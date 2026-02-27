@@ -8,9 +8,25 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
+
+// Fetch Live Stats
+$campaigns_res = $conn->query("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = $user_id");
+$campaigns_row = $campaigns_res->fetch_assoc();
+$total_sent = $campaigns_row['total'];
+
+$clicks_res = $conn->query("SELECT COUNT(*) as total FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id AND pe.event_type = 'click'");
+$clicks_row = $clicks_res->fetch_assoc();
+$total_clicks = $clicks_row['total'];
+
+$creds_res = $conn->query("SELECT COUNT(*) as total FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id AND pe.event_type = 'credential'");
+$creds_row = $creds_res->fetch_assoc();
+$total_creds = $creds_row['total'];
+
+$click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100) : 0;
+
+$show_success = isset($_GET['success']);
 ?>
 <!DOCTYPE html>
-
 <html class="dark" lang="en">
 
 <head>
@@ -19,7 +35,6 @@ $user_id = $_SESSION['user_id'];
     <title>CyberShield | Phishing Simulation Dashboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
     <script id="tailwind-config">
         tailwind.config = {
@@ -35,22 +50,12 @@ $user_id = $_SESSION['user_id'];
                     },
                     fontFamily: {
                         "display": ["Inter", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
+                    }
                 },
             },
         }
     </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
         }
@@ -72,21 +77,51 @@ $user_id = $_SESSION['user_id'];
 </head>
 
 <body class="bg-background-light dark:bg-background-dark text-white font-display overflow-x-hidden">
+    <?php if ($show_success): ?>
+        <div id="successModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background-dark/80 backdrop-blur-sm">
+            <div class="glass-panel max-w-lg w-full rounded-2xl p-8 border-primary/30 shadow-2xl animate-in fade-in zoom-in duration-300 bg-surface-dark border border-white/10">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-3xl">verified</span>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-black italic uppercase italic">Campaign <span class="text-primary">Successful!</span></h3>
+                        <p class="text-slate-400 text-xs">Phishing simulation execution completed.</p>
+                    </div>
+                </div>
+                <div class="space-y-6 text-sm text-slate-300 leading-relaxed">
+                    <p>You have successfully simulated a real-world phishing attack. Lifecycle:</p>
+                    <div class="space-y-4">
+                        <div class="flex gap-4">
+                            <div class="size-8 rounded-full bg-background-dark border border-border-muted flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">1</div>
+                            <p class="text-xs text-slate-400"><span class="text-white font-bold">Attacker sends mail:</span> Craft spoofed email with psychological triggers.</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="size-8 rounded-full bg-background-dark border border-border-muted flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">2</div>
+                            <p class="text-xs text-slate-400"><span class="text-white font-bold">User clicks link:</span> Victim interacts with tracking payload.</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="size-8 rounded-full bg-background-dark border border-border-muted flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">3</div>
+                            <p class="text-xs text-slate-400"><span class="text-white font-bold">Data Harvested:</span> Attacker receives IP, Login, and Password.</p>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('successModal').remove()" class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">UNDERSTOOD</button>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="relative flex h-screen w-full flex-col overflow-hidden">
-        <!-- Top Navigation Bar -->
-        <header class="flex items-center justify-between border-b border-solid border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md z-10">
+        <header class="flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md z-10">
             <div class="flex items-center gap-8">
                 <div class="flex items-center gap-3 text-primary">
-                    <div class="size-8 flex items-center justify-center">
-                        <span class="material-symbols-outlined text-3xl">shield_person</span>
-                    </div>
+                    <span class="material-symbols-outlined text-3xl">shield_person</span>
                     <h2 class="text-white text-xl font-bold tracking-tight uppercase">CyberShield <span class="text-primary/70 text-xs font-mono">v4.2.0</span></h2>
                 </div>
                 <div class="hidden lg:flex items-center gap-6">
                     <a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="#">Simulation</a>
                     <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="#">Analytics</a>
                     <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="#">Templates</a>
-                    <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="#">Target Groups</a>
                 </div>
             </div>
             <div class="flex items-center gap-4">
@@ -94,286 +129,195 @@ $user_id = $_SESSION['user_id'];
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#b0bc9a] text-sm">search</span>
                     <input class="bg-surface-dark border-border-muted rounded-lg pl-9 pr-4 py-1.5 text-sm w-64 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all" placeholder="Search logs..." type="text" />
                 </div>
-                <button class="p-2 rounded-lg bg-surface-dark text-[#b0bc9a] hover:text-primary transition-colors">
-                    <span class="material-symbols-outlined">notifications</span>
-                </button>
-                <div class="h-8 w-px bg-border-muted mx-1"></div>
                 <div class="flex items-center gap-3 bg-surface-dark px-3 py-1.5 rounded-full border border-border-muted">
-                    <div class="size-6 bg-primary/20 rounded-full flex items-center justify-center border border-primary/40">
-                        <span class="material-symbols-outlined text-primary text-xs">admin_panel_settings</span>
-                    </div>
                     <span class="text-xs font-bold tracking-wider">SEC_ADMIN</span>
                 </div>
             </div>
         </header>
-        <!-- Main Content Area -->
+
         <main class="flex-1 flex overflow-hidden terminal-grid">
-            <!-- Left Sidebar: Target Groups -->
-            <aside class="w-64 border-r border-border-muted flex flex-col bg-background-dark/50">
-                <div class="p-6 border-b border-border-muted">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Target Audience</h3>
-                    <div class="space-y-1">
-                        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-xl">groups</span>
-                                <span class="text-sm font-medium">All Employees</span>
-                            </div>
-                            <span class="text-[10px] font-mono">1,240</span>
-                        </button>
-                        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] hover:bg-surface-dark hover:text-white transition-all">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-xl">code</span>
-                                <span class="text-sm font-medium">Engineering</span>
-                            </div>
-                            <span class="text-[10px] font-mono">412</span>
-                        </button>
-                        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] hover:bg-surface-dark hover:text-white transition-all">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-xl">payments</span>
-                                <span class="text-sm font-medium">Finance</span>
-                            </div>
-                            <span class="text-[10px] font-mono">84</span>
-                        </button>
-                        <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] hover:bg-surface-dark hover:text-white transition-all">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-xl">support_agent</span>
-                                <span class="text-sm font-medium">Sales</span>
-                            </div>
-                            <span class="text-[10px] font-mono">156</span>
-                        </button>
+            <aside class="w-64 border-r border-border-muted flex flex-col bg-background-dark/50 p-6 overflow-y-auto custom-scrollbar">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Target Audience</h3>
+                <div class="space-y-1 mb-8">
+                    <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                        <span class="text-sm font-medium">All Employees</span>
+                        <span class="text-[10px] font-mono">1,240</span>
+                    </button>
+                    <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] hover:bg-surface-dark hover:text-white">
+                        <span class="text-sm font-medium">Engineering</span>
+                        <span class="text-[10px] font-mono">412</span>
+                    </button>
+                </div>
+                <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Threat Vectors</h3>
+                <div class="space-y-3 mb-8">
+                    <div class="flex items-center gap-3">
+                        <input checked class="rounded border-border-muted bg-surface-dark text-primary" type="checkbox" />
+                        <span class="text-sm text-[#b0bc9a]">Link Tracking</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input checked class="rounded border-border-muted bg-surface-dark text-primary" type="checkbox" />
+                        <span class="text-sm text-[#b0bc9a]">Credential Capture</span>
                     </div>
                 </div>
-                <div class="p-6">
-                    <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Threat Vectors</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3">
-                            <input checked="" class="rounded border-border-muted bg-surface-dark text-primary focus:ring-primary" type="checkbox" />
-                            <span class="text-sm text-[#b0bc9a]">Link Tracking</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <input checked="" class="rounded border-border-muted bg-surface-dark text-primary focus:ring-primary" type="checkbox" />
-                            <span class="text-sm text-[#b0bc9a]">Credential Capture</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <input class="rounded border-border-muted bg-surface-dark text-primary focus:ring-primary" type="checkbox" />
-                            <span class="text-sm text-[#b0bc9a]">Attachment Payload</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-auto p-4">
-                    <div class="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                        <div class="flex items-center gap-2 text-red-500 mb-1">
-                            <span class="material-symbols-outlined text-sm">warning</span>
-                            <span class="text-[10px] font-bold uppercase">System Alert</span>
-                        </div>
-                        <p class="text-[10px] text-red-200/70">Training mode is active. All interactions will be logged for compliance.</p>
-                    </div>
+                <div class="mt-auto p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <span class="text-[10px] font-bold uppercase text-red-500 block mb-1">System Alert</span>
+                    <p class="text-[10px] text-red-200/70">Training mode active. Interaction logged.</p>
                 </div>
             </aside>
-            <!-- Center & Right: Dashboard Workspace -->
+
             <div class="flex-1 flex flex-col overflow-hidden">
-                <!-- Metrics Bar -->
-                <section class="p-6 grid grid-cols-4 gap-4 bg-background-dark/30 border-b border-border-muted">
-                    <div class="flex flex-col gap-1 p-4 rounded-xl border border-border-muted bg-surface-dark/50 hover:border-primary/30 transition-all group">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[#b0bc9a] text-xs font-semibold uppercase">Emails Sent</span>
-                            <span class="material-symbols-outlined text-primary text-sm">send</span>
-                        </div>
-                        <div class="flex items-baseline gap-2">
-                            <p class="text-2xl font-bold">0</p>
-                            <span class="text-[10px] text-primary">0%</span>
-                        </div>
+                <section class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-background-dark/30 border-b border-border-muted">
+                    <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
+                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Emails Sent</span>
+                        <p class="text-2xl font-bold"><?php echo number_format($total_sent); ?></p>
+                        <span class="text-[10px] text-primary">Live Data</span>
                     </div>
-                    <div class="flex flex-col gap-1 p-4 rounded-xl border border-border-muted bg-surface-dark/50 hover:border-primary/30 transition-all group">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[#b0bc9a] text-xs font-semibold uppercase">Links Clicked</span>
-                            <span class="material-symbols-outlined text-primary text-sm">ads_click</span>
-                        </div>
-                        <div class="flex items-baseline gap-2">
-                            <p class="text-2xl font-bold">0</p>
-                            <span class="text-[10px] text-primary">0%</span>
-                        </div>
+                    <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
+                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Links Clicked</span>
+                        <p class="text-2xl font-bold"><?php echo number_format($total_clicks); ?></p>
+                        <span class="text-[10px] text-primary"><?php echo $click_rate; ?>% Success</span>
                     </div>
-                    <div class="flex flex-col gap-1 p-4 rounded-xl border border-border-muted bg-surface-dark/50 hover:border-primary/30 transition-all group">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[#b0bc9a] text-xs font-semibold uppercase">Credentials</span>
-                            <span class="material-symbols-outlined text-red-500 text-sm">key</span>
-                        </div>
-                        <div class="flex items-baseline gap-2">
-                            <p class="text-2xl font-bold">0</p>
-                            <span class="text-[10px] text-[#b0bc9a]">None</span>
-                        </div>
+                    <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
+                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Credentials Captured</span>
+                        <p class="text-2xl font-bold"><?php echo number_format($total_creds); ?></p>
+                        <span class="text-[10px] text-red-500">Compromised</span>
                     </div>
-                    <div class="flex flex-col gap-1 p-4 rounded-xl border border-border-muted bg-surface-dark/50 hover:border-primary/30 transition-all group">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[#b0bc9a] text-xs font-semibold uppercase">Avg Risk Score</span>
-                            <span class="material-symbols-outlined text-primary text-sm">speed</span>
-                        </div>
-                        <div class="flex items-baseline gap-2">
-                            <p class="text-2xl font-bold">0%</p>
-                            <span class="text-[10px] text-primary">Target: 20%</span>
-                        </div>
+                    <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
+                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Risk Profile</span>
+                        <p class="text-2xl font-bold"><?php echo $total_creds > 0 ? 'CRITICAL' : 'SECURE'; ?></p>
+                        <span class="text-[10px] text-primary">Real-time Analysis</span>
                     </div>
                 </section>
-                <!-- Editor Workspace -->
+
                 <div class="flex-1 flex overflow-hidden">
-                    <!-- Phishing Email Creator -->
-                    <form method="POST" action="process_campaign.php" class="w-1/2 p-6 overflow-y-auto">
+                    <form method="POST" action="process_campaign.php" class="w-1/2 p-6 overflow-y-auto custom-scrollbar border-r border-border-muted">
                         <div class="flex items-center justify-between mb-6">
                             <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
                                 <span class="material-symbols-outlined text-primary">edit_note</span>
                                 Email Creator
                             </h2>
                             <div class="flex gap-2">
-                                <button class="px-3 py-1.5 text-xs font-bold border border-border-muted rounded-lg hover:bg-surface-dark transition-all">Reset</button>
-                                <button class="px-3 py-1.5 text-xs font-bold bg-primary/20 text-primary border border-primary/40 rounded-lg hover:bg-primary/30 transition-all">Load Template</button>
+                                <select id="templateSelector" class="bg-surface-dark border-border-muted rounded-lg text-xs font-bold text-[#b0bc9a] px-2 outline-none focus:border-primary">
+                                    <option value="default">Custom Template...</option>
+                                    <option value="microsoft">Microsoft Account Alert</option>
+                                    <option value="google">Google Security Warning</option>
+                                    <option value="invoice">Unpaid Invoice #842</option>
+                                    <option value="hr">New HR Policy (Q1 2024)</option>
+                                </select>
+                                <button type="button" onclick="loadTemplate()" class="px-3 py-1 text-xs font-bold bg-primary text-background-dark rounded-lg hover:brightness-110">Load</button>
                             </div>
                         </div>
                         <div class="space-y-6">
                             <div class="grid grid-cols-2 gap-4">
-                                <label class="flex flex-col gap-2">
-                                    <span class="text-xs font-bold uppercase text-[#b0bc9a]">Sender Display Name</span>
-                                    <input class="bg-surface-dark border-border-muted rounded-lg p-3 text-sm focus:border-primary outline-none focus:ring-1 focus:ring-primary/20" type="text" value="IT Security Operations" />
-                                </label>
-                                <label class="flex flex-col gap-2">
-                                    <span class="text-xs font-bold uppercase text-[#b0bc9a]">Spoofed Email Address</span>
-                                    <input class="bg-surface-dark border-border-muted rounded-lg p-3 text-sm font-mono focus:border-primary outline-none focus:ring-1 focus:ring-primary/20" type="text" value="admin-no-reply@cybershield-auth.com" />
-                                </label>
+                                <div class="space-y-2">
+                                    <span class="text-xs font-bold uppercase text-[#b0bc9a]">Sender Name</span>
+                                    <input id="sender_name" name="sender_name" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm focus:border-primary outline-none" type="text" value="IT Security Operations" />
+                                </div>
+                                <div class="space-y-2">
+                                    <span class="text-xs font-bold uppercase text-[#b0bc9a]">Spoof Email</span>
+                                    <input id="spoof_email" name="spoof_email" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm font-mono focus:border-primary outline-none" type="text" value="admin-no-reply@cybershield-auth.com" />
+                                </div>
                             </div>
-                            <label class="flex flex-col gap-2">
+                            <div class="space-y-2">
                                 <span class="text-xs font-bold uppercase text-[#b0bc9a]">Email Subject</span>
-                                <input class="bg-surface-dark border-border-muted rounded-lg p-3 text-sm font-medium focus:border-primary outline-none focus:ring-1 focus:ring-primary/20" type="text" value="URGENT: Your account requires immediate verification" />
-                            </label>
-                            <div class="flex flex-col gap-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-bold uppercase text-[#b0bc9a]">Email Body (HTML/Rich Text)</span>
-                                    <div class="flex gap-1">
-                                        <button class="p-1 hover:bg-surface-dark rounded text-[#b0bc9a]"><span class="material-symbols-outlined text-lg">format_bold</span></button>
-                                        <button class="p-1 hover:bg-surface-dark rounded text-[#b0bc9a]"><span class="material-symbols-outlined text-lg">format_italic</span></button>
-                                        <button class="p-1 hover:bg-surface-dark rounded text-[#b0bc9a]"><span class="material-symbols-outlined text-lg">link</span></button>
-                                        <button class="p-1 hover:bg-surface-dark rounded text-primary"><span class="material-symbols-outlined text-lg">code</span></button>
-                                    </div>
+                                <input id="subject" name="subject" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm focus:border-primary outline-none" type="text" value="URGENT: Your account requires verification" />
+                            </div>
+                            <div class="space-y-2 flex flex-col flex-1">
+                                <span class="text-xs font-bold uppercase text-[#b0bc9a]">Body (HTML OK)</span>
+                                <textarea id="email_body" name="body" class="flex-1 min-h-[300px] w-full bg-surface-dark border-border-muted rounded-lg p-4 text-sm font-mono focus:border-primary outline-none custom-scrollbar" rows="10">&lt;p&gt;Dear Employee,&lt;/p&gt;
+&lt;p&gt;We have detected unusual activity. Please click below to verify:&lt;/p&gt;
+&lt;a href="{{TRACKING_LINK}}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;"&gt;Verify Now&lt;/a&gt;</textarea>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" name="launch" class="px-8 py-3 bg-primary text-background-dark rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">Launch Attack</button>
+                        </div>
+                    </form>
+
+                    <section class="w-1/2 p-6 bg-surface-dark/30 overflow-y-auto custom-scrollbar">
+                        <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">visibility</span>
+                            Target Preview
+                        </h2>
+                        <div class="bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col text-gray-900 border border-white/10">
+                            <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between">
+                                <span>Preview: Outlook Mobile / Desktop</span>
+                                <span class="flex gap-1.5">
+                                    <div class="size-2 rounded-full bg-red-400"></div>
+                                    <div class="size-2 rounded-full bg-green-400"></div>
+                                </span>
+                            </div>
+                            <div class="p-8 space-y-4">
+                                <div class="border-b pb-4">
+                                    <p class="text-xs text-gray-500 mb-1">From: <span class="font-bold text-gray-900">IT Security Operations</span></p>
+                                    <p class="text-sm font-bold">URGENT: Your account requires verification</p>
                                 </div>
-                                <div class="relative group">
-                                    <textarea class="w-full bg-surface-dark border-border-muted rounded-lg p-4 text-sm font-mono focus:border-primary outline-none focus:ring-1 focus:ring-primary/20 custom-scrollbar" rows="10">&lt;p&gt;Dear Employee,&lt;/p&gt;
-
-&lt;p&gt;We have detected an unusual login attempt on your CyberShield account from a new location in Eastern Europe. For your security, your account access has been temporarily restricted.&lt;/p&gt;
-
-&lt;p&gt;Please click the button below to verify your identity and restore access:&lt;/p&gt;
-
-&lt;a href="{{TRACKING_LINK}}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;"&gt;Verify Account Now&lt;/a&gt;
-
-&lt;p&gt;Failure to verify within 24 hours will result in permanent account suspension.&lt;/p&gt;
-
-&lt;p&gt;Regards,&lt;br&gt;IT Security Team&lt;/p&gt;</textarea>
-                                    <div class="absolute bottom-4 right-4 text-[10px] text-[#b0bc9a] font-mono bg-background-dark/80 px-2 py-1 rounded">214 Words | HTML OK</div>
+                                <div class="text-sm prose prose-sm max-w-none">
+                                    <p>Dear Employee,</p>
+                                    <p>We detected unusual activity. Please verify your identity.</p>
+                                    <p><a href="#" class="inline-block bg-[#007bff] text-white px-4 py-2 rounded no-underline">Verify Now</a></p>
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-8 pt-8 border-t border-border-muted flex items-center justify-between">
-                            <button class="flex items-center gap-2 px-6 py-3 border border-border-muted rounded-xl font-bold hover:bg-surface-dark transition-all">
-                                <span class="material-symbols-outlined">save</span>
-                                Save Draft
-                            </button>
-                            <button class="flex items-center gap-2 px-8 py-3 bg-primary text-background-dark rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
-                                <span class="material-symbols-outlined">rocket_launch</span>
-                                <button type="submit" name="launch">
-                                    Launch Campaign
-                                </button>
+                        <div class="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-xl grid grid-cols-2 gap-4">
+                            <div class="flex items-center gap-2 text-[10px] text-[#b0bc9a]">
+                                <span class="material-symbols-outlined text-primary text-sm">check_circle</span>
+                                Tracking Armed
+                            </div>
+                            <div class="flex items-center gap-2 text-[10px] text-yellow-500">
+                                <span class="material-symbols-outlined text-sm">warning</span>
+                                Urgency High
+                            </div>
                         </div>
-                        </section>
-                        <!-- Preview Panel -->
-                        <section class="w-1/2 p-6 bg-surface-dark/30 flex flex-col">
-                            <div class="flex items-center justify-between mb-6">
-                                <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
-                                    <span class="material-symbols-outlined text-primary">visibility</span>
-                                    Target Preview
-                                </h2>
-                                <div class="bg-background-dark p-1 rounded-lg border border-border-muted flex gap-1">
-                                    <button class="px-2 py-1 rounded bg-surface-dark text-primary"><span class="material-symbols-outlined text-sm">desktop_windows</span></button>
-                                    <button class="px-2 py-1 rounded hover:bg-surface-dark transition-all"><span class="material-symbols-outlined text-sm">smartphone</span></button>
-                                    <button class="px-2 py-1 rounded hover:bg-surface-dark transition-all"><span class="material-symbols-outlined text-sm">tablet</span></button>
-                                </div>
-                            </div>
-                            <!-- Simulated Outlook/Gmail View -->
-                            <div class="flex-1 bg-[#f1f3f4] rounded-xl overflow-hidden shadow-2xl flex flex-col border border-white/10">
-                                <!-- Browser Header -->
-                                <div class="bg-white px-4 py-2 border-b border-gray-200 flex items-center gap-4">
-                                    <div class="flex gap-1.5">
-                                        <div class="size-2.5 rounded-full bg-red-400"></div>
-                                        <div class="size-2.5 rounded-full bg-yellow-400"></div>
-                                        <div class="size-2.5 rounded-full bg-green-400"></div>
-                                    </div>
-                                    <div class="bg-gray-100 px-4 py-1 rounded text-[10px] text-gray-500 flex-1 truncate">outlook.office.com/mail/inbox/id=842...</div>
-                                </div>
-                                <!-- Email View Area -->
-                                <div class="flex-1 bg-white p-8 overflow-y-auto custom-scrollbar text-gray-900">
-                                    <div class="mb-6">
-                                        <h1 class="text-xl font-bold text-gray-900 mb-4">URGENT: Your account requires immediate verification</h1>
-                                        <div class="flex items-center gap-3">
-                                            <div class="size-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold">IT</div>
-                                            <div>
-                                                <div class="flex items-center gap-2">
-                                                    <span class="text-sm font-bold">IT Security Operations</span>
-                                                    <span class="text-[10px] text-gray-500">&lt;admin-no-reply@cybershield-auth.com&gt;</span>
-                                                </div>
-                                                <div class="text-[10px] text-gray-500">To: Employee Name &lt;target@company.com&gt;</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="text-sm leading-relaxed space-y-4">
-                                        <p>Dear Employee,</p>
-                                        <p>We have detected an unusual login attempt on your CyberShield account from a new location in Eastern Europe. For your security, your account access has been temporarily restricted.</p>
-                                        <p>Please click the button below to verify your identity and restore access:</p>
-                                        <div>
-                                            <a class="inline-block bg-[#007bff] text-white px-6 py-2.5 rounded font-medium text-sm no-underline shadow-sm" href="#">Verify Account Now</a>
-                                        </div>
-                                        <p>Failure to verify within 24 hours will result in permanent account suspension.</p>
-                                        <p class="pt-4 text-gray-500">Regards,<br />IT Security Team</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Analysis / Red Flags -->
-                            <div class="mt-6 p-4 rounded-xl border border-primary/20 bg-primary/5">
-                                <h3 class="text-xs font-bold uppercase text-primary mb-3 flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-sm">biotech</span>
-                                    Simulation Analysis
-                                </h3>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="flex items-center gap-2">
-                                        <span class="material-symbols-outlined text-primary text-sm">check_circle</span>
-                                        <span class="text-[10px] text-[#b0bc9a]">Spoof successful</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="material-symbols-outlined text-primary text-sm">check_circle</span>
-                                        <span class="text-[10px] text-[#b0bc9a]">Tracking pixel armed</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="material-symbols-outlined text-yellow-500 text-sm">report</span>
-                                        <span class="text-[10px] text-[#b0bc9a]">Urgency flags detected (3)</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="material-symbols-outlined text-primary text-sm">verified_user</span>
-                                        <span class="text-[10px] text-[#b0bc9a]">SSL bypass active</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
+                    </section>
                 </div>
-                <!-- Footer / Legal -->
-                <footer class="px-6 py-2 bg-background-dark border-t border-border-muted flex items-center justify-between">
-                    <div class="flex items-center gap-4 text-[10px] text-[#b0bc9a] font-mono">
-                        <span class="flex items-center gap-1"><span class="size-1.5 rounded-full bg-primary animate-pulse"></span> SERVER_NODE_01: ONLINE</span>
-                        <span>LATENCY: 12ms</span>
-                        <span>ENCRYPTION: AES-256</span>
-                    </div>
-                    <div class="text-[10px] text-[#b0bc9a]/50 uppercase tracking-tighter">
-                        Authorized Use Only • CyberShield Security Training Platform © 2024
-                    </div>
-                </footer>
             </div>
         </main>
+
+        <footer class="px-6 py-2 bg-background-dark border-t border-border-muted flex items-center justify-between text-[10px] text-[#b0bc9a] font-mono">
+            <div class="flex gap-4"><span>SERVER: ONLINE</span><span>LATENCY: 12ms</span></div>
+            <div class="uppercase tracking-tighter">CyberShield Training Platform © 2024</div>
+        </footer>
     </div>
+
+    <script>
+        const templates = {
+            microsoft: {
+                name: "Microsoft Security",
+                email: "security@microsoft-auth.com",
+                subject: "Action Required: Unusual sign-in activity",
+                body: `<p>We detected unusual activity on your Microsoft account.</p><p>Location: Sao Paulo, Brazil<br>IP: 191.242.14.92</p><p>Secure your account:</p><a href="{{TRACKING_LINK}}" style="background: #00a4ef; color: white; padding: 10px 20px; text-decoration: none; border-radius: 2px;">Review Activity</a>`
+            },
+            google: {
+                name: "Google Admin",
+                email: "noreply-admin@google-security.net",
+                subject: "Critical Security Alert",
+                body: `<p>A suspicious app was granted access.</p><p>Revoke access immediately to prevent loss.</p><a href="{{TRACKING_LINK}}" style="background: #4285f4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Check Activity</a>`
+            },
+            invoice: {
+                name: "Accounts Payable",
+                email: "billing@corporate-finance.com",
+                subject: "Overdue Invoice: #INV-2024-842",
+                body: `<p>Invoice #INV-2024-842 is 15 days past due.</p><p>Pay via secure portal:</p><a href="{{TRACKING_LINK}}" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Pay Now</a>`
+            },
+            hr: {
+                name: "HR Communications",
+                email: "hr@corporate-it.com",
+                subject: "New Policy Update: Remote Work 2024",
+                body: `<p>Review and sign the updated policy.</p><p>Delays may affect payroll.</p><a href="{{TRACKING_LINK}}" style="background: #6f42c1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Sign Document</a>`
+            }
+        };
+
+        function loadTemplate() {
+            const val = document.getElementById('templateSelector').value;
+            if (val === 'default') return;
+            const t = templates[val];
+            document.getElementById('sender_name').value = t.name;
+            document.getElementById('spoof_email').value = t.email;
+            document.getElementById('subject').value = t.subject;
+            document.getElementById('email_body').value = t.body;
+        }
+    </script>
 </body>
 
 </html>
