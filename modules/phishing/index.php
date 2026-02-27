@@ -220,14 +220,14 @@ $show_success = isset($_GET['success']);
                 </section>
 
                 <div class="flex-1 flex overflow-hidden">
-                    <form method="POST" action="process_campaign.php" class="w-1/2 p-6 overflow-y-auto custom-scrollbar border-r border-border-muted">
+                    <form method="POST" action="process_campaign.php" class="w-1/2 p-6 overflow-y-auto custom-scrollbar border-r border-border-muted h-full">
                         <div class="flex items-center justify-between mb-6">
                             <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
                                 <span class="material-symbols-outlined text-primary">edit_note</span>
                                 Email Creator
                             </h2>
                             <div class="flex gap-2">
-                                <select id="templateSelector" class="bg-surface-dark border-border-muted rounded-lg text-xs font-bold text-[#b0bc9a] px-2 outline-none focus:border-primary">
+                                <select id="templateSelector" onchange="loadTemplate()" class="bg-surface-dark border-border-muted rounded-lg text-xs font-bold text-[#b0bc9a] px-2 outline-none focus:border-primary max-w-[150px]">
                                     <option value="default">Custom Template...</option>
                                     <optgroup label="General" id="generalTemplates">
                                         <option value="microsoft">Microsoft Account Alert</option>
@@ -243,8 +243,13 @@ $show_success = isset($_GET['success']);
                                         <option value="tax">Tax Compliance Notice 2024</option>
                                         <option value="invoice_overdue">Overdue Invoice - Urgent Payment</option>
                                     </optgroup>
+                                    <optgroup label="My Custom Templates" id="userTemplates">
+                                        <!-- Dynamically populated -->
+                                    </optgroup>
                                 </select>
-                                <button type="button" onclick="loadTemplate()" class="px-3 py-1 text-xs font-bold bg-primary text-background-dark rounded-lg hover:brightness-110">Load</button>
+                                <button type="button" onclick="clearForm()" class="px-3 py-1 text-xs font-bold bg-white/5 border border-white/10 text-white rounded-lg hover:bg-white/10" title="Clear Editor">New</button>
+                                <button type="button" onclick="restoreTemplate()" id="restoreBtn" class="px-3 py-1 text-xs font-bold bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg hover:bg-amber-500/20 hidden" title="Revert Changes">Restore</button>
+                                <button type="button" onclick="saveAsCustom()" class="px-3 py-1 text-xs font-bold bg-primary/20 border border-primary/40 text-primary rounded-lg hover:bg-primary/30" title="Save to Library">Save</button>
                             </div>
                         </div>
                         <div class="space-y-6">
@@ -270,7 +275,7 @@ $show_success = isset($_GET['success']);
                             </div>
                         </div>
                         <div class="mt-8 flex justify-end">
-                            <button type="submit" name="launch" class="px-8 py-3 bg-primary text-background-dark rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">Launch Attack</button>
+                            <button type="submit" name="launch" class="px-8 py-3 bg-primary text-background-dark rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all uppercase italic">Launch Attack Instance</button>
                         </div>
                     </form>
 
@@ -339,7 +344,7 @@ $show_success = isset($_GET['success']);
     </div>
 
     <script>
-        const templates = {
+        const systemTemplates = {
             microsoft: {
                 name: "Microsoft Security",
                 email: "security@microsoft-auth.com",
@@ -406,6 +411,19 @@ $show_success = isset($_GET['success']);
         };
 
         let currentAudience = 'all';
+        let customTemplates = JSON.parse(localStorage.getItem('phishing_custom_templates') || '{}');
+
+        function initTemplates() {
+            const container = document.getElementById('userTemplates');
+            container.innerHTML = '';
+
+            Object.keys(customTemplates).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = 'custom_' + key;
+                opt.innerText = customTemplates[key].subject.substring(0, 30) + (customTemplates[key].subject.length > 30 ? '...' : '');
+                container.appendChild(opt);
+            });
+        }
 
         function switchAudience(key) {
             currentAudience = key;
@@ -433,20 +451,89 @@ $show_success = isset($_GET['success']);
 
         function loadTemplate() {
             const val = document.getElementById('templateSelector').value;
-            if (val === 'default') return;
-            const t = templates[val];
-            document.getElementById('sender_name').value = t.name;
-            document.getElementById('spoof_email').value = t.email;
-            document.getElementById('subject').value = t.subject;
-            document.getElementById('email_body').value = t.body;
+            const restoreBtn = document.getElementById('restoreBtn');
+
+            if (val === 'default') {
+                clearForm();
+                restoreBtn.classList.add('hidden');
+                return;
+            }
+
+            let t;
+            if (val.startsWith('custom_')) {
+                const key = val.replace('custom_', '');
+                t = customTemplates[key];
+                restoreBtn.classList.add('hidden'); // No restore for custom (they just edit)
+            } else {
+                t = systemTemplates[val];
+                restoreBtn.classList.remove('hidden');
+            }
+
+            if (t) {
+                document.getElementById('sender_name').value = t.name;
+                document.getElementById('spoof_email').value = t.email;
+                document.getElementById('subject').value = t.subject;
+                document.getElementById('email_body').value = t.body;
+                updatePreview();
+            }
+        }
+
+        function restoreTemplate() {
+            const val = document.getElementById('templateSelector').value;
+            if (val && systemTemplates[val]) {
+                const t = systemTemplates[val];
+                document.getElementById('sender_name').value = t.name;
+                document.getElementById('spoof_email').value = t.email;
+                document.getElementById('subject').value = t.subject;
+                document.getElementById('email_body').value = t.body;
+                updatePreview();
+                alert("Original template content restored.");
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('templateSelector').value = 'default';
+            document.getElementById('sender_name').value = '';
+            document.getElementById('spoof_email').value = '';
+            document.getElementById('subject').value = '';
+            document.getElementById('email_body').value = '';
+            document.getElementById('restoreBtn').classList.add('hidden');
             updatePreview();
         }
 
+        function saveAsCustom() {
+            const name = document.getElementById('sender_name').value;
+            const email = document.getElementById('spoof_email').value;
+            const subject = document.getElementById('subject').value;
+            const body = document.getElementById('email_body').value;
+
+            if (!subject) {
+                alert("Please provide at least a subject for the template.");
+                return;
+            }
+
+            const id = Date.now().toString();
+            customTemplates[id] = {
+                name,
+                email,
+                subject,
+                body
+            };
+            localStorage.setItem('phishing_custom_templates', JSON.stringify(customTemplates));
+
+            initTemplates();
+            document.getElementById('templateSelector').value = 'custom_' + id;
+            document.getElementById('restoreBtn').classList.add('hidden');
+            alert("Template saved successfully to your library!");
+        }
+
         function updatePreview() {
-            document.getElementById('previewSender').innerText = document.getElementById('sender_name').value;
-            document.getElementById('previewSubject').innerText = document.getElementById('subject').value;
+            document.getElementById('previewSender').innerText = document.getElementById('sender_name').value || 'Sender Name';
+            document.getElementById('previewSubject').innerText = document.getElementById('subject').value || 'Email Subject';
             // Use innerHTML but handle the replacement
-            document.getElementById('previewBody').innerHTML = document.getElementById('email_body').value.replace(/{{TRACKING_LINK}}/g, '#');
+            let body = document.getElementById('email_body').value;
+            if (!body) body = '<p class="text-slate-300 italic">Starting new custom pattern...</p>';
+            document.getElementById('previewBody').innerHTML = body.replace(/{{TRACKING_LINK}}/g, '#');
         }
 
         // Add real-time listeners
@@ -455,7 +542,8 @@ $show_success = isset($_GET['success']);
             if (el) el.addEventListener('input', updatePreview);
         });
 
-        // Initialize preview
+        // Initialize
+        initTemplates();
         updatePreview();
     </script>
 </body>
