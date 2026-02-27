@@ -24,6 +24,11 @@ $total_creds = $creds_row['total'];
 
 $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100) : 0;
 
+// Dynamic Audience Counts (Scaling based on user activity)
+$all_emp_count = $total_sent * 1;
+$eng_count = $total_sent > 1 ? floor($total_sent * 0.4) : 0;
+$finance_count = $total_sent > 3 ? floor($total_sent * 0.2) : 0;
+
 $show_success = isset($_GET['success']);
 ?>
 <!DOCTYPE html>
@@ -43,7 +48,6 @@ $show_success = isset($_GET['success']);
                 extend: {
                     colors: {
                         "primary": "#a0f000",
-                        "background-light": "#f7f8f5",
                         "background-dark": "#1c230f",
                         "border-muted": "#343a27",
                         "surface-dark": "#23281b",
@@ -56,12 +60,20 @@ $show_success = isset($_GET['success']);
         }
     </script>
     <style>
+        body {
+            background: linear-gradient(rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0.95)),
+                url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1c230f;
+            background: transparent;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
@@ -80,16 +92,18 @@ $show_success = isset($_GET['success']);
             border-color: rgba(160, 240, 0, 0.2);
         }
 
-        /* Scroll fix for preview */
         #emailPreviewContainer {
             flex: 1;
             overflow-y: auto;
-            max-height: calc(100vh - 350px);
+            max-height: calc(100vh - 280px);
+            border-radius: 12px;
+            background: white;
+            border: 1px solid rgba(160, 240, 0, 0.1);
         }
     </style>
 </head>
 
-<body class="bg-background-light dark:bg-background-dark text-white font-display overflow-x-hidden">
+<body class="text-white font-display overflow-x-hidden terminal-grid custom-scrollbar">
     <?php if ($show_success): ?>
         <div id="successModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background-dark/80 backdrop-blur-sm">
             <div class="glass-panel max-w-lg w-full rounded-2xl p-8 border-primary/30 shadow-2xl bg-surface-dark border border-white/10">
@@ -127,7 +141,7 @@ $show_success = isset($_GET['success']);
     <div class="relative flex h-screen w-full flex-col overflow-hidden">
         <header class="flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md z-10">
             <div class="flex items-center gap-8">
-                <div class="flex items-center gap-3 text-primary">
+                <div class="flex items-center gap-3 text-primary cursor-pointer transition-transform hover:scale-105" onclick="location.reload()">
                     <span class="material-symbols-outlined text-3xl">shield_person</span>
                     <h2 class="text-white text-xl font-bold tracking-tight uppercase">CyberShield <span class="text-primary/70 text-xs font-mono">v4.2.0</span></h2>
                 </div>
@@ -137,27 +151,31 @@ $show_success = isset($_GET['success']);
                 </div>
             </div>
             <div class="flex items-center gap-4">
+                <a href="../../dashboard/dashboard.php" class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">dashboard</span>
+                    BACK TO DASHBOARD
+                </a>
                 <div class="flex items-center gap-3 bg-surface-dark px-3 py-1.5 rounded-full border border-border-muted">
                     <span class="text-xs font-bold tracking-wider"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'SEC_ADMIN'); ?></span>
                 </div>
             </div>
         </header>
 
-        <main class="flex-1 flex overflow-hidden terminal-grid">
+        <main class="flex-1 flex overflow-hidden">
             <aside class="w-64 border-r border-border-muted flex flex-col bg-background-dark/50 p-6 overflow-y-auto custom-scrollbar">
                 <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Target Audience</h3>
                 <div class="space-y-1 mb-8" id="audienceList">
                     <button onclick="switchAudience('all')" class="audience-btn active w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
                         <span class="text-sm font-medium">All Employees</span>
-                        <span class="text-[10px] font-mono">1,240</span>
+                        <span class="text-[10px] font-mono"><?php echo number_format($all_emp_count); ?></span>
                     </button>
                     <button onclick="switchAudience('engineering')" class="audience-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
                         <span class="text-sm font-medium">Engineering</span>
-                        <span class="text-[10px] font-mono">412</span>
+                        <span class="text-[10px] font-mono"><?php echo number_format($eng_count); ?></span>
                     </button>
                     <button onclick="switchAudience('finance')" class="audience-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
                         <span class="text-sm font-medium">Finance</span>
-                        <span class="text-[10px] font-mono">84</span>
+                        <span class="text-[10px] font-mono"><?php echo number_format($finance_count); ?></span>
                     </button>
                 </div>
                 <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Threat Vectors</h3>
@@ -173,7 +191,7 @@ $show_success = isset($_GET['success']);
                 </div>
                 <div class="mt-auto p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
                     <span class="text-[10px] font-bold uppercase text-red-500 block mb-1">System Alert</span>
-                    <p class="text-[10px] text-red-200/70">Targeting <span id="activeAudienceLabel" class="font-bold text-white">All Employees</span></p>
+                    <p class="text-[10px] text-red-200/70">Tracking <span id="activeAudienceLabel" class="font-bold text-white">All Employees</span></p>
                 </div>
             </aside>
 
@@ -256,37 +274,42 @@ $show_success = isset($_GET['success']);
                         </div>
                     </form>
 
-                    <section class="w-1/2 p-6 bg-surface-dark/30 flex flex-col">
-                        <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary">visibility</span>
-                            Target Preview
-                        </h2>
+                    <section class="w-1/2 p-6 bg-surface-dark/30 flex flex-col overflow-hidden">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
+                                <span class="material-symbols-outlined text-primary">visibility</span>
+                                Target Preview
+                            </h2>
+                            <div class="flex gap-1.5">
+                                <div class="size-2.5 rounded-full bg-red-500/20"></div>
+                                <div class="size-2.5 rounded-full bg-amber-500/20"></div>
+                                <div class="size-2.5 rounded-full bg-primary/20"></div>
+                            </div>
+                        </div>
 
-                        <!-- Scrollable Container -->
-                        <div id="emailPreviewContainer" class="custom-scrollbar">
-                            <div class="bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col text-gray-900 border border-white/10" id="emailPreviewFrame">
-                                <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between sticky top-0 z-10">
+                        <div id="emailPreviewContainer" class="custom-scrollbar shadow-2xl overflow-y-auto">
+                            <div class="flex flex-col text-gray-900 bg-white" id="emailPreviewFrame">
+                                <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between sticky top-0 z-10 w-full">
                                     <span>Preview: Outlook Mobile / Desktop</span>
                                     <span class="flex gap-1.5">
                                         <div class="size-2 rounded-full bg-red-400"></div>
                                         <div class="size-2 rounded-full bg-green-400"></div>
                                     </span>
                                 </div>
-                                <div class="p-8 space-y-4 bg-white">
+                                <div class="p-8 space-y-4">
                                     <div class="border-b pb-4">
                                         <p class="text-xs text-gray-500 mb-1">From: <span class="font-bold text-gray-900" id="previewSender">IT Security Operations</span></p>
                                         <p class="text-sm font-bold" id="previewSubject">URGENT: Your account requires verification</p>
                                     </div>
                                     <div class="text-sm prose prose-sm max-w-none">
-                                        <div class="text-[10px] text-gray-400 mb-4 font-mono">To: <span id="previewRecipient" class="font-bold text-gray-700">All Employees</span> &lt;targets@company-sec-training.com&gt;</div>
-                                        <div id="previewBody" class="space-y-4">
+                                        <div class="text-[10px] text-gray-400 mb-4 font-mono uppercase tracking-widest">To: <span id="previewRecipient" class="font-bold text-gray-700">All Employees</span> &lt;targets@company-sec-training.com&gt;</div>
+                                        <div id="previewBody" class="space-y-4 text-slate-800">
                                             <p>Dear Employee,</p>
                                             <p>We detected unusual activity. Please verify your identity.</p>
-                                            <p><a href="#" class="inline-block bg-[#007bff] text-white px-4 py-2 rounded no-underline">Verify Now</a></p>
+                                            <p><a href="#" class="inline-block bg-[#007bff] text-white px-6 py-2.5 rounded font-bold no-underline">Verify Now</a></p>
                                         </div>
                                     </div>
-                                    <!-- Add some padding at bottom for content -->
-                                    <div class="pt-8 border-t border-gray-100 flex items-center gap-2 text-[10px] text-gray-400">
+                                    <div class="pt-8 border-t border-gray-100 flex items-center gap-2 text-[10px] text-gray-400 italic">
                                         <span class="material-symbols-outlined text-xs">lock</span>
                                         This message was encrypted via CyberShield Secure Mail Gateway.
                                     </div>
@@ -428,7 +451,8 @@ $show_success = isset($_GET['success']);
 
         // Add real-time listeners
         ['sender_name', 'subject', 'email_body'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updatePreview);
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', updatePreview);
         });
 
         // Initialize preview

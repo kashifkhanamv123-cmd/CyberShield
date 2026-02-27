@@ -10,21 +10,49 @@ include("../../config/db.php");
 
 $campaign_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
+// RECORD SIMULATED EVENTS (To ensure analytics have data even for first-time use)
 if ($campaign_id > 0) {
-    // Record click event
-    $conn->query("INSERT INTO phishing_events 
-        (campaign_id, event_type, target_email)
-        VALUES ($campaign_id, 'click', 'employee@test.com')");
-
-    // Record credential capture event
-    $conn->query("INSERT INTO phishing_events 
-        (campaign_id, event_type, target_email)
-        VALUES ($campaign_id, 'credential', 'employee@test.com')");
+    $check = $conn->query("SELECT id FROM phishing_events WHERE campaign_id = $campaign_id LIMIT 1");
+    if ($check->num_rows == 0) {
+        // First click
+        $conn->query("INSERT INTO phishing_events (campaign_id, event_type, target_email, created_at) 
+                     VALUES ($campaign_id, 'click', 'target_employee@finance-corp.com', NOW())");
+        // Credential capture short time later
+        $conn->query("INSERT INTO phishing_events (campaign_id, event_type, target_email, created_at) 
+                     VALUES ($campaign_id, 'credential', 'target_employee@finance-corp.com', DATE_ADD(NOW(), INTERVAL 4 SECOND))");
+    }
 }
 
-// Mock captured data for simulation
+// FETCH REAL-TIME STATS
+$stats_query = $conn->query("SELECT 
+    (SELECT COUNT(DISTINCT target_email) FROM phishing_events WHERE campaign_id = $campaign_id) as targets_hit,
+    (SELECT COUNT(*) FROM phishing_events WHERE campaign_id = $campaign_id AND event_type = 'click') as clicks,
+    (SELECT COUNT(*) FROM phishing_events WHERE campaign_id = $campaign_id AND event_type = 'credential') as credentials,
+    pc.created_at as created_at
+    FROM phishing_campaigns pc WHERE pc.id = $campaign_id");
+
+$stats = $stats_query->fetch_assoc();
+
+$targets_hit = $stats['targets_hit'] ?? 0;
+$clicks = $stats['clicks'] ?? 0;
+$credentials = $stats['credentials'] ?? 0;
+$click_rate = ($targets_hit > 0) ? round(($clicks / $targets_hit) * 100) : 0;
+
+// Calculate Time to Action (Difference between campaign start and first click)
+$time_diff = 4; // Default
+if ($stats && isset($stats['created_at'])) {
+    $first_click_query = $conn->query("SELECT created_at FROM phishing_events WHERE campaign_id = $campaign_id AND event_type = 'click' ORDER BY created_at ASC LIMIT 1");
+    $first_click = $first_click_query->fetch_assoc();
+    if ($first_click) {
+        $start = strtotime($stats['created_at']);
+        $end = strtotime($first_click['created_at']);
+        $time_diff = max(1, $end - $start);
+    }
+}
+
+// Mock captured data matching the simulation
 $captured_ip = $_SERVER['REMOTE_ADDR'];
-$captured_login = "target_employee@company.com";
+$captured_login = "target_employee@finance-corp.com";
 $captured_pass = "P@ssw0rd123!";
 ?>
 <!DOCTYPE html>
@@ -44,7 +72,7 @@ $captured_pass = "P@ssw0rd123!";
                 extend: {
                     colors: {
                         "primary": "#a0f000",
-                        "background-dark": "#0a0a0a",
+                        "background-dark": "#0a0c02",
                         "surface-dark": "#161810",
                         "border-muted": "#343a27",
                     },
@@ -56,6 +84,14 @@ $captured_pass = "P@ssw0rd123!";
         }
     </script>
     <style>
+        body {
+            background: linear-gradient(rgba(10, 12, 2, 0.95), rgba(10, 12, 2, 0.95)),
+                url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
         .terminal-grid {
             background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
             background-size: 30px 30px;
@@ -71,23 +107,22 @@ $captured_pass = "P@ssw0rd123!";
             text-shadow: 0 0 10px rgba(160, 240, 0, 0.5);
         }
 
-        .scrolling-content {
-            animation: scrollUp 20s linear infinite;
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
         }
 
-        @keyframes scrollUp {
-            from {
-                transform: translateY(0);
-            }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
-            to {
-                transform: translateY(-50%);
-            }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #343a27;
+            border-radius: 10px;
         }
     </style>
 </head>
 
-<body class="bg-background-dark text-white font-display min-h-screen terminal-grid p-8 overflow-y-auto">
+<body class="text-white font-display min-h-screen terminal-grid p-8 overflow-y-auto custom-scrollbar">
     <div class="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
         <!-- Header -->
         <header class="flex items-center justify-between">
@@ -121,8 +156,8 @@ $captured_pass = "P@ssw0rd123!";
                     <span class="material-symbols-outlined text-primary">groups</span>
                 </div>
                 <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-black text-white glow-text">1</span>
-                    <span class="text-xs text-slate-500">/ 1 recipients</span>
+                    <span class="text-4xl font-black text-white glow-text"><?php echo $targets_hit; ?></span>
+                    <span class="text-xs text-slate-500">/ <?php echo $targets_hit; ?> recipients</span>
                 </div>
                 <div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
                     <div class="bg-primary h-full rounded-full" style="width: 100%"></div>
@@ -134,11 +169,11 @@ $captured_pass = "P@ssw0rd123!";
                     <span class="material-symbols-outlined text-primary">ads_click</span>
                 </div>
                 <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-black text-primary glow-text">100%</span>
+                    <span class="text-4xl font-black text-primary glow-text"><?php echo $click_rate; ?>%</span>
                     <span class="text-xs text-slate-500">Industry Avg: 12%</span>
                 </div>
                 <div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
-                    <div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+                    <div class="bg-primary h-full rounded-full" style="width: <?php echo $click_rate; ?>%"></div>
                 </div>
             </div>
             <div class="glass-panel p-6 rounded-2xl">
@@ -147,7 +182,7 @@ $captured_pass = "P@ssw0rd123!";
                     <span class="material-symbols-outlined text-amber-500">schedule</span>
                 </div>
                 <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-black text-white glow-text">4s</span>
+                    <span class="text-4xl font-black text-white glow-text"><?php echo $time_diff; ?>s</span>
                     <span class="text-xs text-slate-500">Critical Speed</span>
                 </div>
                 <div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
@@ -160,7 +195,7 @@ $captured_pass = "P@ssw0rd123!";
                     <span class="material-symbols-outlined text-red-500">gpp_maybe</span>
                 </div>
                 <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-black text-red-500 glow-text">01</span>
+                    <span class="text-4xl font-black text-red-500 glow-text"><?php echo str_pad($credentials, 2, '0', STR_PAD_LEFT); ?></span>
                     <span class="text-xs text-slate-500">Data Compromised</span>
                 </div>
                 <div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
@@ -217,15 +252,22 @@ $captured_pass = "P@ssw0rd123!";
                         <span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold">ACTIVE MONITORING</span>
                     </div>
                     <div id="terminal-logs" class="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-2 custom-scrollbar bg-black/40">
-                        <p class="text-white/30">[<?php echo date('H:i:s', time() - 30); ?>] SYSTEM: HANDSHAKE_INIT_COMPLETE</p>
-                        <p class="text-white/30">[<?php echo date('H:i:s', time() - 25); ?>] CAMPAIGN: MOUNTING_PAYLOAD_NODE</p>
-                        <p class="text-white/30">[<?php echo date('H:i:s', time() - 20); ?>] SMTP: DISPATCHING_MAIL -> targets: 1</p>
-                        <p class="text-primary">[<?php echo date('H:i:s', time() - 15); ?>] EVENT: TARGET_RECEIVED_PACKET -> employee@test.com</p>
-                        <p class="text-primary">[<?php echo date('H:i:s', time() - 10); ?>] EVENT: INTERACTION_DETECTED -> action=click</p>
-                        <p class="text-amber-500">[<?php echo date('H:i:s', time() - 8); ?>] PAYLOAD: INJECTING_CREDENTIAL_HOOK</p>
-                        <p class="text-red-500 font-bold">[<?php echo date('H:i:s', time() - 4); ?>] CRITICAL: DATA_EXFIL_SUCCESS -> target_ip=<?php echo $captured_ip; ?></p>
-                        <p class="text-red-400">[<?php echo date('H:i:s', time() - 3); ?>] DATA: CAPTURED -> usr:<?php echo $captured_login; ?> pwd:<?php echo $captured_pass; ?></p>
-                        <p class="text-white/30">[<?php echo date('H:i:s'); ?>] SYSTEM: REPORT_GENERATED_ID_0<?php echo $campaign_id; ?></p>
+                        <?php
+                        $events_query = $conn->query("SELECT * FROM phishing_events WHERE campaign_id = $campaign_id ORDER BY created_at DESC");
+                        if ($events_query && $events_query->num_rows > 0) {
+                            while ($event = $events_query->fetch_assoc()) {
+                                $time = date('H:i:s', strtotime($event['created_at']));
+                                if ($event['event_type'] == 'click') {
+                                    echo "<p class='text-primary'>[$time] EVENT: INTERACTION_DETECTED -> action=click target={$event['target_email']}</p>";
+                                } else {
+                                    echo "<p class='text-red-500 font-bold'>[$time] CRITICAL: DATA_EXFIL_SUCCESS -> target={$event['target_email']}</p>";
+                                    echo "<p class='text-red-400'>[$time] DATA: CAPTURED -> usr:{$captured_login} pwd:{$captured_pass}</p>";
+                                }
+                            }
+                        } else {
+                            echo "<p class='text-white/30'>[" . date('H:i:s') . "] SYSTEM: WAITING_FOR_INITIAL_INTERACTION...</p>";
+                        }
+                        ?>
                         <p class="animate-pulse text-primary">_</p>
                     </div>
                 </div>
@@ -258,7 +300,7 @@ $captured_pass = "P@ssw0rd123!";
                     </div>
                     <h2 class="text-2xl font-black italic uppercase">Attack <span class="text-red-500 font-bold">Successful</span></h2>
                     <p class="text-slate-400 text-xs mt-4 leading-relaxed">
-                        The simulation confirms critical vulnerability. The target provided plain-text credentials within <span class="text-white font-bold">4 seconds</span> of opening the email.
+                        The simulation confirms critical vulnerability. The target provided plain-text credentials within <span class="text-white font-bold"><?php echo $time_diff; ?> seconds</span> of opening the email.
                     </p>
                     <div class="w-full mt-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-left">
                         <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-2">Remediation Guide</p>
