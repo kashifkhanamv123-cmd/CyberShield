@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . "/../config/session.php";
 
 // Unset all session variables
 $_SESSION = [];
@@ -24,4 +24,3 @@ if (ini_get("session.use_cookies")) {
 // Redirect to homepage
 header("Location: /index.php");
 exit();
-?>

@@ -1,13 +1,13 @@
 <?php
-session_start();
+require_once __DIR__ . "/../../config/session.php";
 include("../../config/db.php");
 
-if(!isset($_SESSION['user_id'])){
+if (!isset($_SESSION['user_id'])) {
     header("Location: ../../auth/login.php");
     exit();
 }
 
-if(isset($_POST['launch'])){
+if (isset($_POST['launch'])) {
 
     $user_id = $_SESSION['user_id'];
     $sender = $_POST['sender_name'];
@@ -28,4 +28,3 @@ if(isset($_POST['launch'])){
     header("Location: analytics.php?id=$campaign_id");
     exit();
 }
-?>

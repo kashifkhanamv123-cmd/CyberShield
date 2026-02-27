@@ -1,4 +1,11 @@
 <?php
+require_once __DIR__ . "/../../config/session.php";
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../auth/login.php");
+    exit();
+}
+
 include("../../config/db.php");
 
 $campaign_id = $_GET['id'];

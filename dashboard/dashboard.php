@@ -1,8 +1,8 @@
 <?php
-session_start();
+require_once __DIR__ . '/../config/session.php';
 
 if (!isset($_SESSION['user_id'])) {
-    header("Location: ..auth/login.php");
+    header("Location: ../auth/login.php");
     exit();
 }
 
@@ -234,29 +234,31 @@ $userName = $_SESSION['user_name'];
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <!-- Pathway Card: Phishing -->
-                            <div class="bg-surface p-6 rounded-xl border border-border-dim group hover:border-primary/50 transition-all cursor-pointer">
-                                <div class="flex justify-between items-start mb-6">
-                                    <div class="p-3 bg-primary/10 rounded-lg text-primary group-hover:bg-primary group-hover:text-background-dark transition-all">
-                                        <span class="material-symbols-outlined">mail</span>
+                            <a href="../modules/phishing/index.php" class="block">
+                                <div class="bg-surface p-6 rounded-xl border border-border-dim group hover:border-primary/50 transition-all cursor-pointer">
+                                    <div class="flex justify-between items-start mb-6">
+                                        <div class="p-3 bg-primary/10 rounded-lg text-primary group-hover:bg-primary group-hover:text-background-dark transition-all">
+                                            <span class="material-symbols-outlined">mail</span>
+                                        </div>
+                                        <span class="px-2 py-1 bg-neutral-dark text-[10px] font-bold text-primary rounded border border-primary/20 uppercase">Easy</span>
                                     </div>
-                                    <span class="px-2 py-1 bg-neutral-dark text-[10px] font-bold text-primary rounded border border-primary/20 uppercase">Easy</span>
+                                    <h4 class="text-lg font-bold text-white mb-1">Social Engineering &amp; Phishing</h4>
+                                    <p class="text-xs text-slate-400 mb-6">Learn to identify and mitigate advanced email-based threats.</p>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                                            <span class="text-slate-500">Progress</span>
+                                            <span class="text-white">0%</span>
+                                        </div>
+                                        <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
+                                            <div class="bg-primary h-full rounded-full" style="width: 0%"></div>
+                                        </div>
+                                        <div class="flex justify-between items-center pt-2">
+                                            <span class="text-[10px] text-slate-500">Level 2 / 5</span>
+                                            <span class="text-[10px] text-primary font-bold">NEXT: HEADER ANALYSIS</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <h4 class="text-lg font-bold text-white mb-1">Social Engineering &amp; Phishing</h4>
-                                <p class="text-xs text-slate-400 mb-6">Learn to identify and mitigate advanced email-based threats.</p>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                                        <span class="text-slate-500">Progress</span>
-                                        <span class="text-white">0%</span>
-                                    </div>
-                                    <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
-                                        <div class="bg-primary h-full rounded-full" style="width: 0%"></div>
-                                    </div>
-                                    <div class="flex justify-between items-center pt-2">
-                                        <span class="text-[10px] text-slate-500">Level 2 / 5</span>
-                                        <span class="text-[10px] text-primary font-bold">NEXT: HEADER ANALYSIS</span>
-                                    </div>
-                                </div>
-                            </div>
+                            </a>
                             <!-- Pathway Card: Brute Force -->
                             <div class="bg-surface p-6 rounded-xl border border-border-dim group hover:border-primary/50 transition-all cursor-pointer">
                                 <div class="flex justify-between items-start mb-6">
