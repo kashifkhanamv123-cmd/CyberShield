@@ -73,13 +73,26 @@ $show_success = isset($_GET['success']);
             background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
             background-size: 30px 30px;
         }
+
+        .audience-btn.active {
+            background: rgba(160, 240, 0, 0.1);
+            color: #a0f000;
+            border-color: rgba(160, 240, 0, 0.2);
+        }
+
+        /* Scroll fix for preview */
+        #emailPreviewContainer {
+            flex: 1;
+            overflow-y: auto;
+            max-height: calc(100vh - 350px);
+        }
     </style>
 </head>
 
 <body class="bg-background-light dark:bg-background-dark text-white font-display overflow-x-hidden">
     <?php if ($show_success): ?>
         <div id="successModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background-dark/80 backdrop-blur-sm">
-            <div class="glass-panel max-w-lg w-full rounded-2xl p-8 border-primary/30 shadow-2xl animate-in fade-in zoom-in duration-300 bg-surface-dark border border-white/10">
+            <div class="glass-panel max-w-lg w-full rounded-2xl p-8 border-primary/30 shadow-2xl bg-surface-dark border border-white/10">
                 <div class="flex items-center gap-4 mb-6">
                     <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
                         <span class="material-symbols-outlined text-3xl">verified</span>
@@ -119,18 +132,13 @@ $show_success = isset($_GET['success']);
                     <h2 class="text-white text-xl font-bold tracking-tight uppercase">CyberShield <span class="text-primary/70 text-xs font-mono">v4.2.0</span></h2>
                 </div>
                 <div class="hidden lg:flex items-center gap-6">
-                    <a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="#">Simulation</a>
-                    <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="#">Analytics</a>
-                    <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="#">Templates</a>
+                    <a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="index.php">Simulation</a>
+                    <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="analytics.php">Analytics</a>
                 </div>
             </div>
             <div class="flex items-center gap-4">
-                <div class="relative hidden sm:block">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#b0bc9a] text-sm">search</span>
-                    <input class="bg-surface-dark border-border-muted rounded-lg pl-9 pr-4 py-1.5 text-sm w-64 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all" placeholder="Search logs..." type="text" />
-                </div>
                 <div class="flex items-center gap-3 bg-surface-dark px-3 py-1.5 rounded-full border border-border-muted">
-                    <span class="text-xs font-bold tracking-wider">SEC_ADMIN</span>
+                    <span class="text-xs font-bold tracking-wider"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'SEC_ADMIN'); ?></span>
                 </div>
             </div>
         </header>
@@ -138,14 +146,18 @@ $show_success = isset($_GET['success']);
         <main class="flex-1 flex overflow-hidden terminal-grid">
             <aside class="w-64 border-r border-border-muted flex flex-col bg-background-dark/50 p-6 overflow-y-auto custom-scrollbar">
                 <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Target Audience</h3>
-                <div class="space-y-1 mb-8">
-                    <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-primary/10 text-primary border border-primary/20">
+                <div class="space-y-1 mb-8" id="audienceList">
+                    <button onclick="switchAudience('all')" class="audience-btn active w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
                         <span class="text-sm font-medium">All Employees</span>
                         <span class="text-[10px] font-mono">1,240</span>
                     </button>
-                    <button class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] hover:bg-surface-dark hover:text-white">
+                    <button onclick="switchAudience('engineering')" class="audience-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
                         <span class="text-sm font-medium">Engineering</span>
                         <span class="text-[10px] font-mono">412</span>
+                    </button>
+                    <button onclick="switchAudience('finance')" class="audience-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
+                        <span class="text-sm font-medium">Finance</span>
+                        <span class="text-[10px] font-mono">84</span>
                     </button>
                 </div>
                 <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Threat Vectors</h3>
@@ -161,7 +173,7 @@ $show_success = isset($_GET['success']);
                 </div>
                 <div class="mt-auto p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
                     <span class="text-[10px] font-bold uppercase text-red-500 block mb-1">System Alert</span>
-                    <p class="text-[10px] text-red-200/70">Training mode active. Interaction logged.</p>
+                    <p class="text-[10px] text-red-200/70">Targeting <span id="activeAudienceLabel" class="font-bold text-white">All Employees</span></p>
                 </div>
             </aside>
 
@@ -199,10 +211,20 @@ $show_success = isset($_GET['success']);
                             <div class="flex gap-2">
                                 <select id="templateSelector" class="bg-surface-dark border-border-muted rounded-lg text-xs font-bold text-[#b0bc9a] px-2 outline-none focus:border-primary">
                                     <option value="default">Custom Template...</option>
-                                    <option value="microsoft">Microsoft Account Alert</option>
-                                    <option value="google">Google Security Warning</option>
-                                    <option value="invoice">Unpaid Invoice #842</option>
-                                    <option value="hr">New HR Policy (Q1 2024)</option>
+                                    <optgroup label="General" id="generalTemplates">
+                                        <option value="microsoft">Microsoft Account Alert</option>
+                                        <option value="google">Google Security Warning</option>
+                                    </optgroup>
+                                    <optgroup label="Engineering" id="engineeringTemplates">
+                                        <option value="gitlab">GitLab SSH Key Alert</option>
+                                        <option value="aws">AWS IAM Policy Update</option>
+                                        <option value="jira">Jira Priority Ticket</option>
+                                    </optgroup>
+                                    <optgroup label="Finance" id="financeTemplates">
+                                        <option value="payroll">Urgent: Payroll Discrepancy</option>
+                                        <option value="tax">Tax Compliance Notice 2024</option>
+                                        <option value="invoice_overdue">Overdue Invoice - Urgent Payment</option>
+                                    </optgroup>
                                 </select>
                                 <button type="button" onclick="loadTemplate()" class="px-3 py-1 text-xs font-bold bg-primary text-background-dark rounded-lg hover:brightness-110">Load</button>
                             </div>
@@ -234,32 +256,45 @@ $show_success = isset($_GET['success']);
                         </div>
                     </form>
 
-                    <section class="w-1/2 p-6 bg-surface-dark/30 overflow-y-auto custom-scrollbar">
+                    <section class="w-1/2 p-6 bg-surface-dark/30 flex flex-col">
                         <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
                             <span class="material-symbols-outlined text-primary">visibility</span>
                             Target Preview
                         </h2>
-                        <div class="bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col text-gray-900 border border-white/10">
-                            <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between">
-                                <span>Preview: Outlook Mobile / Desktop</span>
-                                <span class="flex gap-1.5">
-                                    <div class="size-2 rounded-full bg-red-400"></div>
-                                    <div class="size-2 rounded-full bg-green-400"></div>
-                                </span>
-                            </div>
-                            <div class="p-8 space-y-4">
-                                <div class="border-b pb-4">
-                                    <p class="text-xs text-gray-500 mb-1">From: <span class="font-bold text-gray-900">IT Security Operations</span></p>
-                                    <p class="text-sm font-bold">URGENT: Your account requires verification</p>
+
+                        <!-- Scrollable Container -->
+                        <div id="emailPreviewContainer" class="custom-scrollbar">
+                            <div class="bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col text-gray-900 border border-white/10" id="emailPreviewFrame">
+                                <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between sticky top-0 z-10">
+                                    <span>Preview: Outlook Mobile / Desktop</span>
+                                    <span class="flex gap-1.5">
+                                        <div class="size-2 rounded-full bg-red-400"></div>
+                                        <div class="size-2 rounded-full bg-green-400"></div>
+                                    </span>
                                 </div>
-                                <div class="text-sm prose prose-sm max-w-none">
-                                    <p>Dear Employee,</p>
-                                    <p>We detected unusual activity. Please verify your identity.</p>
-                                    <p><a href="#" class="inline-block bg-[#007bff] text-white px-4 py-2 rounded no-underline">Verify Now</a></p>
+                                <div class="p-8 space-y-4 bg-white">
+                                    <div class="border-b pb-4">
+                                        <p class="text-xs text-gray-500 mb-1">From: <span class="font-bold text-gray-900" id="previewSender">IT Security Operations</span></p>
+                                        <p class="text-sm font-bold" id="previewSubject">URGENT: Your account requires verification</p>
+                                    </div>
+                                    <div class="text-sm prose prose-sm max-w-none">
+                                        <div class="text-[10px] text-gray-400 mb-4 font-mono">To: <span id="previewRecipient" class="font-bold text-gray-700">All Employees</span> &lt;targets@company-sec-training.com&gt;</div>
+                                        <div id="previewBody" class="space-y-4">
+                                            <p>Dear Employee,</p>
+                                            <p>We detected unusual activity. Please verify your identity.</p>
+                                            <p><a href="#" class="inline-block bg-[#007bff] text-white px-4 py-2 rounded no-underline">Verify Now</a></p>
+                                        </div>
+                                    </div>
+                                    <!-- Add some padding at bottom for content -->
+                                    <div class="pt-8 border-t border-gray-100 flex items-center gap-2 text-[10px] text-gray-400">
+                                        <span class="material-symbols-outlined text-xs">lock</span>
+                                        This message was encrypted via CyberShield Secure Mail Gateway.
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="mt-8 p-4 bg-primary/5 border border-primary/20 rounded-xl grid grid-cols-2 gap-4">
+
+                        <div class="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl grid grid-cols-2 gap-4">
                             <div class="flex items-center gap-2 text-[10px] text-[#b0bc9a]">
                                 <span class="material-symbols-outlined text-primary text-sm">check_circle</span>
                                 Tracking Armed
@@ -286,27 +321,92 @@ $show_success = isset($_GET['success']);
                 name: "Microsoft Security",
                 email: "security@microsoft-auth.com",
                 subject: "Action Required: Unusual sign-in activity",
-                body: `<p>We detected unusual activity on your Microsoft account.</p><p>Location: Sao Paulo, Brazil<br>IP: 191.242.14.92</p><p>Secure your account:</p><a href="{{TRACKING_LINK}}" style="background: #00a4ef; color: white; padding: 10px 20px; text-decoration: none; border-radius: 2px;">Review Activity</a>`
+                body: `<p>We detected unusual activity on your Microsoft account.</p><p>Location: Sao Paulo, Brazil<br>IP: 191.242.14.92</p><p>Secure your account:</p><p><a href="{{TRACKING_LINK}}" style="background: #00a4ef; color: white; padding: 10px 20px; text-decoration: none; border-radius: 2px;">Review Activity</a></p><p>If this was not you, please report this incident to IT immediately.</p>`
             },
             google: {
                 name: "Google Admin",
                 email: "noreply-admin@google-security.net",
                 subject: "Critical Security Alert",
-                body: `<p>A suspicious app was granted access.</p><p>Revoke access immediately to prevent loss.</p><a href="{{TRACKING_LINK}}" style="background: #4285f4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Check Activity</a>`
+                body: `<p>A suspicious app was granted access.</p><p>Revoke access immediately to prevent loss.</p><p><a href="{{TRACKING_LINK}}" style="background: #4285f4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Check Activity</a></p><p>Security Note: Google will never ask for your password via email.</p>`
             },
-            invoice: {
+            gitlab: {
+                name: "GitLab.com Support",
+                email: "support@gitlab-security.io",
+                subject: "[SECURITY] New SSH Key added to your account",
+                body: `<p>A new SSH Key (RSA 4096) was added to your GitLab account from a new device.</p><p>If you did not perform this action, your source code access may be compromised.</p><p><a href="{{TRACKING_LINK}}" style="background: #fc6d26; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Revoke SSH Key Now</a></p><p>Device: MacBook Pro (Linux/x86_64)<br>Location: Moscow, RU</p>`
+            },
+            aws: {
+                name: "AWS Billing Support",
+                email: "noreply@aws-console-auth.com",
+                subject: "URGENT: AWS IAM Policy Violation - Action Required",
+                body: `<p>Our automated systems detected an 'AdministratorAccess' policy attached to an unauthorized IAM user in your root account.</p><p>Access must be reviewed immediately to avoid account suspension.</p><p><a href="{{TRACKING_LINK}}" style="background: #ff9900; color: black; padding: 10px 20px; text-decoration: none; border-radius: 2px; font-weight: bold;">Review IAM Policies</a></p><p>Cost Center: DEV-PROD-01<br>Region: us-east-1</p>`
+            },
+            jira: {
+                name: "Jira Cloud",
+                email: "jira-notifications@atlassian-corp.com",
+                subject: "[JIRA] High Priority Security Vulnerability: CYBER-842 Assigned to You",
+                body: `<p>A new High Priority security ticket has been assigned to you. The vulnerability requires immediate patching in production.</p><p>Log in to view the ticket details:</p><p><a href="{{TRACKING_LINK}}" style="background: #0052cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Ticket CYBER-842</a></p>`
+            },
+            payroll: {
+                name: "Corporate Payroll Dept",
+                email: "finance-noreply@corporate-it.com",
+                subject: "URGENT: Payroll Disbursement Discrepancy Error #842",
+                body: `<p>Dear Employee,</p><p>Our Q1 audit has flagged a discrepancy in your payroll bank details. Payment for the current cycle has been suspended until the records are verified.</p><p>Please review and confirm your bank details via our secure payroll portal:</p><p><a href="{{TRACKING_LINK}}" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Payroll Details</a></p><p>Note: Failure to verify by EOD will result in a 3-day payment delay.</p>`
+            },
+            tax: {
+                name: "Tax Compliance",
+                email: "compliance@finance-services.net",
+                subject: "Action Required: Your 2024 Tax Forms are Ready",
+                body: `<p>Your annual tax compliance forms (W-2/1099 equivalents) are now available for electronic signature.</p><p>Please sign and download your documents to avoid IRS late filing penalties:</p><p><a href="{{TRACKING_LINK}}" style="background: #004085; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Sign Tax Documents</a></p><p>Standard document ID: TAX-COMP-2024-XJF</p>`
+            },
+            invoice_overdue: {
                 name: "Accounts Payable",
-                email: "billing@corporate-finance.com",
-                subject: "Overdue Invoice: #INV-2024-842",
-                body: `<p>Invoice #INV-2024-842 is 15 days past due.</p><p>Pay via secure portal:</p><a href="{{TRACKING_LINK}}" style="background: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Pay Now</a>`
-            },
-            hr: {
-                name: "HR Communications",
-                email: "hr@corporate-it.com",
-                subject: "New Policy Update: Remote Work 2024",
-                body: `<p>Review and sign the updated policy.</p><p>Delays may affect payroll.</p><a href="{{TRACKING_LINK}}" style="background: #6f42c1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Sign Document</a>`
+                email: "billing@vendor-system.com",
+                subject: "FINAL NOTICE: Invoice #INV-2024-991 Overdue",
+                body: `<p>Our records show that Invoice #INV-2024-991 ($14,500.00) is now 30 days past due. We will be initiating a credit hold on your account if payment is not received today.</p><p>Pay now via our secure payment gateway:</p><p><a href="{{TRACKING_LINK}}" style="background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Submit Payment Now</a></p>`
             }
         };
+
+        const audienceData = {
+            all: {
+                label: "All Employees",
+                email: "targets@company-sec-training.com"
+            },
+            engineering: {
+                label: "Engineering Team",
+                email: "dev-team@company.io"
+            },
+            finance: {
+                label: "Finance Department",
+                email: "billing@company-finance.com"
+            }
+        };
+
+        let currentAudience = 'all';
+
+        function switchAudience(key) {
+            currentAudience = key;
+            const data = audienceData[key];
+
+            // Update UI
+            document.querySelectorAll('.audience-btn').forEach(btn => btn.classList.remove('active'));
+            const clickedBtn = Array.from(document.querySelectorAll('.audience-btn')).find(b => b.innerText.toLowerCase().includes(key));
+            if (clickedBtn) clickedBtn.classList.add('active');
+
+            document.getElementById('activeAudienceLabel').innerText = data.label;
+            document.getElementById('previewRecipient').innerText = data.label;
+
+            // Auto-load relevant template
+            const templateSelect = document.getElementById('templateSelector');
+            if (key === 'engineering') {
+                templateSelect.value = 'gitlab';
+            } else if (key === 'finance') {
+                templateSelect.value = 'payroll';
+            } else {
+                templateSelect.value = 'microsoft';
+            }
+            loadTemplate();
+        }
 
         function loadTemplate() {
             const val = document.getElementById('templateSelector').value;
@@ -316,7 +416,23 @@ $show_success = isset($_GET['success']);
             document.getElementById('spoof_email').value = t.email;
             document.getElementById('subject').value = t.subject;
             document.getElementById('email_body').value = t.body;
+            updatePreview();
         }
+
+        function updatePreview() {
+            document.getElementById('previewSender').innerText = document.getElementById('sender_name').value;
+            document.getElementById('previewSubject').innerText = document.getElementById('subject').value;
+            // Use innerHTML but handle the replacement
+            document.getElementById('previewBody').innerHTML = document.getElementById('email_body').value.replace(/{{TRACKING_LINK}}/g, '#');
+        }
+
+        // Add real-time listeners
+        ['sender_name', 'subject', 'email_body'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePreview);
+        });
+
+        // Initialize preview
+        updatePreview();
     </script>
 </body>
 
