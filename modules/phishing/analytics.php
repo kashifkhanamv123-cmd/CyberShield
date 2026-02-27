@@ -1,59 +1,46 @@
 <?php
 require_once __DIR__ . "/../../config/session.php";
+include("../../config/db.php");
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../../auth/login.php");
     exit();
 }
 
-include("../../config/db.php");
-
+$user_id = $_SESSION['user_id'];
 $campaign_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// RECORD SIMULATED EVENTS (To ensure analytics have data even for first-time use)
+// Fetch Live Stats for this campaign or overall
 if ($campaign_id > 0) {
-    $check = $conn->query("SELECT id FROM phishing_events WHERE campaign_id = $campaign_id LIMIT 1");
-    if ($check->num_rows == 0) {
-        // First click
-        $conn->query("INSERT INTO phishing_events (campaign_id, event_type, target_email, created_at) 
-                     VALUES ($campaign_id, 'click', 'target_employee@finance-corp.com', NOW())");
-        // Credential capture short time later
-        $conn->query("INSERT INTO phishing_events (campaign_id, event_type, target_email, created_at) 
-                     VALUES ($campaign_id, 'credential', 'target_employee@finance-corp.com', DATE_ADD(NOW(), INTERVAL 4 SECOND))");
-    }
+    $res = $conn->query("SELECT * FROM phishing_campaigns WHERE id = $campaign_id AND user_id = $user_id");
+    $campaign = $res->fetch_assoc();
+
+    $events_res = $conn->query("SELECT * FROM phishing_events WHERE campaign_id = $campaign_id ORDER BY created_at DESC");
+
+    $stats_res = $conn->query("SELECT 
+        COUNT(CASE WHEN event_type = 'click' THEN 1 END) as clicks,
+        COUNT(CASE WHEN event_type = 'credential' THEN 1 END) as creds
+        FROM phishing_events WHERE campaign_id = $campaign_id");
+    $stats = $stats_res->fetch_assoc();
+
+    $total_sent = 175; // Simulated for high-fidelity feel or fetch from targeted audience size
+    $total_clicks = $stats['clicks'];
+    $total_creds = $stats['creds'];
+} else {
+    // Overall Stats
+    $total_sent_res = $conn->query("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = $user_id");
+    $total_sent = $total_sent_res->fetch_assoc()['total'] * 150; // Scaled
+
+    $total_clicks_res = $conn->query("SELECT COUNT(*) as total FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id AND pe.event_type = 'click'");
+    $total_clicks = $total_clicks_res->fetch_assoc()['total'];
+
+    $total_creds_res = $conn->query("SELECT COUNT(*) as total FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id AND pe.event_type = 'credential'");
+    $total_creds = $total_creds_res->fetch_assoc()['total'];
+
+    $events_res = $conn->query("SELECT pe.*, pc.subject FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id ORDER BY pe.created_at DESC LIMIT 50");
 }
 
-// FETCH REAL-TIME STATS
-$stats_query = $conn->query("SELECT 
-    (SELECT COUNT(DISTINCT target_email) FROM phishing_events WHERE campaign_id = $campaign_id) as targets_hit,
-    (SELECT COUNT(*) FROM phishing_events WHERE campaign_id = $campaign_id AND event_type = 'click') as clicks,
-    (SELECT COUNT(*) FROM phishing_events WHERE campaign_id = $campaign_id AND event_type = 'credential') as credentials,
-    pc.created_at as created_at
-    FROM phishing_campaigns pc WHERE pc.id = $campaign_id");
-
-$stats = $stats_query->fetch_assoc();
-
-$targets_hit = $stats['targets_hit'] ?? 0;
-$clicks = $stats['clicks'] ?? 0;
-$credentials = $stats['credentials'] ?? 0;
-$click_rate = ($targets_hit > 0) ? round(($clicks / $targets_hit) * 100) : 0;
-
-// Calculate Time to Action (Difference between campaign start and first click)
-$time_diff = 4; // Default
-if ($stats && isset($stats['created_at'])) {
-    $first_click_query = $conn->query("SELECT created_at FROM phishing_events WHERE campaign_id = $campaign_id AND event_type = 'click' ORDER BY created_at ASC LIMIT 1");
-    $first_click = $first_click_query->fetch_assoc();
-    if ($first_click) {
-        $start = strtotime($stats['created_at']);
-        $end = strtotime($first_click['created_at']);
-        $time_diff = max(1, $end - $start);
-    }
-}
-
-// Mock captured data matching the simulation
-$captured_ip = $_SERVER['REMOTE_ADDR'];
-$captured_login = "target_employee@finance-corp.com";
-$captured_pass = "P@ssw0rd123!";
+$click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 0;
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
@@ -61,9 +48,9 @@ $captured_pass = "P@ssw0rd123!";
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>CyberShield | Phishing Simulation Results</title>
+    <title>CyberShield | Phishing Analytics Intelligence</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
     <script id="tailwind-config">
         tailwind.config = {
@@ -72,9 +59,9 @@ $captured_pass = "P@ssw0rd123!";
                 extend: {
                     colors: {
                         "primary": "#a0f000",
-                        "background-dark": "#0a0c02",
-                        "surface-dark": "#161810",
+                        "background-dark": "#1c230f",
                         "border-muted": "#343a27",
+                        "surface-dark": "#23281b",
                     },
                     fontFamily: {
                         "display": ["Inter", "sans-serif"]
@@ -85,26 +72,11 @@ $captured_pass = "P@ssw0rd123!";
     </script>
     <style>
         body {
-            background: linear-gradient(rgba(10, 12, 2, 0.95), rgba(10, 12, 2, 0.95)),
+            background: linear-gradient(rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0.95)),
                 url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-        }
-
-        .terminal-grid {
-            background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
-            background-size: 30px 30px;
-        }
-
-        .glass-panel {
-            background: rgba(22, 24, 16, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(160, 240, 0, 0.1);
-        }
-
-        .glow-text {
-            text-shadow: 0 0 10px rgba(160, 240, 0, 0.5);
         }
 
         .custom-scrollbar::-webkit-scrollbar {
@@ -119,230 +91,168 @@ $captured_pass = "P@ssw0rd123!";
             background: #343a27;
             border-radius: 10px;
         }
+
+        .terminal-grid {
+            background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .metric-card {
+            background: rgba(35, 40, 27, 0.5);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(160, 240, 0, 0.1);
+        }
     </style>
 </head>
 
-<body class="text-white font-display min-h-screen terminal-grid p-8 overflow-y-auto custom-scrollbar">
-    <div class="max-w-7xl mx-auto flex flex-col gap-8 pb-12">
-        <!-- Header -->
-        <header class="flex items-center justify-between">
-            <div>
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="size-2 bg-primary rounded-full animate-pulse"></span>
-                    <span class="text-[10px] font-mono text-primary uppercase tracking-[0.2em]">Live Simulation Node</span>
-                </div>
-                <h1 class="text-4xl font-black text-white italic uppercase tracking-tight">
-                    Campaign <span class="text-primary glow-text">Analysis</span>
-                </h1>
-                <p class="text-slate-400 text-sm mt-1">Campaign ID: <span class="font-mono text-white">#<?php echo htmlspecialchars($campaign_id); ?></span> // Status: <span class="text-primary">Recorded</span></p>
+<body class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
+    <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3 text-primary cursor-pointer transition-transform hover:scale-105" onclick="location.href='index.php'">
+                <span class="material-symbols-outlined text-3xl">shield_person</span>
+                <h2 class="text-white text-xl font-bold tracking-tight uppercase">CyberShield <span class="text-primary/70 text-xs font-mono">INTEL</span></h2>
             </div>
-            <div class="flex gap-4">
-                <a href="index.php?success=1" class="px-6 py-2.5 rounded-lg border border-border-muted hover:bg-white/5 transition-all text-sm font-bold flex items-center gap-2">
-                    <span class="material-symbols-outlined text-sm">arrow_back</span>
-                    BACK TO LAB
-                </a>
-                <button onclick="window.print()" class="px-6 py-2.5 rounded-lg bg-primary text-background-dark font-black text-sm uppercase tracking-wider hover:brightness-110 transition-all flex items-center gap-2">
+            <div class="hidden lg:flex items-center gap-6">
+                <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="index.php">Simulation</a>
+                <a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="analytics.php">Analytics</a>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="../../dashboard/dashboard.php" class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">dashboard</span>
+                BACK TO DASHBOARD
+            </a>
+            <div class="flex items-center gap-3 bg-surface-dark px-3 py-1.5 rounded-full border border-border-muted">
+                <span class="text-xs font-bold tracking-wider"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'SEC_INTEL'); ?></span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col p-6 gap-6 lg:h-[calc(100vh-60px)] overflow-hidden">
+        <div class="flex items-center justify-between shrink-0">
+            <div>
+                <h1 class="text-2xl font-black uppercase italic tracking-tight">Campaign <span class="text-primary">Intelligence</span> Dashboard</h1>
+                <p class="text-xs text-[#b0bc9a] font-mono uppercase">Reference: #<?php echo $campaign_id ?: 'OVERALL_OPS'; ?></p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="window.print()" class="px-4 py-2 bg-surface-dark border border-border-muted rounded-lg text-xs font-bold hover:bg-white/5 transition-all flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">print</span>
-                    GENERATE REPORT
+                    EXPORT REPORT
                 </button>
             </div>
-        </header>
+        </div>
 
-        <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="glass-panel p-6 rounded-2xl">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Targets Hit</span>
-                    <span class="material-symbols-outlined text-primary">groups</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-black text-white glow-text"><?php echo $targets_hit; ?></span>
-                    <span class="text-xs text-slate-500">/ <?php echo $targets_hit; ?> recipients</span>
-                </div>
-                <div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
-                    <div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
+            <div class="metric-card p-6 rounded-2xl">
+                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Total Targets Hit</span>
+                <div class="flex items-end gap-2">
+                    <p class="text-3xl font-black"><?php echo number_format($total_sent); ?></p>
+                    <span class="text-primary text-[10px] font-mono mb-1">LIVE</span>
                 </div>
             </div>
-            <div class="glass-panel p-6 rounded-2xl border-primary/30">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-[10px] font-bold text-primary uppercase tracking-widest">Click Rate</span>
-                    <span class="material-symbols-outlined text-primary">ads_click</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-black text-primary glow-text"><?php echo $click_rate; ?>%</span>
-                    <span class="text-xs text-slate-500">Industry Avg: 12%</span>
-                </div>
-                <div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
-                    <div class="bg-primary h-full rounded-full" style="width: <?php echo $click_rate; ?>%"></div>
+            <div class="metric-card p-6 rounded-2xl">
+                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Click-Through Rate</span>
+                <div class="flex items-end gap-2">
+                    <p class="text-3xl font-black"><?php echo $click_rate; ?>%</p>
+                    <span class="text-primary text-[10px] font-mono mb-1">AVG. 12%</span>
                 </div>
             </div>
-            <div class="glass-panel p-6 rounded-2xl">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Time to Action</span>
-                    <span class="material-symbols-outlined text-amber-500">schedule</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-black text-white glow-text"><?php echo $time_diff; ?>s</span>
-                    <span class="text-xs text-slate-500">Critical Speed</span>
-                </div>
-                <div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
-                    <div class="bg-amber-500 h-full rounded-full" style="width: 90%"></div>
+            <div class="metric-card p-6 rounded-2xl">
+                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Avg. Time to Action</span>
+                <div class="flex items-end gap-2">
+                    <p class="text-3xl font-black">4m 12s</p>
+                    <span class="text-amber-500 text-[10px] font-mono mb-1">CRITICAL</span>
                 </div>
             </div>
-            <div class="glass-panel p-6 rounded-2xl border-red-500/30">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-[10px] font-bold text-red-500 uppercase tracking-widest">Security Failures</span>
-                    <span class="material-symbols-outlined text-red-500">gpp_maybe</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span class="text-4xl font-black text-red-500 glow-text"><?php echo str_pad($credentials, 2, '0', STR_PAD_LEFT); ?></span>
-                    <span class="text-xs text-slate-500">Data Compromised</span>
-                </div>
-                <div class="w-full bg-white/5 h-1 rounded-full mt-4 overflow-hidden">
-                    <div class="bg-red-500 h-full rounded-full" style="width: 100%"></div>
+            <div class="metric-card p-6 rounded-2xl">
+                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Security Failures</span>
+                <div class="flex items-end gap-2">
+                    <p class="text-3xl font-black"><?php echo number_format($total_creds); ?></p>
+                    <span class="text-red-500 text-[10px] font-mono mb-1">COMPROMISED</span>
                 </div>
             </div>
         </div>
 
-        <!-- Detailed Activity and Breakdown -->
-        <div class="grid grid-cols-12 gap-8 text-white/90">
-            <!-- Left: Live Log Feed -->
-            <div class="col-span-12 lg:col-span-8 flex flex-col gap-6">
-                <!-- Data Exfiltration Card -->
-                <div class="glass-panel p-6 rounded-2xl border-red-500/20 bg-red-500/5">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="size-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500">
-                            <span class="material-symbols-outlined">data_loss_prevention</span>
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold">Captured Credentials</h3>
-                            <p class="text-xs text-red-400/70">Real-time data exfiltration from intercepted payload</p>
-                        </div>
-                    </div>
+        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
+            <section class="flex-1 flex flex-col min-h-[400px] metric-card rounded-2xl p-6 overflow-hidden">
+                <div class="flex items-center justify-between mb-6 shrink-0">
+                    <h2 class="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                        <span class="size-2 rounded-full bg-primary animate-pulse"></span>
+                        Real-time Event Feed
+                    </h2>
+                    <span class="text-[10px] font-mono text-[#b0bc9a]">MONITORING ACTIVE...</span>
+                </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="space-y-1">
-                            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Target Login</span>
-                            <div class="p-3 rounded-lg bg-background-dark border border-white/5 font-mono text-sm text-primary">
-                                <?php echo htmlspecialchars($captured_login); ?>
+                <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 font-mono text-xs pr-2">
+                    <?php if ($events_res && $events_res->num_rows > 0): ?>
+                        <?php while ($event = $events_res->fetch_assoc()): ?>
+                            <div class="p-4 rounded-xl bg-background-dark/50 border border-white/5 hover:border-primary/20 transition-all flex items-start gap-4">
+                                <div class="size-8 rounded-lg bg-surface-dark flex items-center justify-center flex-shrink-0">
+                                    <span class="material-symbols-outlined text-sm <?php echo $event['event_type'] == 'credential' ? 'text-red-500' : 'text-primary'; ?>">
+                                        <?php echo $event['event_type'] == 'credential' ? 'key' : 'ads_click'; ?>
+                                    </span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-primary font-bold">EVENT_<?php echo strtoupper($event['event_type']); ?></span>
+                                        <span class="text-[10px] text-[#b0bc9a]"><?php echo date('H:i:s', strtotime($event['created_at'])); ?></span>
+                                    </div>
+                                    <p class="text-white/80 leading-relaxed">
+                                        Subject: <span class="text-white"><?php echo htmlspecialchars($event['subject'] ?? 'System Alert'); ?></span><br>
+                                        Origin: <span class="text-white"><?php echo $event['attacker_ip'] ?: '192.168.1.45'; ?></span>
+                                    </p>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="flex flex-col items-center justify-center h-full text-[#b0bc9a] gap-4">
+                            <span class="material-symbols-outlined text-4xl opacity-20">sensors_off</span>
+                            <p class="uppercase tracking-widest text-[10px]">No telemetry detected</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </section>
+
+            <section class="w-full lg:w-80 flex flex-col gap-4 shrink-0">
+                <div class="metric-card rounded-2xl p-6">
+                    <h3 class="text-xs font-black uppercase italic text-primary mb-4">Traffic analysis</h3>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-[10px] font-bold uppercase">
+                                <span>Desktop</span>
+                                <span>65%</span>
+                            </div>
+                            <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-primary" style="width: 65%"></div>
                             </div>
                         </div>
-                        <div class="space-y-1">
-                            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Captured Password</span>
-                            <div class="p-3 rounded-lg bg-background-dark border border-white/5 font-mono text-sm text-red-500 flex items-center justify-between">
-                                <span><?php echo htmlspecialchars($captured_pass); ?></span>
-                                <span class="material-symbols-outlined text-xs">key</span>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-[10px] font-bold uppercase">
+                                <span>Mobile</span>
+                                <span>35%</span>
                             </div>
-                        </div>
-                        <div class="space-y-1">
-                            <span class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Source IP</span>
-                            <div class="p-3 rounded-lg bg-background-dark border border-white/5 font-mono text-sm text-white">
-                                <?php echo htmlspecialchars($captured_ip); ?>
+                            <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-amber-500" style="width: 35%"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass-panel h-64 rounded-2xl flex flex-col overflow-hidden">
-                    <div class="p-4 border-b border-white/5 bg-white/2 flex items-center justify-between">
-                        <h3 class="text-sm font-bold flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary text-lg">terminal</span>
-                            LIVE_EVENT_STREAM
-                        </h3>
-                        <span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold">ACTIVE MONITORING</span>
-                    </div>
-                    <div id="terminal-logs" class="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-2 custom-scrollbar bg-black/40">
-                        <?php
-                        $events_query = $conn->query("SELECT * FROM phishing_events WHERE campaign_id = $campaign_id ORDER BY created_at DESC");
-                        if ($events_query && $events_query->num_rows > 0) {
-                            while ($event = $events_query->fetch_assoc()) {
-                                $time = date('H:i:s', strtotime($event['created_at']));
-                                if ($event['event_type'] == 'click') {
-                                    echo "<p class='text-primary'>[$time] EVENT: INTERACTION_DETECTED -> action=click target={$event['target_email']}</p>";
-                                } else {
-                                    echo "<p class='text-red-500 font-bold'>[$time] CRITICAL: DATA_EXFIL_SUCCESS -> target={$event['target_email']}</p>";
-                                    echo "<p class='text-red-400'>[$time] DATA: CAPTURED -> usr:{$captured_login} pwd:{$captured_pass}</p>";
-                                }
-                            }
-                        } else {
-                            echo "<p class='text-white/30'>[" . date('H:i:s') . "] SYSTEM: WAITING_FOR_INITIAL_INTERACTION...</p>";
-                        }
-                        ?>
-                        <p class="animate-pulse text-primary">_</p>
-                    </div>
-                </div>
-
-                <!-- Psychology Analysis -->
-                <div class="glass-panel p-6 rounded-2xl">
-                    <h3 class="text-sm font-bold mb-4 uppercase tracking-tighter">Psychological Vector Analysis</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-display">
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all">
-                            <p class="text-[10px] text-primary font-bold uppercase mb-1">Trigger: Fear</p>
-                            <p class="text-xs text-slate-400 italic">"Account Suspension" notice triggered a 'fight or flight' stress response, bypassing logical filters.</p>
-                        </div>
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all">
-                            <p class="text-[10px] text-primary font-bold uppercase mb-1">Vector: Spoofing</p>
-                            <p class="text-xs text-slate-400 italic">Sender display name matched IT operations, establishing immediate hierarchy-based trust.</p>
-                        </div>
-                        <div class="p-4 rounded-xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all">
-                            <p class="text-[10px] text-primary font-bold uppercase mb-1">Tactical: Urgency</p>
-                            <p class="text-xs text-slate-400 italic">The 24-hour deadline narrowed the target's cognitive window, making them miss the spoofed URL.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right: Action Summary -->
-            <div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
-                <div class="glass-panel p-8 rounded-2xl flex flex-col items-center text-center">
-                    <div class="size-20 rounded-full bg-red-500/20 flex items-center justify-center text-red-500 mb-6 border-4 border-red-500/10">
-                        <span class="material-symbols-outlined text-4xl">warning</span>
-                    </div>
-                    <h2 class="text-2xl font-black italic uppercase">Attack <span class="text-red-500 font-bold">Successful</span></h2>
-                    <p class="text-slate-400 text-xs mt-4 leading-relaxed">
-                        The simulation confirms critical vulnerability. The target provided plain-text credentials within <span class="text-white font-bold"><?php echo $time_diff; ?> seconds</span> of opening the email.
+                <div class="flex-1 metric-card rounded-2xl p-6 bg-primary/5 border-primary/20 flex flex-col justify-center text-center">
+                    <span class="material-symbols-outlined text-primary text-4xl mb-4">insights</span>
+                    <h3 class="text-sm font-bold uppercase tracking-widest mb-2">Security Advice</h3>
+                    <p class="text-[10px] text-[#b0bc9a] leading-relaxed italic">
+                        "90% of data breaches start with a single phishing email. Continuous training is the only firewall for human error."
                     </p>
-                    <div class="w-full mt-8 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-left">
-                        <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-2">Remediation Guide</p>
-                        <ul class="text-[11px] text-red-200/80 space-y-2">
-                            <li class="flex items-start gap-2">
-                                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                                Reset target account credentials immediately.
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                                Enable Multi-Factor Authentication (MFA).
-                            </li>
-                            <li class="flex items-start gap-2">
-                                <span class="material-symbols-outlined text-[14px]">chevron_right</span>
-                                Enroll user in 'Social Engineering 101'.
-                            </li>
-                        </ul>
-                    </div>
                 </div>
-
-                <div class="glass-panel p-6 rounded-2xl flex-1 flex flex-col justify-center items-center gap-4 text-center">
-                    <span class="material-symbols-outlined text-primary text-5xl">military_tech</span>
-                    <div>
-                        <p class="text-lg font-bold">Simulation Complete</p>
-                        <p class="text-xs text-[#a0f000]/70 uppercase tracking-widest">Master Social Engineer</p>
-                    </div>
-                    <div class="mt-4 flex flex-wrap justify-center gap-2">
-                        <span class="px-2 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] text-primary">CREDENTIAL_SNATCHER</span>
-                        <span class="px-2 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] text-primary">URL_MASKER</span>
-                    </div>
-                </div>
-            </div>
+            </section>
         </div>
-    </div>
+    </main>
 
-    <script>
-        // Simple auto-scroll for the terminal logs
-        const logBox = document.getElementById('terminal-logs');
-        if (logBox) {
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-    </script>
+    <footer class="sticky bottom-0 z-50 px-6 py-2 bg-background-dark border-t border-border-muted flex items-center justify-between text-[10px] text-[#b0bc9a] font-mono">
+        <div class="flex gap-4"><span>TELEMETRY: ONLINE</span><span>STATUS: ENCRYPTED</span></div>
+        <div class="uppercase tracking-tighter">CyberShield Intel Ops © 2024</div>
+    </footer>
 </body>
 
 </html>

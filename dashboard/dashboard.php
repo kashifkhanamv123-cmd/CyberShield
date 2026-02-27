@@ -69,13 +69,55 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
         .glow-text {
             text-shadow: 0 0 10px rgba(160, 240, 0, 0.5);
         }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #23281b;
+            border-radius: 10px;
+        }
     </style>
 </head>
 
-<body class="bg-background-dark text-slate-300 font-display min-h-screen terminal-grid selection:bg-primary selection:text-background-dark">
-    <div class="flex h-screen overflow-hidden">
+<body class="bg-background-dark text-slate-300 font-display min-h-screen flex flex-col terminal-grid selection:bg-primary selection:text-background-dark custom-scrollbar overflow-x-hidden">
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-50 bg-background-dark/80 backdrop-blur-md border-b border-border-dim px-8 py-4 flex items-center justify-between shrink-0">
+        <div>
+            <div class="flex items-center gap-2 mb-0.5">
+                <span class="text-[10px] font-mono text-primary uppercase tracking-widest">Node: csh_analyst_01</span>
+            </div>
+            <h2 class="text-xl font-black text-white italic uppercase italic">Analyst <span class="text-primary glow-text">Overview</span></h2>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="text-right">
+                        <p class="text-sm font-black text-white leading-tight">
+                            <?php echo htmlspecialchars($userName); ?>
+                        </p>
+                    </div>
+                    <div class="size-9 rounded-full bg-gradient-to-tr from-primary to-lime-600 border-2 border-surface flex items-center justify-center text-background-dark font-bold text-sm">
+                        <?php
+                        $initials = '';
+                        $parts = explode(' ', $userName);
+                        foreach ($parts as $p) $initials .= strtoupper($p[0]);
+                        echo substr($initials, 0, 2);
+                        ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden h-[calc(100vh-80px)]">
         <!-- Sidebar Navigation -->
-        <aside class="w-64 border-r border-border-dim bg-neutral-dark/50 backdrop-blur-xl flex flex-col z-20">
+        <aside class="w-64 border-r border-border-dim bg-neutral-dark/50 backdrop-blur-xl flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
             <div class="p-6">
                 <div class="flex items-center gap-3 text-primary mb-8 px-2 transition-transform hover:scale-105 cursor-pointer">
                     <span class="material-symbols-outlined text-3xl">shield_person</span>
@@ -117,38 +159,9 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
             </div>
         </aside>
 
-        <!-- Main Workspace -->
-        <main class="flex-1 overflow-y-auto relative custom-scrollbar pb-12">
-            <!-- Top Navigation Bar -->
-            <header class="sticky top-0 z-10 bg-background-dark/80 backdrop-blur-md border-b border-border-dim px-8 py-4 flex items-center justify-between">
-                <div>
-                    <div class="flex items-center gap-2 mb-0.5">
-                        <span class="text-[10px] font-mono text-primary uppercase tracking-widest">Node: csh_analyst_01</span>
-                    </div>
-                    <h2 class="text-xl font-black text-white italic uppercase italic">Analyst <span class="text-primary glow-text">Overview</span></h2>
-                </div>
-                <div class="flex items-center gap-6">
-                    <div class="flex items-center gap-4">
-                        <div class="flex items-center gap-3">
-                            <div class="text-right">
-                                <p class="text-sm font-black text-white leading-tight">
-                                    <?php echo htmlspecialchars($userName); ?>
-                                </p>
-                            </div>
-                            <div class="size-9 rounded-full bg-gradient-to-tr from-primary to-lime-600 border-2 border-surface flex items-center justify-center text-background-dark font-bold text-sm">
-                                <?php
-                                $initials = '';
-                                $parts = explode(' ', $userName);
-                                foreach ($parts as $p) $initials .= strtoupper($p[0]);
-                                echo substr($initials, 0, 2);
-                                ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <div class="p-8 max-w-7xl mx-auto space-y-8">
+        <!-- Content Area -->
+        <section class="flex-1 overflow-y-auto custom-scrollbar p-8">
+            <div class="max-w-7xl mx-auto space-y-8">
                 <!-- Welcome Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <!-- Progress Card -->
@@ -294,11 +307,11 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
+        </section>
+    </main>
 
     <!-- Active Terminal Status Bar -->
-    <div class="fixed bottom-0 left-0 right-0 h-8 bg-neutral-dark border-t border-border-dim z-30 flex items-center justify-between px-6 px-6">
+    <footer class="sticky bottom-0 z-50 h-8 bg-neutral-dark border-t border-border-dim flex items-center justify-between px-6 shrink-0">
         <div class="flex items-center gap-4 text-[10px] font-mono">
             <div class="flex items-center gap-1.5">
                 <span class="text-primary uppercase">Console:</span>
@@ -313,7 +326,7 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
             <span class="text-slate-500 uppercase">Uptime: <?php echo floor(time() / 3600) % 24; ?>h 42m</span>
             <span class="text-primary italic">CyberShield Control v4.2 BETA</span>
         </div>
-    </div>
+    </footer>
 </body>
 
 </html>

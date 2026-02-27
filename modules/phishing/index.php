@@ -95,7 +95,7 @@ $show_success = isset($_GET['success']);
         #emailPreviewContainer {
             flex: 1;
             overflow-y: auto;
-            max-height: calc(100vh - 280px);
+            max-height: 600px;
             border-radius: 12px;
             background: white;
             border: 1px solid rgba(160, 240, 0, 0.1);
@@ -103,7 +103,7 @@ $show_success = isset($_GET['success']);
     </style>
 </head>
 
-<body class="text-white font-display overflow-x-hidden terminal-grid custom-scrollbar">
+<body class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
     <?php if ($show_success): ?>
         <div id="successModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background-dark/80 backdrop-blur-sm">
             <div class="glass-panel max-w-lg w-full rounded-2xl p-8 border-primary/30 shadow-2xl bg-surface-dark border border-white/10">
@@ -138,210 +138,208 @@ $show_success = isset($_GET['success']);
         </div>
     <?php endif; ?>
 
-    <div class="relative flex h-screen w-full flex-col overflow-hidden">
-        <header class="flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md z-10">
-            <div class="flex items-center gap-8">
-                <div class="flex items-center gap-3 text-primary cursor-pointer transition-transform hover:scale-105" onclick="location.reload()">
-                    <span class="material-symbols-outlined text-3xl">shield_person</span>
-                    <h2 class="text-white text-xl font-bold tracking-tight uppercase">CyberShield <span class="text-primary/70 text-xs font-mono">v4.2.0</span></h2>
+    <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3 text-primary cursor-pointer transition-transform hover:scale-105" onclick="location.reload()">
+                <span class="material-symbols-outlined text-3xl">shield_person</span>
+                <h2 class="text-white text-xl font-bold tracking-tight uppercase">CyberShield <span class="text-primary/70 text-xs font-mono">v4.2.0</span></h2>
+            </div>
+            <div class="hidden lg:flex items-center gap-6">
+                <a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="index.php">Simulation</a>
+                <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="analytics.php">Analytics</a>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="../../dashboard/dashboard.php" class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">dashboard</span>
+                BACK TO DASHBOARD
+            </a>
+            <div class="flex items-center gap-3 bg-surface-dark px-3 py-1.5 rounded-full border border-border-muted">
+                <span class="text-xs font-bold tracking-wider"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'SEC_ADMIN'); ?></span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden lg:h-[calc(100vh-60px)]">
+        <aside class="hidden md:flex w-64 border-r border-border-muted flex-col bg-background-dark/50 p-6 overflow-y-auto custom-scrollbar shrink-0">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Target Audience</h3>
+            <div class="space-y-1 mb-8" id="audienceList">
+                <button onclick="switchAudience('all')" class="audience-btn active w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all text-left">
+                    <span class="text-sm font-medium">All Employees</span>
+                    <span class="text-[10px] font-mono"><?php echo number_format($all_emp_count); ?></span>
+                </button>
+                <button onclick="switchAudience('engineering')" class="audience-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all text-left">
+                    <span class="text-sm font-medium">Engineering</span>
+                    <span class="text-[10px] font-mono"><?php echo number_format($eng_count); ?></span>
+                </button>
+                <button onclick="switchAudience('finance')" class="audience-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all text-left">
+                    <span class="text-sm font-medium">Finance</span>
+                    <span class="text-[10px] font-mono"><?php echo number_format($finance_count); ?></span>
+                </button>
+            </div>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Threat Vectors</h3>
+            <div class="space-y-3 mb-8">
+                <div class="flex items-center gap-3">
+                    <input checked class="rounded border-border-muted bg-surface-dark text-primary" type="checkbox" />
+                    <span class="text-sm text-[#b0bc9a]">Link Tracking</span>
                 </div>
-                <div class="hidden lg:flex items-center gap-6">
-                    <a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="index.php">Simulation</a>
-                    <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="analytics.php">Analytics</a>
+                <div class="flex items-center gap-3">
+                    <input checked class="rounded border-border-muted bg-surface-dark text-primary" type="checkbox" />
+                    <span class="text-sm text-[#b0bc9a]">Credential Capture</span>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <a href="../../dashboard/dashboard.php" class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2">
-                    <span class="material-symbols-outlined text-sm">dashboard</span>
-                    BACK TO DASHBOARD
-                </a>
-                <div class="flex items-center gap-3 bg-surface-dark px-3 py-1.5 rounded-full border border-border-muted">
-                    <span class="text-xs font-bold tracking-wider"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'SEC_ADMIN'); ?></span>
-                </div>
+            <div class="mt-auto p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <span class="text-[10px] font-bold uppercase text-red-500 block mb-1 text-left">System Alert</span>
+                <p class="text-[10px] text-red-200/70 text-left">Tracking <span id="activeAudienceLabel" class="font-bold text-white">All Employees</span></p>
             </div>
-        </header>
+        </aside>
 
-        <main class="flex-1 flex overflow-hidden">
-            <aside class="w-64 border-r border-border-muted flex flex-col bg-background-dark/50 p-6 overflow-y-auto custom-scrollbar">
-                <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Target Audience</h3>
-                <div class="space-y-1 mb-8" id="audienceList">
-                    <button onclick="switchAudience('all')" class="audience-btn active w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
-                        <span class="text-sm font-medium">All Employees</span>
-                        <span class="text-[10px] font-mono"><?php echo number_format($all_emp_count); ?></span>
-                    </button>
-                    <button onclick="switchAudience('engineering')" class="audience-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
-                        <span class="text-sm font-medium">Engineering</span>
-                        <span class="text-[10px] font-mono"><?php echo number_format($eng_count); ?></span>
-                    </button>
-                    <button onclick="switchAudience('finance')" class="audience-btn w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all">
-                        <span class="text-sm font-medium">Finance</span>
-                        <span class="text-[10px] font-mono"><?php echo number_format($finance_count); ?></span>
-                    </button>
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <section class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-background-dark/30 border-b border-border-muted shrink-0">
+                <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
+                    <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Emails Sent</span>
+                    <p class="text-2xl font-bold"><?php echo number_format($total_sent); ?></p>
+                    <span class="text-[10px] text-primary">Live Data</span>
                 </div>
-                <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Threat Vectors</h3>
-                <div class="space-y-3 mb-8">
-                    <div class="flex items-center gap-3">
-                        <input checked class="rounded border-border-muted bg-surface-dark text-primary" type="checkbox" />
-                        <span class="text-sm text-[#b0bc9a]">Link Tracking</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <input checked class="rounded border-border-muted bg-surface-dark text-primary" type="checkbox" />
-                        <span class="text-sm text-[#b0bc9a]">Credential Capture</span>
-                    </div>
+                <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
+                    <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Links Clicked</span>
+                    <p class="text-2xl font-bold"><?php echo number_format($total_clicks); ?></p>
+                    <span class="text-[10px] text-primary"><?php echo $click_rate; ?>% Success</span>
                 </div>
-                <div class="mt-auto p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                    <span class="text-[10px] font-bold uppercase text-red-500 block mb-1">System Alert</span>
-                    <p class="text-[10px] text-red-200/70">Tracking <span id="activeAudienceLabel" class="font-bold text-white">All Employees</span></p>
+                <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
+                    <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Credentials Captured</span>
+                    <p class="text-2xl font-bold"><?php echo number_format($total_creds); ?></p>
+                    <span class="text-[10px] text-red-500">Compromised</span>
                 </div>
-            </aside>
+                <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
+                    <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Risk Profile</span>
+                    <p class="text-2xl font-bold"><?php echo $total_creds > 0 ? 'CRITICAL' : 'SECURE'; ?></p>
+                    <span class="text-[10px] text-primary">Real-time Analysis</span>
+                </div>
+            </section>
 
-            <div class="flex-1 flex flex-col overflow-hidden">
-                <section class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-background-dark/30 border-b border-border-muted">
-                    <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
-                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Emails Sent</span>
-                        <p class="text-2xl font-bold"><?php echo number_format($total_sent); ?></p>
-                        <span class="text-[10px] text-primary">Live Data</span>
-                    </div>
-                    <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
-                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Links Clicked</span>
-                        <p class="text-2xl font-bold"><?php echo number_format($total_clicks); ?></p>
-                        <span class="text-[10px] text-primary"><?php echo $click_rate; ?>% Success</span>
-                    </div>
-                    <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
-                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Credentials Captured</span>
-                        <p class="text-2xl font-bold"><?php echo number_format($total_creds); ?></p>
-                        <span class="text-[10px] text-red-500">Compromised</span>
-                    </div>
-                    <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
-                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Risk Profile</span>
-                        <p class="text-2xl font-bold"><?php echo $total_creds > 0 ? 'CRITICAL' : 'SECURE'; ?></p>
-                        <span class="text-[10px] text-primary">Real-time Analysis</span>
-                    </div>
-                </section>
-
-                <div class="flex-1 flex overflow-hidden">
-                    <form method="POST" action="process_campaign.php" class="w-1/2 p-6 overflow-y-auto custom-scrollbar border-r border-border-muted h-full">
-                        <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
-                                <span class="material-symbols-outlined text-primary">edit_note</span>
-                                Email Creator
-                            </h2>
-                            <div class="flex gap-2">
-                                <select id="templateSelector" onchange="loadTemplate()" class="bg-surface-dark border-border-muted rounded-lg text-xs font-bold text-[#b0bc9a] px-2 outline-none focus:border-primary max-w-[150px]">
-                                    <option value="default">Custom Template...</option>
-                                    <optgroup label="General" id="generalTemplates">
-                                        <option value="microsoft">Microsoft Account Alert</option>
-                                        <option value="google">Google Security Warning</option>
-                                    </optgroup>
-                                    <optgroup label="Engineering" id="engineeringTemplates">
-                                        <option value="gitlab">GitLab SSH Key Alert</option>
-                                        <option value="aws">AWS IAM Policy Update</option>
-                                        <option value="jira">Jira Priority Ticket</option>
-                                    </optgroup>
-                                    <optgroup label="Finance" id="financeTemplates">
-                                        <option value="payroll">Urgent: Payroll Discrepancy</option>
-                                        <option value="tax">Tax Compliance Notice 2024</option>
-                                        <option value="invoice_overdue">Overdue Invoice - Urgent Payment</option>
-                                    </optgroup>
-                                    <optgroup label="My Custom Templates" id="userTemplates">
-                                        <!-- Dynamically populated -->
-                                    </optgroup>
-                                </select>
-                                <button type="button" onclick="clearForm()" class="px-3 py-1 text-xs font-bold bg-white/5 border border-white/10 text-white rounded-lg hover:bg-white/10" title="Clear Editor">New</button>
-                                <button type="button" onclick="restoreTemplate()" id="restoreBtn" class="px-3 py-1 text-xs font-bold bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg hover:bg-amber-500/20 hidden" title="Revert Changes">Restore</button>
-                                <button type="button" onclick="saveAsCustom()" class="px-3 py-1 text-xs font-bold bg-primary/20 border border-primary/40 text-primary rounded-lg hover:bg-primary/30" title="Save to Library">Save</button>
-                            </div>
+            <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+                <form method="POST" action="process_campaign.php" class="w-full lg:w-1/2 p-6 overflow-y-auto custom-scrollbar border-b lg:border-b-0 lg:border-r border-border-muted h-full">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
+                            <span class="material-symbols-outlined text-primary">edit_note</span>
+                            Email Creator
+                        </h2>
+                        <div class="flex gap-2">
+                            <select id="templateSelector" onchange="loadTemplate()" class="bg-surface-dark border-border-muted rounded-lg text-xs font-bold text-[#b0bc9a] px-2 outline-none focus:border-primary max-w-[150px]">
+                                <option value="default">Custom Template...</option>
+                                <optgroup label="General" id="generalTemplates">
+                                    <option value="microsoft">Microsoft Account Alert</option>
+                                    <option value="google">Google Security Warning</option>
+                                </optgroup>
+                                <optgroup label="Engineering" id="engineeringTemplates">
+                                    <option value="gitlab">GitLab SSH Key Alert</option>
+                                    <option value="aws">AWS IAM Policy Update</option>
+                                    <option value="jira">Jira Priority Ticket</option>
+                                </optgroup>
+                                <optgroup label="Finance" id="financeTemplates">
+                                    <option value="payroll">Urgent: Payroll Discrepancy</option>
+                                    <option value="tax">Tax Compliance Notice 2024</option>
+                                    <option value="invoice_overdue">Overdue Invoice - Urgent Payment</option>
+                                </optgroup>
+                                <optgroup label="My Custom Templates" id="userTemplates">
+                                    <!-- Dynamically populated -->
+                                </optgroup>
+                            </select>
+                            <button type="button" onclick="clearForm()" class="px-3 py-1 text-xs font-bold bg-white/5 border border-white/10 text-white rounded-lg hover:bg-white/10" title="Clear Editor">New</button>
+                            <button type="button" onclick="restoreTemplate()" id="restoreBtn" class="px-3 py-1 text-xs font-bold bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-lg hover:bg-amber-500/20 hidden" title="Revert Changes">Restore</button>
+                            <button type="button" onclick="saveAsCustom()" class="px-3 py-1 text-xs font-bold bg-primary/20 border border-primary/40 text-primary rounded-lg hover:bg-primary/30" title="Save to Library">Save</button>
                         </div>
-                        <div class="space-y-6">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="space-y-2">
-                                    <span class="text-xs font-bold uppercase text-[#b0bc9a]">Sender Name</span>
-                                    <input id="sender_name" name="sender_name" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm focus:border-primary outline-none" type="text" value="IT Security Operations" />
-                                </div>
-                                <div class="space-y-2">
-                                    <span class="text-xs font-bold uppercase text-[#b0bc9a]">Spoof Email</span>
-                                    <input id="spoof_email" name="spoof_email" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm font-mono focus:border-primary outline-none" type="text" value="admin-no-reply@cybershield-auth.com" />
-                                </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <span class="text-xs font-bold uppercase text-[#b0bc9a] block">Sender Name</span>
+                                <input id="sender_name" name="sender_name" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm focus:border-primary outline-none" type="text" value="IT Security Operations" />
                             </div>
                             <div class="space-y-2">
-                                <span class="text-xs font-bold uppercase text-[#b0bc9a]">Email Subject</span>
-                                <input id="subject" name="subject" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm focus:border-primary outline-none" type="text" value="URGENT: Your account requires verification" />
+                                <span class="text-xs font-bold uppercase text-[#b0bc9a] block">Spoof Email</span>
+                                <input id="spoof_email" name="spoof_email" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm font-mono focus:border-primary outline-none" type="text" value="admin-no-reply@cybershield-auth.com" />
                             </div>
-                            <div class="space-y-2 flex flex-col flex-1">
-                                <span class="text-xs font-bold uppercase text-[#b0bc9a]">Body (HTML OK)</span>
-                                <textarea id="email_body" name="body" class="flex-1 min-h-[300px] w-full bg-surface-dark border-border-muted rounded-lg p-4 text-sm font-mono focus:border-primary outline-none custom-scrollbar" rows="10">&lt;p&gt;Dear Employee,&lt;/p&gt;
+                        </div>
+                        <div class="space-y-2">
+                            <span class="text-xs font-bold uppercase text-[#b0bc9a] block">Email Subject</span>
+                            <input id="subject" name="subject" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm focus:border-primary outline-none" type="text" value="URGENT: Your account requires verification" />
+                        </div>
+                        <div class="space-y-2 flex flex-col">
+                            <span class="text-xs font-bold uppercase text-[#b0bc9a] block">Body (HTML OK)</span>
+                            <textarea id="email_body" name="body" class="w-full bg-surface-dark border-border-muted rounded-lg p-4 text-sm font-mono focus:border-primary outline-none custom-scrollbar" rows="8">&lt;p&gt;Dear Employee,&lt;/p&gt;
 &lt;p&gt;We have detected unusual activity. Please click below to verify:&lt;/p&gt;
 &lt;a href="{{TRACKING_LINK}}" style="background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;"&gt;Verify Now&lt;/a&gt;</textarea>
-                            </div>
                         </div>
-                        <div class="mt-8 flex justify-end">
-                            <button type="submit" name="launch" class="px-8 py-3 bg-primary text-background-dark rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all uppercase italic">Launch Attack Instance</button>
-                        </div>
-                    </form>
+                    </div>
+                    <div class="mt-8 flex justify-end">
+                        <button type="submit" name="launch" class="px-8 py-3 bg-primary text-background-dark rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all uppercase italic">Launch Attack Instance</button>
+                    </div>
+                </form>
 
-                    <section class="w-1/2 p-6 bg-surface-dark/30 flex flex-col overflow-hidden">
-                        <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
-                                <span class="material-symbols-outlined text-primary">visibility</span>
-                                Target Preview
-                            </h2>
-                            <div class="flex gap-1.5">
-                                <div class="size-2.5 rounded-full bg-red-500/20"></div>
-                                <div class="size-2.5 rounded-full bg-amber-500/20"></div>
-                                <div class="size-2.5 rounded-full bg-primary/20"></div>
-                            </div>
+                <section class="w-full lg:w-1/2 p-6 bg-surface-dark/30 flex flex-col overflow-y-auto custom-scrollbar h-full">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
+                            <span class="material-symbols-outlined text-primary">visibility</span>
+                            Target Preview
+                        </h2>
+                        <div class="flex gap-1.5">
+                            <div class="size-2.5 rounded-full bg-red-500/20"></div>
+                            <div class="size-2.5 rounded-full bg-amber-500/20"></div>
+                            <div class="size-2.5 rounded-full bg-primary/20"></div>
                         </div>
+                    </div>
 
-                        <div id="emailPreviewContainer" class="custom-scrollbar shadow-2xl overflow-y-auto">
-                            <div class="flex flex-col text-gray-900 bg-white" id="emailPreviewFrame">
-                                <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between sticky top-0 z-10 w-full">
-                                    <span>Preview: Outlook Mobile / Desktop</span>
-                                    <span class="flex gap-1.5">
-                                        <div class="size-2 rounded-full bg-red-400"></div>
-                                        <div class="size-2 rounded-full bg-green-400"></div>
-                                    </span>
+                    <div id="emailPreviewContainer" class="custom-scrollbar shadow-2xl shrink-0">
+                        <div class="flex flex-col text-gray-900 bg-white" id="emailPreviewFrame">
+                            <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between sticky top-0 z-10 w-full">
+                                <span>Preview: Outlook Mobile / Desktop</span>
+                                <span class="flex gap-1.5">
+                                    <div class="size-2 rounded-full bg-red-400"></div>
+                                    <div class="size-2 rounded-full bg-green-400"></div>
+                                </span>
+                            </div>
+                            <div class="p-8 space-y-4">
+                                <div class="border-b pb-4">
+                                    <p class="text-xs text-gray-500 mb-1">From: <span class="font-bold text-gray-900" id="previewSender">IT Security Operations</span></p>
+                                    <p class="text-sm font-bold" id="previewSubject">URGENT: Your account requires verification</p>
                                 </div>
-                                <div class="p-8 space-y-4">
-                                    <div class="border-b pb-4">
-                                        <p class="text-xs text-gray-500 mb-1">From: <span class="font-bold text-gray-900" id="previewSender">IT Security Operations</span></p>
-                                        <p class="text-sm font-bold" id="previewSubject">URGENT: Your account requires verification</p>
-                                    </div>
-                                    <div class="text-sm prose prose-sm max-w-none">
-                                        <div class="text-[10px] text-gray-400 mb-4 font-mono uppercase tracking-widest">To: <span id="previewRecipient" class="font-bold text-gray-700">All Employees</span> &lt;targets@company-sec-training.com&gt;</div>
-                                        <div id="previewBody" class="space-y-4 text-slate-800">
-                                            <p>Dear Employee,</p>
-                                            <p>We detected unusual activity. Please verify your identity.</p>
-                                            <p><a href="#" class="inline-block bg-[#007bff] text-white px-6 py-2.5 rounded font-bold no-underline">Verify Now</a></p>
-                                        </div>
-                                    </div>
-                                    <div class="pt-8 border-t border-gray-100 flex items-center gap-2 text-[10px] text-gray-400 italic">
-                                        <span class="material-symbols-outlined text-xs">lock</span>
-                                        This message was encrypted via CyberShield Secure Mail Gateway.
+                                <div class="text-sm prose prose-sm max-w-none">
+                                    <div class="text-[10px] text-gray-400 mb-4 font-mono uppercase tracking-widest">To: <span id="previewRecipient" class="font-bold text-gray-700">All Employees</span> &lt;targets@company-sec-training.com&gt;</div>
+                                    <div id="previewBody" class="space-y-4 text-slate-800">
+                                        <p>Dear Employee,</p>
+                                        <p>We detected unusual activity. Please verify your identity.</p>
+                                        <p><a href="#" class="inline-block bg-[#007bff] text-white px-6 py-2.5 rounded font-bold no-underline">Verify Now</a></p>
                                     </div>
                                 </div>
+                                <div class="pt-8 border-t border-gray-100 flex items-center gap-2 text-[10px] text-gray-400 italic">
+                                    <span class="material-symbols-outlined text-xs">lock</span>
+                                    This message was encrypted via CyberShield Secure Mail Gateway.
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl grid grid-cols-2 gap-4">
-                            <div class="flex items-center gap-2 text-[10px] text-[#b0bc9a]">
-                                <span class="material-symbols-outlined text-primary text-sm">check_circle</span>
-                                Tracking Armed
-                            </div>
-                            <div class="flex items-center gap-2 text-[10px] text-yellow-500">
-                                <span class="material-symbols-outlined text-sm">warning</span>
-                                Urgency High
-                            </div>
+                    <div class="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-xl grid grid-cols-2 gap-4 shrink-0">
+                        <div class="flex items-center gap-2 text-[10px] text-[#b0bc9a]">
+                            <span class="material-symbols-outlined text-primary text-sm">check_circle</span>
+                            Tracking Armed
                         </div>
-                    </section>
-                </div>
+                        <div class="flex items-center gap-2 text-[10px] text-yellow-500 text-right justify-end">
+                            <span class="material-symbols-outlined text-sm">warning</span>
+                            Urgency High
+                        </div>
+                    </div>
+                </section>
             </div>
-        </main>
+        </div>
+    </main>
 
-        <footer class="px-6 py-2 bg-background-dark border-t border-border-muted flex items-center justify-between text-[10px] text-[#b0bc9a] font-mono">
-            <div class="flex gap-4"><span>SERVER: ONLINE</span><span>LATENCY: 12ms</span></div>
-            <div class="uppercase tracking-tighter">CyberShield Training Platform © 2024</div>
-        </footer>
-    </div>
+    <footer class="sticky bottom-0 z-50 px-6 py-2 bg-background-dark border-t border-border-muted flex items-center justify-between text-[10px] text-[#b0bc9a] font-mono">
+        <div class="flex gap-4"><span>SERVER: ONLINE</span><span>LATENCY: 12ms</span></div>
+        <div class="uppercase tracking-tighter">CyberShield Training Platform © 2024</div>
+    </footer>
 
     <script>
         const systemTemplates = {
@@ -463,7 +461,7 @@ $show_success = isset($_GET['success']);
             if (val.startsWith('custom_')) {
                 const key = val.replace('custom_', '');
                 t = customTemplates[key];
-                restoreBtn.classList.add('hidden'); // No restore for custom (they just edit)
+                restoreBtn.classList.add('hidden');
             } else {
                 t = systemTemplates[val];
                 restoreBtn.classList.remove('hidden');
@@ -530,19 +528,16 @@ $show_success = isset($_GET['success']);
         function updatePreview() {
             document.getElementById('previewSender').innerText = document.getElementById('sender_name').value || 'Sender Name';
             document.getElementById('previewSubject').innerText = document.getElementById('subject').value || 'Email Subject';
-            // Use innerHTML but handle the replacement
             let body = document.getElementById('email_body').value;
             if (!body) body = '<p class="text-slate-300 italic">Starting new custom pattern...</p>';
             document.getElementById('previewBody').innerHTML = body.replace(/{{TRACKING_LINK}}/g, '#');
         }
 
-        // Add real-time listeners
         ['sender_name', 'subject', 'email_body'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', updatePreview);
         });
 
-        // Initialize
         initTemplates();
         updatePreview();
     </script>
