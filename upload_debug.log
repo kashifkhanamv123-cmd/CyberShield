@@ -190,3 +190,15 @@ FILES custom_landing: Array
     [size] => 0
 )
 
+--- 2026-02-28 16:16:25 ---
+POST landing_image: 
+FILES custom_landing: Array
+(
+    [name] => kali-linux-dark-3840x2160-15965.jpg
+    [full_path] => kali-linux-dark-3840x2160-15965.jpg
+    [type] => 
+    [tmp_name] => 
+    [error] => 1
+    [size] => 0
+)
+

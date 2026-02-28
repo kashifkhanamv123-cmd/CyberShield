@@ -472,11 +472,27 @@ $unique_ips  = array_unique($ip_list);
                     </span>
                     <?php
                     if (!empty($landing_img)):
-                        // Resolve path: if it doesn't start with http, it's a local path relative to root
-                        $display_path = (strpos($landing_img, 'http') === 0) ? $landing_img : "../../" . $landing_img;
+                        if (strpos($landing_img, 'http') === 0) {
+                            // External URL (Unsplash preset) — use as-is
+                            $display_path = $landing_img;
+                        } else {
+                            // Local upload — build absolute web path dynamically
+                            // SCRIPT_NAME is like /Cybershield/modules/phishing/analytics.php
+                            // We need to go up 2 levels: /Cybershield/
+                            $script_parts = explode('/', trim($_SERVER['SCRIPT_NAME'], '/'));
+                            // Remove the last 2 segments (modules/phishing/analytics.php)
+                            $base_segments = array_slice($script_parts, 0, max(0, count($script_parts) - 3));
+                            $web_base = '/' . implode('/', $base_segments);
+                            $web_base = rtrim($web_base, '/') . '/';
+                            $display_path = $web_base . $landing_img;
+                        }
                     ?>
-                        <img src="<?php echo htmlspecialchars($display_path); ?>" alt="Landing page preview"
-                            class="w-full max-h-[400px] object-cover object-top rounded-lg border border-border-muted shadow-lg" />
+                        <div class="w-full bg-background-dark/30 rounded-lg border border-border-muted overflow-hidden" style="min-height:200px;max-height:420px;">
+                            <img src="<?php echo htmlspecialchars($display_path); ?>" alt="Landing page preview"
+                                class="w-full h-full object-contain rounded-lg"
+                                style="max-height:420px;"
+                                onerror="this.parentElement.innerHTML='<div class=\'flex items-center justify-center h-40 text-red-400 text-xs font-mono gap-2\'><span class=\'material-symbols-outlined text-sm\'>broken_image</span>Image path not found: <?php echo htmlspecialchars(addslashes($display_path)); ?></div>'" />
+                        </div>
                     <?php else: ?>
                         <div class="flex items-center justify-center h-20 bg-background-dark/50 border border-border-muted rounded-lg text-[#b0bc9a] text-xs font-mono gap-2">
                             <span class="material-symbols-outlined text-sm opacity-40">hide_image</span>
