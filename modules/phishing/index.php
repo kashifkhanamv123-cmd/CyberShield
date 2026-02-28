@@ -63,6 +63,7 @@ $all_emp_count = $total_sent * 1;
 $eng_count = $total_sent > 1 ? floor($total_sent * 0.4) : 0;
 $finance_count = $total_sent > 3 ? floor($total_sent * 0.2) : 0;
 $campaign_completed = isset($_GET['completed']);
+$show_success = isset($_GET['success']);
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
@@ -125,79 +126,94 @@ $campaign_completed = isset($_GET['completed']);
             border-color: rgba(160, 240, 0, 0.2);
         }
 
-      #emailPreviewContainer {
-    flex: 1;
-    overflow-y: auto;
-    height: 100%;
-    border-radius: 12px;
-    background: white;
-    border: 1px solid rgba(160, 240, 0, 0.1);
-}
+        #emailPreviewContainer {
+            flex: 1;
+            overflow-y: auto;
+            height: 100%;
+            border-radius: 12px;
+            background: white;
+            border: 1px solid rgba(160, 240, 0, 0.1);
+        }
     </style>
 </head>
 
 <body class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
-<?php if ($campaign_completed): ?>
-<div id="completionModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <?php if ($campaign_completed): ?>
+        <div id="completionModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div class="bg-surface-dark border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-3xl">verified</span>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black uppercase">
+                            Simulation <span class="text-primary">Completed</span>
+                        </h2>
+                        <p class="text-xs text-[#b0bc9a]">Campaign lifecycle executed successfully.</p>
+                    </div>
+                </div>
 
-    <div class="bg-surface-dark border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl">
+                <div class="space-y-6 text-sm text-slate-300 leading-relaxed overflow-y-auto max-h-[60vh] custom-scrollbar pr-2">
+                    <div class="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                        <h4 class="text-xs font-bold text-primary uppercase mb-2">Simulation Summary</h4>
+                        <div class="grid grid-cols-2 gap-4 text-[11px] font-mono">
+                            <div class="flex justify-between border-b border-white/5 pb-1">
+                                <span class="text-[#b0bc9a]">Total Clicks:</span>
+                                <span class="text-primary"><?php echo number_format($total_clicks); ?></span>
+                            </div>
+                            <div class="flex justify-between border-b border-white/5 pb-1">
+                                <span class="text-[#b0bc9a]">Credentials Captured:</span>
+                                <span class="text-red-500"><?php echo number_format($total_creds); ?></span>
+                            </div>
+                        </div>
+                    </div>
 
-        <div class="flex items-center gap-4 mb-6">
-            <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-                <span class="material-symbols-outlined text-3xl">verified</span>
-            </div>
-            <div>
-                <h2 class="text-2xl font-black uppercase">
-                    Simulation <span class="text-primary">Completed</span>
-                </h2>
-                <p class="text-xs text-[#b0bc9a]">Campaign lifecycle executed successfully.</p>
+                    <div class="p-4 bg-white/5 border border-white/10 rounded-xl">
+                        <h4 class="text-xs font-bold text-white uppercase mb-4 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">school</span>
+                            Educational Debrief
+                        </h4>
+                        <div class="space-y-4">
+                            <div class="space-y-1">
+                                <p class="text-xs font-bold text-primary flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-xs">check_circle</span>
+                                    What just happened?
+                                </p>
+                                <p class="text-[11px] text-[#b0bc9a]">
+                                    A realistic phishing email was deployed to your organization. This simulation tracks the "human firewall" strength by monitoring interaction telemetry in real-time.
+                                </p>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-xs font-bold text-primary flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-xs">warning</span>
+                                    Risk Awareness
+                                </p>
+                                <p class="text-[11px] text-[#b0bc9a]">
+                                    Attackers use urgency and spoofed identities to bypass technical controls. In this simulation, <span class="text-white font-bold"><?php echo number_format($total_creds); ?></span> sets of credentials were compromised.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                        <h4 class="text-xs font-bold text-red-500 uppercase mb-2">Prevention Tips</h4>
+                        <ul class="space-y-2 list-disc list-inside text-[11px] text-red-200/70">
+                            <li>Verify the <span class="text-white font-medium">sender's original email domain</span> (e.g., @microsoft.com vs @micr0soft.com).</li>
+                            <li>Always <span class="text-white font-medium">hover over links</span> to inspect the true URL destination.</li>
+                            <li>Avoid acting on emails that demand <span class="text-white font-medium">immediate action</span> or convey extreme urgency.</li>
+                            <li>Report suspicious activity via the official <span class="text-white font-medium">IT Security Channel</span>.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <button onclick="closeCompletionModal()"
+                    class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest shadow-lg shadow-primary/20">
+                    Acknowledge & Continue
+                </button>
             </div>
         </div>
+    <?php endif; ?>
 
-        <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
-
-            <p>
-                ✔ The phishing email was deployed.<br>
-                ✔ Tracking infrastructure was activated.<br>
-                ✔ User interaction telemetry was logged.<br>
-                ✔ Intelligence dashboard updated in real-time.
-            </p>
-
-            <div class="bg-background-dark border border-border-muted rounded-lg p-4 text-xs font-mono space-y-2">
-                <div class="flex justify-between">
-                    <span>Total Campaigns:</span>
-                    <span class="text-primary"><?php echo number_format($total_sent); ?></span>
-                </div>
-                <div class="flex justify-between">
-                    <span>Total Clicks:</span>
-                    <span class="text-primary"><?php echo number_format($total_clicks); ?></span>
-                </div>
-                <div class="flex justify-between">
-                    <span>Credentials Captured:</span>
-                    <span class="text-red-500"><?php echo number_format($total_creds); ?></span>
-                </div>
-                <div class="flex justify-between">
-                    <span>Risk Level:</span>
-                    <span class="<?php echo $total_creds > 0 ? 'text-red-500' : 'text-primary'; ?>">
-                        <?php echo $total_creds > 0 ? 'CRITICAL' : 'LOW'; ?>
-                    </span>
-                </div>
-            </div>
-
-            <p class="text-[11px] text-[#b0bc9a] italic">
-                "Human behavior is the weakest link in cybersecurity. Continuous training reduces breach probability."
-            </p>
-
-        </div>
-
-        <button onclick="closeCompletionModal()" 
-            class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">
-            Acknowledge
-        </button>
-
-    </div>
-</div>
-<?php endif; ?>
     <?php if ($show_success): ?>
         <div id="successModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background-dark/80 backdrop-blur-sm">
             <div class="glass-panel max-w-lg w-full rounded-2xl p-8 border-primary/30 shadow-2xl bg-surface-dark border border-white/10">
@@ -227,7 +243,7 @@ $campaign_completed = isset($_GET['completed']);
                         </div>
                     </div>
                 </div>
-               <button onclick="window.location.href='analytics.php?id=<?php echo $_GET['id'] ?? ''; ?>'" class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">UNDERSTOOD</button>
+                <button onclick="window.location.href='analytics.php?id=<?php echo $_GET['id'] ?? ''; ?>'" class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">UNDERSTOOD</button>
             </div>
         </div>
     <?php endif; ?>
@@ -631,19 +647,17 @@ $campaign_completed = isset($_GET['completed']);
             if (el) el.addEventListener('input', updatePreview);
         });
 
+        function closeCompletionModal() {
+            document.getElementById('completionModal').remove();
+            // Clean up URL parameters
+            const url = new URL(window.location);
+            url.searchParams.delete('completed');
+            window.history.replaceState({}, '', url);
+        }
+
         initTemplates();
         updatePreview();
     </script>
-    <script>
-function closeCompletionModal() {
-    const modal = document.getElementById('completionModal');
-    if (modal) {
-        modal.remove();
-        // Remove query string from URL
-        window.history.replaceState({}, document.title, "index.php");
-    }
-}
-</script>
 </body>
 
 </html>
