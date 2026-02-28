@@ -188,12 +188,64 @@ $unique_ips  = array_unique($ip_list);
     <style>
         @media print {
             body#analytics-app {
-                background: white !important;
-                color: black !important;
+                /* Keep the dark theme for print to maintain enterprise look */
+                background-color: #12160a !important;
+                background-image: none !important;
+                /* Strip heavy background images to save ink, keep solid dark */
+                color: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
             #analytics-app .metric-card {
-                border: 1px solid black !important;
+                background-color: #1c230f !important;
+                border: 1px solid rgba(160, 240, 0, 0.2) !important;
+                box-shadow: none !important;
+                break-inside: avoid;
+            }
+
+            /* Hide unnecessary UI elements during export */
+            header,
+            aside,
+            footer,
+            button[onclick="window.print()"],
+            .group-hover\:flex,
+            /* Hide beta overlays */
+            .animate-pulse {
+                /* Stop animations */
+                display: none !important;
+            }
+
+            /* Fix layout expansion to full width */
+            main {
+                padding: 0 !important;
+                gap: 1.5rem !important;
+            }
+
+            /* Force all background colors and utilities to render in PDF */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Specifically hide the preview sections to keep the report clean */
+            aside,
+            .metric-card.relative.group {
+                display: none !important;
+            }
+
+            /* Make layout more linear for standard paper sizes */
+            @page {
+                size: A4 portrait;
+                margin: 1cm;
+            }
+
+            .grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+
+            .lg\:flex-row {
+                flex-direction: column !important;
             }
         }
     </style>
