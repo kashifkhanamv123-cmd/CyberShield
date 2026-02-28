@@ -66,12 +66,21 @@ $campaign_completed = isset($_GET['completed']);
 $show_success = isset($_GET['success']);
 ?>
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html class="dark" lang="en" style="background-color:#1c230f;color-scheme:dark;">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="color-scheme" content="dark" />
     <title>CyberShield | Phishing Simulation Dashboard</title>
+    <!-- Critical: prevent white flash before Tailwind loads -->
+    <style>
+        html,
+        body {
+            background-color: #1c230f !important;
+            color: #fff;
+        }
+    </style>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
@@ -137,7 +146,7 @@ $show_success = isset($_GET['success']);
     </style>
 </head>
 
-<body id="phishing-app" class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
+<body id="phishing-app" class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar" style="background-color:#1c230f;">
     <?php if ($campaign_completed): ?>
         <div id="completionModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div class="bg-surface-dark border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl">

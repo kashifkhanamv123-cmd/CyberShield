@@ -125,12 +125,21 @@ $click_rate  = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) :
 $unique_ips  = array_unique($ip_list);
 ?>
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark" style="background-color:#1c230f;color-scheme:dark;">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="color-scheme" content="dark" />
     <title>CyberShield | Phishing Analytics Intelligence</title>
+    <!-- Critical: prevent white flash before Tailwind loads -->
+    <style>
+        html,
+        body {
+            background-color: #1c230f !important;
+            color: #fff;
+        }
+    </style>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -251,7 +260,7 @@ $unique_ips  = array_unique($ip_list);
     </style>
 </head>
 
-<body id="analytics-app" class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
+<body id="analytics-app" class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar" style="background-color:#1c230f;">
 
     <!-- HEADER -->
     <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md shrink-0">
