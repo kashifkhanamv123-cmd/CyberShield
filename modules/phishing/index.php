@@ -328,7 +328,7 @@ $show_success = isset($_GET['success']);
             </section>
 
             <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
-                <form method="POST" action="process_campaign.php" class="w-full lg:w-1/2 p-6 overflow-y-auto custom-scrollbar border-b lg:border-b-0 lg:border-r border-border-muted h-full">
+                <form method="POST" action="process_campaign.php" enctype="multipart/form-data" class="w-full lg:w-1/2 p-6 overflow-y-auto custom-scrollbar border-b lg:border-b-0 lg:border-r border-border-muted h-full">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
                             <span class="material-symbols-outlined text-primary">edit_note</span>
@@ -381,21 +381,46 @@ $show_success = isset($_GET['success']);
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 <?php
                                 $landings = [
-                                    ['name' => 'Microsoft 365', 'val' => 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=400'],
-                                    ['name' => 'Google Account', 'val' => 'https://images.unsplash.com/photo-1573867639040-6dd25fa5f597?auto=format&fit=crop&q=80&w=400'],
-                                    ['name' => 'Corporate HR', 'val' => 'https://images.unsplash.com/photo-1554224155-1696413575b9?auto=format&fit=crop&q=80&w=400']
+                                    ['name' => 'Microsoft 365', 'val' => 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Google Account', 'val' => 'https://images.unsplash.com/photo-1573867639040-6dd25fa5f597?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Corporate HR', 'val' => 'https://images.unsplash.com/photo-1454165833767-027ffea9e78b?auto=format&fit=crop&q=80&w=1200']
                                 ];
-                                foreach ($landings as $idx => $l): ?>
+                                ?>
+                                <label class="cursor-pointer group">
+                                    <input type="radio" name="landing_image" value="" class="hidden peer" checked>
+                                    <div class="p-2 h-full rounded-xl border-2 border-border-muted bg-surface-dark/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all hover:border-primary/50 text-center flex flex-col items-center justify-center">
+                                        <span class="material-symbols-outlined text-2xl mb-1 opacity-40">block</span>
+                                        <p class="text-[10px] font-bold uppercase text-[#b0bc9a]">None / Custom</p>
+                                    </div>
+                                </label>
+                                <?php foreach ($landings as $idx => $l): ?>
                                     <label class="cursor-pointer group">
-                                        <input type="radio" name="landing_image" value="<?php echo $l['val']; ?>" class="hidden peer" <?php echo $idx === 0 ? 'checked' : ''; ?>>
-                                        <div class="p-2 rounded-xl border-2 border-border-muted bg-surface-dark/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all hover:border-primary/50">
+                                        <input type="radio" name="landing_image" value="<?php echo $l['val']; ?>" class="hidden peer">
+                                        <div class="p-2 rounded-xl border-2 border-border-muted bg-surface-dark/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all hover:border-primary/50 text-center">
                                             <div class="aspect-video bg-background-dark rounded-lg overflow-hidden mb-2">
                                                 <img src="<?php echo $l['val']; ?>" class="w-full h-full object-cover">
                                             </div>
-                                            <p class="text-[10px] font-bold uppercase text-center text-[#b0bc9a] group-hover:text-white"><?php echo $l['name']; ?></p>
+                                            <p class="text-[10px] font-bold uppercase text-[#b0bc9a] group-hover:text-white"><?php echo $l['name']; ?></p>
                                         </div>
                                     </label>
                                 <?php endforeach; ?>
+                            </div>
+
+                            <!-- Custom Upload Option -->
+                            <div class="mt-4 p-4 rounded-xl border border-dashed border-border-muted bg-background-dark/30 hover:border-primary/50 transition-all group">
+                                <div class="flex items-center justify-between mb-3 text-[10px] font-bold uppercase tracking-widest text-[#b0bc9a]">
+                                    <span class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-sm text-primary">upload_file</span>
+                                        Or Upload Custom HD Image
+                                    </span>
+                                    <span class="text-white/20 italic">PNG / JPG / WEBP</span>
+                                </div>
+                                <div class="flex items-center gap-4">
+                                    <input type="file" id="custom_landing_input" name="custom_landing" accept="image/*" class="flex-1 text-xs text-[#b0bc9a] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-primary file:text-background-dark hover:file:bg-primary/80 transition-all cursor-pointer" />
+                                    <div id="upload_preview_container" class="hidden size-12 rounded-lg border border-border-muted overflow-hidden shrink-0">
+                                        <img id="upload_preview" class="w-full h-full object-cover">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="space-y-2 flex flex-col">
@@ -628,6 +653,12 @@ $show_success = isset($_GET['success']);
             document.getElementById('subject').value = '';
             document.getElementById('email_body').value = '';
             document.getElementById('restoreBtn').classList.add('hidden');
+
+            // Reset Landing Selections
+            document.querySelectorAll('input[name="landing_image"]').forEach(radio => radio.checked = radio.value === "");
+            document.getElementById('custom_landing_input').value = "";
+            document.getElementById('upload_preview_container').classList.add('hidden');
+
             updatePreview();
         }
 
@@ -677,6 +708,26 @@ $show_success = isset($_GET['success']);
             url.searchParams.delete('completed');
             window.history.replaceState({}, '', url);
         }
+
+        // Custom Upload Preview logic
+        document.getElementById('custom_landing_input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const previewContainer = document.getElementById('upload_preview_container');
+            const previewImg = document.getElementById('upload_preview');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    previewImg.src = event.target.result;
+                    previewContainer.classList.remove('hidden');
+                    // Automatically deselect presets
+                    document.querySelector('input[name="landing_image"][value=""]').checked = true;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.classList.add('hidden');
+            }
+        });
 
         initTemplates();
         updatePreview();

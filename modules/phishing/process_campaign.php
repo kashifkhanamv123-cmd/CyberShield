@@ -16,6 +16,22 @@ if (isset($_POST['launch'])) {
     $body         = $_POST['body'];
     $landing_img  = $_POST['landing_image'] ?? '';
 
+    // Handle Custom Upload if provided
+    if (isset($_FILES['custom_landing']) && $_FILES['custom_landing']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = __DIR__ . "/../../uploads/phishing/";
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+
+        $file_name = time() . "_" . basename($_FILES['custom_landing']['name']);
+        $target_path = $upload_dir . $file_name;
+
+        if (move_uploaded_file($_FILES['custom_landing']['tmp_name'], $target_path)) {
+            // Store the relative path for web access
+            $landing_img = "../../uploads/phishing/" . $file_name;
+        }
+    }
+
     $stmt = $conn->prepare(
         "INSERT INTO phishing_campaigns (user_id, sender_name, spoof_email, subject, body, landing_image) VALUES (?, ?, ?, ?, ?, ?)"
     );
