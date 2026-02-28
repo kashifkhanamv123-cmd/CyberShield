@@ -413,12 +413,29 @@ $show_success = isset($_GET['success']);
                                         <span class="material-symbols-outlined text-sm text-primary">upload_file</span>
                                         Or Upload Custom HD Image
                                     </span>
-                                    <span class="text-white/20 italic">PNG / JPG / WEBP</span>
+                                    <span class="text-white/20 italic">PNG / JPG (MAX 2MB)</span>
                                 </div>
-                                <div class="flex items-center gap-4">
-                                    <input type="file" id="custom_landing_input" name="custom_landing" accept="image/*" class="flex-1 text-xs text-[#b0bc9a] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-primary file:text-background-dark hover:file:bg-primary/80 transition-all cursor-pointer" />
-                                    <div id="upload_preview_container" class="hidden size-12 rounded-lg border border-border-muted overflow-hidden shrink-0">
-                                        <img id="upload_preview" class="w-full h-full object-cover">
+                                <div class="flex flex-col gap-4">
+                                    <div class="flex items-center gap-4">
+                                        <input type="file" id="custom_landing_input" name="custom_landing" accept="image/png, image/jpeg" class="flex-1 text-xs text-[#b0bc9a] file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-primary file:text-background-dark hover:file:bg-primary/80 transition-all cursor-pointer" />
+
+                                        <div id="upload_controls" class="hidden flex items-center gap-2">
+                                            <button type="button" id="btn_accept_upload" class="px-3 py-1.5 bg-primary text-background-dark text-[10px] font-black uppercase rounded-lg hover:scale-105 transition-all">OK</button>
+                                            <button type="button" id="btn_delete_upload" class="p-1.5 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-all" title="Delete Image">
+                                                <span class="material-symbols-outlined text-sm">delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div id="upload_preview_container" class="hidden flex items-center gap-4 p-2 bg-background-dark/50 rounded-lg border border-border-muted">
+                                        <div class="size-16 rounded overflow-hidden border border-white/10">
+                                            <img id="upload_preview" class="w-full h-full object-cover">
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p id="upload_filename" class="text-[10px] font-bold text-white truncate">Image Selected</p>
+                                            <p id="upload_status" class="text-[9px] text-amber-500 uppercase font-black">Waiting for confirmation...</p>
+                                        </div>
+                                        <span id="upload_check" class="hidden material-symbols-outlined text-primary">check_circle</span>
                                     </div>
                                 </div>
                             </div>
@@ -464,10 +481,17 @@ $show_success = isset($_GET['success']);
                                 </div>
                                 <div class="text-sm prose prose-sm max-w-none">
                                     <div class="text-[10px] text-gray-400 mb-4 font-mono uppercase tracking-widest">To: <span id="previewRecipient" class="font-bold text-gray-700">All Employees</span> &lt;targets@company-sec-training.com&gt;</div>
-                                    <div id="previewBody" class="space-y-4 text-slate-800">
+                                    <div id="previewBody" class="space-y-4 text-slate-800 mb-6">
                                         <p>Dear Employee,</p>
                                         <p>We detected unusual activity. Please verify your identity.</p>
                                         <p><a href="#" class="inline-block bg-[#007bff] text-white px-6 py-2.5 rounded font-bold no-underline">Verify Now</a></p>
+                                    </div>
+                                    <div id="landingPreviewContainer" class="hidden mt-4 pt-6 border-t border-gray-100">
+                                        <p class="text-[10px] text-gray-400 uppercase font-black mb-2 flex items-center gap-1.5">
+                                            <span class="material-symbols-outlined text-xs">image</span>
+                                            Configured Landing Preview
+                                        </p>
+                                        <img id="landingPreviewImg" class="w-full rounded-xl border border-gray-200 shadow-sm object-cover max-h-48" src="">
                                     </div>
                                 </div>
                                 <div class="pt-8 border-t border-gray-100 flex items-center gap-2 text-[10px] text-gray-400 italic">
@@ -656,8 +680,9 @@ $show_success = isset($_GET['success']);
 
             // Reset Landing Selections
             document.querySelectorAll('input[name="landing_image"]').forEach(radio => radio.checked = radio.value === "");
-            document.getElementById('custom_landing_input').value = "";
-            document.getElementById('upload_preview_container').classList.add('hidden');
+
+            // Reset Upload
+            deleteUploadedImage();
 
             updatePreview();
         }
@@ -709,25 +734,110 @@ $show_success = isset($_GET['success']);
             window.history.replaceState({}, '', url);
         }
 
-        // Custom Upload Preview logic
-        document.getElementById('custom_landing_input').addEventListener('change', function(e) {
+        // Custom Upload Preview & Confirmation logic
+        const uploadInput = document.getElementById('custom_landing_input');
+        const uploadControls = document.getElementById('upload_controls');
+        const uploadPreviewContainer = document.getElementById('upload_preview_container');
+        const uploadPreviewImg = document.getElementById('upload_preview');
+        const uploadStatus = document.getElementById('upload_status');
+        const uploadCheck = document.getElementById('upload_check');
+        const uploadFilename = document.getElementById('upload_filename');
+        const landingPreviewContainer = document.getElementById('landingPreviewContainer');
+        const landingPreviewImg = document.getElementById('landingPreviewImg');
+
+        uploadInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            const previewContainer = document.getElementById('upload_preview_container');
-            const previewImg = document.getElementById('upload_preview');
 
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    previewImg.src = event.target.result;
-                    previewContainer.classList.remove('hidden');
-                    // Automatically deselect presets
+                    uploadPreviewImg.src = event.target.result;
+                    uploadFilename.textContent = file.name;
+                    uploadPreviewContainer.classList.remove('hidden');
+                    uploadControls.classList.remove('hidden');
+                    uploadStatus.textContent = "WAITING FOR OK...";
+                    uploadStatus.className = "text-[9px] text-amber-500 uppercase font-black";
+                    uploadCheck.classList.add('hidden');
+
+                    // Show in target preview immediately for verification
+                    if (landingPreviewImg) landingPreviewImg.src = event.target.result;
+                    if (landingPreviewContainer) landingPreviewContainer.classList.remove('hidden');
+
+                    // Deselect presets
                     document.querySelector('input[name="landing_image"][value=""]').checked = true;
                 };
                 reader.readAsDataURL(file);
-            } else {
-                previewContainer.classList.add('hidden');
             }
         });
+
+        document.getElementById('btn_accept_upload').addEventListener('click', function() {
+            uploadStatus.textContent = "Confirmed & Locked";
+            uploadStatus.className = "text-[9px] text-primary uppercase font-black";
+            uploadCheck.classList.remove('hidden');
+            uploadControls.classList.add('hidden');
+
+            // Highlight the preview to show it's confirmed
+            if (landingPreviewContainer) {
+                landingPreviewContainer.classList.add('border-primary/50');
+                landingPreviewContainer.classList.remove('border-gray-100');
+            }
+        });
+
+        document.getElementById('btn_delete_upload').addEventListener('click', deleteUploadedImage);
+
+        function deleteUploadedImage() {
+            if (uploadInput) uploadInput.value = "";
+            if (uploadPreviewContainer) uploadPreviewContainer.classList.add('hidden');
+            if (uploadControls) uploadControls.classList.add('hidden');
+            if (uploadCheck) uploadCheck.classList.add('hidden');
+
+            // Hide from target preview
+            if (landingPreviewContainer) {
+                landingPreviewContainer.classList.add('hidden');
+                landingPreviewContainer.classList.remove('border-primary/50');
+                landingPreviewContainer.classList.add('border-gray-100');
+            }
+            if (landingPreviewImg) landingPreviewImg.src = "";
+
+            // Re-sync with preset if any
+            updateLandingFromPreset();
+        }
+
+        function updateLandingFromPreset() {
+            const selectedRadio = document.querySelector('input[name="landing_image"]:checked');
+            if (selectedRadio && selectedRadio.value !== "" && (!uploadInput || !uploadInput.value)) {
+                if (landingPreviewImg) landingPreviewImg.src = selectedRadio.value;
+                if (landingPreviewContainer) landingPreviewContainer.classList.remove('hidden');
+            } else if (!uploadInput || !uploadInput.value) {
+                if (landingPreviewContainer) landingPreviewContainer.classList.add('hidden');
+            }
+        }
+
+        // Add listeners to radio buttons to update preview
+        document.querySelectorAll('input[name="landing_image"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value !== "") {
+                    // If a preset is chosen, we should probably clear the custom upload to avoid confusion
+                    if (uploadInput && uploadInput.value) {
+                        if (confirm("Selecting a preset will clear your custom upload. Proceed?")) {
+                            deleteUploadedImage();
+                            updateLandingFromPreset();
+                        } else {
+                            // Re-select None/Custom
+                            document.querySelector('input[name="landing_image"][value=""]').checked = true;
+                        }
+                    } else {
+                        updateLandingFromPreset();
+                    }
+                } else {
+                    updateLandingFromPreset();
+                }
+            });
+        });
+
+        initTemplates();
+        updatePreview();
+        updateLandingFromPreset();
 
         initTemplates();
         updatePreview();

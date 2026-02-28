@@ -1,0 +1,6 @@
+# Disable script execution
+php_flag engine off
+<FilesMatch "\.(php|php5|phtml|sh|py|pl|cgi)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

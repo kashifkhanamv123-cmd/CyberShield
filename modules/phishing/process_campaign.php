@@ -18,17 +18,28 @@ if (isset($_POST['launch'])) {
 
     // Handle Custom Upload if provided
     if (isset($_FILES['custom_landing']) && $_FILES['custom_landing']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = __DIR__ . "/../../uploads/phishing/";
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
+        $file_tmp  = $_FILES['custom_landing']['tmp_name'];
+        $file_name = $_FILES['custom_landing']['name'];
+        $file_size = $_FILES['custom_landing']['size'];
+        $file_type = mime_content_type($file_tmp);
 
-        $file_name = time() . "_" . basename($_FILES['custom_landing']['name']);
-        $target_path = $upload_dir . $file_name;
+        $allowed_types = ['image/png', 'image/jpeg'];
+        $max_size = 2 * 1024 * 1024; // 2MB
 
-        if (move_uploaded_file($_FILES['custom_landing']['tmp_name'], $target_path)) {
-            // Store the relative path for web access
-            $landing_img = "../../uploads/phishing/" . $file_name;
+        if (in_array($file_type, $allowed_types) && $file_size <= $max_size) {
+            $upload_dir = __DIR__ . "/../../uploads/landing_pages/";
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+
+            // Secure Rename: timestamp + random hash
+            $ext = ($file_type === 'image/png') ? '.png' : '.jpg';
+            $new_name = time() . "_" . bin2hex(random_bytes(8)) . $ext;
+            $target_path = $upload_dir . $new_name;
+
+            if (move_uploaded_file($file_tmp, $target_path)) {
+                $landing_img = "../../uploads/landing_pages/" . $new_name;
+            }
         }
     }
 
