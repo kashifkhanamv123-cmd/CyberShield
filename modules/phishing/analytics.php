@@ -15,7 +15,7 @@ $ip_list     = [];
 $tracking_url = '';
 $landing_img  = '';
 
-if ($campaign_id > 0 && $campaign) {
+if ($campaign_id > 0) {
     // Fetch campaign details – prepared statement
     $stmt = $conn->prepare(
         "SELECT * FROM phishing_campaigns WHERE id = ? AND user_id = ?"
@@ -209,10 +209,27 @@ $unique_ips  = array_unique($ip_list);
             </div>
         </div>
         <div class="flex items-center gap-4">
-            <a href="../../dashboard/dashboard.php" class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-surface-dark/5 text-xs font-bold transition-all flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm">dashboard</span>
-                BACK TO DASHBOARD
-            </a>
+<div class="flex items-center gap-4">
+
+    <a href="index.php"
+    class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">arrow_back</span>
+        BACK TO SIMULATION
+    </a>
+
+    <a href="../../dashboard/dashboard.php"
+    class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">dashboard</span>
+        BACK TO DASHBOARD
+    </a>
+
+    <div class="flex items-center gap-3 bg-surface-dark px-3 py-1.5 rounded-full border border-border-muted">
+        <span class="text-xs font-bold tracking-wider">
+            <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'SEC_INTEL'); ?>
+        </span>
+    </div>
+
+</div>
             <div class="flex items-center gap-3 bg-surface-dark px-3 py-1.5 rounded-full border border-border-muted">
                 <span class="text-xs font-bold tracking-wider"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'SEC_INTEL'); ?></span>
             </div>

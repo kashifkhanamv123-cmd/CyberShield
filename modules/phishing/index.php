@@ -10,17 +10,51 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // Fetch Live Stats
-$campaigns_res = $conn->query("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = $user_id");
-$campaigns_row = $campaigns_res->fetch_assoc();
-$total_sent = $campaigns_row['total'];
+// Safe stats queries using prepared statements
 
-$clicks_res = $conn->query("SELECT COUNT(*) as total FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id AND pe.event_type = 'click'");
-$clicks_row = $clicks_res->fetch_assoc();
-$total_clicks = $clicks_row['total'];
+$total_sent = 0;
+$total_clicks = 0;
+$total_creds = 0;
 
-$creds_res = $conn->query("SELECT COUNT(*) as total FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id AND pe.event_type = 'credential'");
-$creds_row = $creds_res->fetch_assoc();
-$total_creds = $creds_row['total'];
+// Campaign count
+$stmt = $conn->prepare("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($row = $result->fetch_assoc()) {
+    $total_sent = (int)$row['total'];
+}
+$stmt->close();
+
+// Click count
+$stmt = $conn->prepare("
+    SELECT COUNT(*) as total
+    FROM phishing_events pe
+    JOIN phishing_campaigns pc ON pe.campaign_id = pc.id
+    WHERE pc.user_id = ? AND pe.event_type = 'click'
+");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($row = $result->fetch_assoc()) {
+    $total_clicks = (int)$row['total'];
+}
+$stmt->close();
+
+// Credential count
+$stmt = $conn->prepare("
+    SELECT COUNT(*) as total
+    FROM phishing_events pe
+    JOIN phishing_campaigns pc ON pe.campaign_id = pc.id
+    WHERE pc.user_id = ? AND pe.event_type = 'credential'
+");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+if ($row = $result->fetch_assoc()) {
+    $total_creds = (int)$row['total'];
+}
+$stmt->close();
 
 $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100) : 0;
 
@@ -28,8 +62,7 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100) : 0;
 $all_emp_count = $total_sent * 1;
 $eng_count = $total_sent > 1 ? floor($total_sent * 0.4) : 0;
 $finance_count = $total_sent > 3 ? floor($total_sent * 0.2) : 0;
-
-$show_success = isset($_GET['success']);
+$show_success = false;
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
@@ -146,7 +179,6 @@ $show_success = isset($_GET['success']);
             </div>
             <div class="hidden lg:flex items-center gap-6">
                 <a class="text-primary text-sm font-semibold border-b-2 border-primary pb-1" href="index.php">Simulation</a>
-                <a class="text-[#b0bc9a] hover:text-white text-sm font-medium transition-colors" href="analytics.php">Analytics</a>
             </div>
         </div>
         <div class="flex items-center gap-4">
