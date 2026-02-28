@@ -243,7 +243,7 @@ $show_success = isset($_GET['success']);
                         </div>
                     </div>
                 </div>
-                <button onclick="window.location.href='analytics.php?id=<?php echo $_GET['id'] ?? ''; ?>'" class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">UNDERSTOOD</button>
+                <button onclick="window.location.href='analytics.php?id=<?php echo isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : (isset($_GET['id']) ? (int)$_GET['id'] : ''); ?>'" class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">UNDERSTOOD</button>
             </div>
         </div>
     <?php endif; ?>

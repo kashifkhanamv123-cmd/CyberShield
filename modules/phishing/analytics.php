@@ -14,6 +14,10 @@ $events      = [];
 $ip_list     = [];
 $tracking_url = '';
 $landing_img  = '';
+$total_sent   = 0;
+$total_clicks = 0;
+$total_creds  = 0;
+$click_rate   = 0;
 
 if ($campaign_id > 0) {
     // Fetch campaign details – prepared statement
@@ -31,7 +35,7 @@ if ($campaign_id > 0) {
         . '/modules/phishing/track.php?id=' . $campaign_id;
 
     // Landing image placeholder (could be stored in campaigns table)
-    $landing_img = $campaign['landing_image'] ?? '';
+    $landing_img = $campaign ? ($campaign['landing_image'] ?? '') : '';
 
     // Stats – prepared statement
     $stmt = $conn->prepare(
