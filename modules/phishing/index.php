@@ -278,7 +278,7 @@ $show_success = isset($_GET['success']);
         </div>
     </header>
 
-    <main class="flex-1 flex overflow-hidden lg:h-[calc(100vh-60px)]">
+    <main class="flex-1 flex lg:h-[calc(100vh-60px)]">
         <aside class="hidden md:flex w-64 border-r border-border-muted flex-col bg-background-dark/50 p-6 overflow-y-auto custom-scrollbar shrink-0">
             <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Target Audience</h3>
             <div class="space-y-1 mb-8" id="audienceList">
@@ -485,7 +485,7 @@ $show_success = isset($_GET['success']);
                     </div>
                 </form>
 
-                <section class="w-full lg:w-1/2 p-6 bg-surface-dark/30 flex flex-col overflow-y-auto custom-scrollbar h-full">
+                <section class="w-full lg:w-1/2 p-6 bg-surface-dark/30 flex flex-col overflow-y-auto custom-scrollbar">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-lg font-bold flex items-center gap-2 tracking-tight">
                             <span class="material-symbols-outlined text-primary">visibility</span>
@@ -497,8 +497,7 @@ $show_success = isset($_GET['success']);
                             <div class="size-2.5 rounded-full bg-primary/20"></div>
                         </div>
                     </div>
-
-                    <div id="emailPreviewContainer" class="custom-scrollbar shadow-2xl shrink-0">
+<div id="emailPreviewContainer" class="custom-scrollbar shadow-2xl flex-1 overflow-y-auto">
                         <div class="flex flex-col text-gray-900 bg-white" id="emailPreviewFrame">
                             <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between sticky top-0 z-10 w-full">
                                 <span>Preview: Outlook Mobile / Desktop</span>
