@@ -75,7 +75,7 @@ $show_success = isset($_GET['success']);
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
-    <script id="tailwind-config">
+    <script>
         tailwind.config = {
             darkMode: "class",
             theme: {
@@ -94,7 +94,7 @@ $show_success = isset($_GET['success']);
         }
     </script>
     <style>
-        body {
+        #phishing-app {
             background: linear-gradient(rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0.95)),
                 url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070');
             background-size: cover;
@@ -102,31 +102,31 @@ $show_success = isset($_GET['success']);
             background-attachment: fixed;
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
+        #phishing-app .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-track {
+        #phishing-app .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb {
+        #phishing-app .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #343a27;
             border-radius: 10px;
         }
 
-        .terminal-grid {
+        #phishing-app.terminal-grid {
             background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
             background-size: 30px 30px;
         }
 
-        .audience-btn.active {
+        #phishing-app .audience-btn.active {
             background: rgba(160, 240, 0, 0.1);
             color: #a0f000;
             border-color: rgba(160, 240, 0, 0.2);
         }
 
-        #emailPreviewContainer {
+        #phishing-app #emailPreviewContainer {
             flex: 1;
             overflow-y: auto;
             height: 100%;
@@ -137,7 +137,7 @@ $show_success = isset($_GET['success']);
     </style>
 </head>
 
-<body class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
+<body id="phishing-app" class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
     <?php if ($campaign_completed): ?>
         <div id="completionModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div class="bg-surface-dark border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl">

@@ -134,7 +134,7 @@ $unique_ips  = array_unique($ip_list);
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <script id="tailwind-config">
+    <script>
         tailwind.config = {
             darkMode: "class",
             theme: {
@@ -153,7 +153,7 @@ $unique_ips  = array_unique($ip_list);
         }
     </script>
     <style>
-        body {
+        #analytics-app {
             background: linear-gradient(rgba(10, 10, 10, 0.95), rgba(10, 10, 10, 0.95)),
                 url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070');
             background-size: cover;
@@ -161,25 +161,25 @@ $unique_ips  = array_unique($ip_list);
             background-attachment: fixed;
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
+        #analytics-app .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-track {
+        #analytics-app .custom-scrollbar::-webkit-scrollbar-track {
             background: transparent;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb {
+        #analytics-app .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #343a27;
             border-radius: 10px;
         }
 
-        .terminal-grid {
+        #analytics-app.terminal-grid {
             background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
             background-size: 30px 30px;
         }
 
-        .metric-card {
+        #analytics-app .metric-card {
             background: rgba(35, 40, 27, 0.5);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(160, 240, 0, 0.1);
@@ -187,19 +187,19 @@ $unique_ips  = array_unique($ip_list);
     </style>
     <style>
         @media print {
-            body {
+            body#analytics-app {
                 background: white !important;
                 color: black !important;
             }
 
-            .metric-card {
+            #analytics-app .metric-card {
                 border: 1px solid black !important;
             }
         }
     </style>
 </head>
 
-<body class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
+<body id="analytics-app" class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
 
     <!-- HEADER -->
     <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md shrink-0">
