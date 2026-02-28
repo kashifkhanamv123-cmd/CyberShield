@@ -352,16 +352,23 @@ $unique_ips  = array_unique($ip_list);
                     </div>
 
                     <!-- Campaign Intelligence (Realistic Filler) -->
-                    <div class="metric-card p-6 rounded-2xl flex flex-col gap-4 shadow-xl border-l-4 border-l-primary/30">
-                        <div class="flex items-center justify-between">
+                    <div class="metric-card p-6 rounded-2xl flex flex-col gap-4 shadow-xl border-l-4 border-l-primary/30 relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-background-dark/80 backdrop-blur-sm z-10 hidden group-hover:flex items-center justify-center transition-all">
+                            <div class="bg-primary/20 text-primary border border-primary/50 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm">construction</span>
+                                Module In Development
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between opacity-50 group-hover:opacity-10 transition-opacity">
                             <span class="text-[#b0bc9a] text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                                 <span class="material-symbols-outlined text-sm text-primary">psychology</span>
                                 Target Profiling
                             </span>
-                            <span class="text-[9px] px-2 py-0.5 rounded bg-primary/10 text-primary font-bold uppercase tracking-widest">Live Intel</span>
+                            <span class="text-[9px] px-2 py-0.5 rounded bg-primary/10 text-primary font-bold uppercase tracking-widest">Preview</span>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-2 gap-4 opacity-50 group-hover:opacity-10 transition-opacity">
                             <div class="space-y-3">
                                 <p class="text-[9px] font-bold text-[#b0bc9a] uppercase tracking-wider opacity-50">Browser Distribution</p>
                                 <div class="space-y-2">
@@ -391,7 +398,7 @@ $unique_ips  = array_unique($ip_list);
                             </div>
                         </div>
 
-                        <div class="mt-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                        <div class="mt-2 p-3 bg-primary/5 rounded-xl border border-primary/10 opacity-50 group-hover:opacity-10 transition-opacity">
                             <p class="text-[10px] text-primary/80 font-medium italic">"Targets exhibit high trust in Corporate SSO lures. Recommend follow-up MFA simulation to test lateral movement resilience."</p>
                         </div>
                     </div>
@@ -485,10 +492,17 @@ $unique_ips  = array_unique($ip_list);
                     <?php endif; ?>
                 </div>
 
-                <!-- Traffic Analysis -->
-                <div class="metric-card rounded-2xl p-6">
-                    <h3 class="text-xs font-black uppercase italic text-primary mb-4">Traffic Analysis</h3>
-                    <div class="space-y-4">
+                <!-- Traffic Analysis (Preview Placeholder) -->
+                <div class="metric-card rounded-2xl p-6 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-background-dark/80 backdrop-blur-sm z-10 hidden group-hover:flex items-center justify-center transition-all">
+                        <div class="bg-primary/20 text-primary border border-primary/50 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">science</span>
+                            Beta Feature
+                        </div>
+                    </div>
+
+                    <h3 class="text-xs font-black uppercase italic text-primary mb-4 opacity-50 group-hover:opacity-10 transition-opacity">Traffic Analysis</h3>
+                    <div class="space-y-4 opacity-50 group-hover:opacity-10 transition-opacity">
                         <div class="space-y-2">
                             <div class="flex justify-between text-[10px] font-bold uppercase">
                                 <span>Desktop</span><span id="stat-desktop">65%</span>
@@ -508,13 +522,19 @@ $unique_ips  = array_unique($ip_list);
                     </div>
                 </div>
 
-                <!-- Security Advice -->
-                <div class="flex-1 metric-card rounded-2xl p-6 bg-primary/5 border-primary/20 flex flex-col justify-center text-center">
-                    <span class="material-symbols-outlined text-primary text-4xl mb-4">insights</span>
-                    <h3 class="text-sm font-bold uppercase tracking-widest mb-2">Security Advice</h3>
-                    <p class="text-[10px] text-[#b0bc9a] leading-relaxed italic">
-                        "90% of data breaches start with a single phishing email. Continuous training is the only firewall for human error."
-                    </p>
+                <!-- Security Advice (Preview Placeholder) -->
+                <div class="flex-1 metric-card rounded-2xl p-6 bg-primary/5 border-primary/20 flex flex-col justify-center text-center relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-background-dark/80 backdrop-blur-sm z-10 hidden group-hover:flex items-center justify-center transition-all">
+                        <span class="text-[10px] font-bold text-primary uppercase tracking-widest border border-primary/30 px-3 py-1 rounded">AI Model Training...</span>
+                    </div>
+
+                    <div class="opacity-50 group-hover:opacity-10 transition-opacity">
+                        <span class="material-symbols-outlined text-primary text-4xl mb-4">insights</span>
+                        <h3 class="text-sm font-bold uppercase tracking-widest mb-2">Automated SOC Advice</h3>
+                        <p class="text-[10px] text-[#b0bc9a] leading-relaxed italic">
+                            "90% of data breaches start with a single phishing email. Continuous training is the only firewall for human error."
+                        </p>
+                    </div>
                 </div>
             </section>
         </div>
