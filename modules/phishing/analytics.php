@@ -7,51 +7,129 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$user_id = $_SESSION['user_id'];
+$user_id     = $_SESSION['user_id'];
 $campaign_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$campaign    = null;
+$events      = [];
+$ip_list     = [];
+$tracking_url = '';
+$landing_img  = '';
 
-// Fetch Live Stats for this campaign or overall
 if ($campaign_id > 0) {
-    $res = $conn->query("SELECT * FROM phishing_campaigns WHERE id = $campaign_id AND user_id = $user_id");
-    $campaign = $res->fetch_assoc();
+    // Fetch campaign details – prepared statement
+    $stmt = $conn->prepare(
+        "SELECT * FROM phishing_campaigns WHERE id = ? AND user_id = ?"
+    );
+    $stmt->bind_param("ii", $campaign_id, $user_id);
+    $stmt->execute();
+    $campaign = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
 
-    $events_res = $conn->query("SELECT * FROM phishing_events WHERE campaign_id = $campaign_id ORDER BY created_at DESC");
+    // Build tracking URL from campaign data
+    $tracking_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
+        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
+        . '/modules/phishing/track.php?id=' . $campaign_id;
 
-    $stats_res = $conn->query("SELECT 
-        COUNT(CASE WHEN event_type = 'click' THEN 1 END) as clicks,
-        COUNT(CASE WHEN event_type = 'credential' THEN 1 END) as creds
-        FROM phishing_events WHERE campaign_id = $campaign_id");
-    $stats = $stats_res->fetch_assoc();
+    // Landing image placeholder (could be stored in campaigns table)
+    $landing_img = $campaign['landing_image'] ?? '';
 
-    $total_sent = 175; // Simulated for high-fidelity feel or fetch from targeted audience size
-    $total_clicks = $stats['clicks'];
-    $total_creds = $stats['creds'];
+    // Stats – prepared statement
+    $stmt = $conn->prepare(
+        "SELECT
+            COUNT(CASE WHEN event_type = 'click' THEN 1 END) AS clicks,
+            COUNT(CASE WHEN event_type = 'credential' THEN 1 END) AS creds
+         FROM phishing_events WHERE campaign_id = ?"
+    );
+    $stmt->bind_param("i", $campaign_id);
+    $stmt->execute();
+    $stats = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    $stmt = $conn->prepare("SELECT COUNT(*) as total FROM phishing_events WHERE campaign_id = ?");
+    $stmt->bind_param("i", $campaign_id);
+    $stmt->execute();
+    $total_sent = (int)$stmt->get_result()->fetch_assoc()['total'];
+    $stmt->close();
+    $total_clicks = (int)$stats['clicks'];
+    $total_creds  = (int)$stats['creds'];
+
+    // Fetch events with IP addresses
+    $stmt = $conn->prepare(
+        "SELECT * FROM phishing_events WHERE campaign_id = ? ORDER BY created_at DESC"
+    );
+    $stmt->bind_param("i", $campaign_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $events[] = $row;
+        if (!empty($row['attacker_ip'])) {
+            $ip_list[] = $row['attacker_ip'];
+        }
+    }
+    $stmt->close();
 } else {
-    // Overall Stats
-    $total_sent_res = $conn->query("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = $user_id");
-    $total_sent = $total_sent_res->fetch_assoc()['total'] * 150; // Scaled
+    // Overall stats – prepared statements
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS total FROM phishing_campaigns WHERE user_id = ?"
+    );
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $total_campaigns = (int)$stmt->get_result()->fetch_assoc()['total'];
+    $stmt->close();
+    $total_sent = $total_campaigns * 150;
 
-    $total_clicks_res = $conn->query("SELECT COUNT(*) as total FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id AND pe.event_type = 'click'");
-    $total_clicks = $total_clicks_res->fetch_assoc()['total'];
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS total FROM phishing_events pe
+         JOIN phishing_campaigns pc ON pe.campaign_id = pc.id
+         WHERE pc.user_id = ? AND pe.event_type = 'click'"
+    );
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $total_clicks = (int)$stmt->get_result()->fetch_assoc()['total'];
+    $stmt->close();
 
-    $total_creds_res = $conn->query("SELECT COUNT(*) as total FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id AND pe.event_type = 'credential'");
-    $total_creds = $total_creds_res->fetch_assoc()['total'];
+    $stmt = $conn->prepare(
+        "SELECT COUNT(*) AS total FROM phishing_events pe
+         JOIN phishing_campaigns pc ON pe.campaign_id = pc.id
+         WHERE pc.user_id = ? AND pe.event_type = 'credential'"
+    );
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $total_creds = (int)$stmt->get_result()->fetch_assoc()['total'];
+    $stmt->close();
 
-    $events_res = $conn->query("SELECT pe.*, pc.subject FROM phishing_events pe JOIN phishing_campaigns pc ON pe.campaign_id = pc.id WHERE pc.user_id = $user_id ORDER BY pe.created_at DESC LIMIT 50");
+    // Events feed with subject
+    $stmt = $conn->prepare(
+        "SELECT pe.*, pc.subject FROM phishing_events pe
+         JOIN phishing_campaigns pc ON pe.campaign_id = pc.id
+         WHERE pc.user_id = ?
+         ORDER BY pe.created_at DESC LIMIT 50"
+    );
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $events[] = $row;
+        if (!empty($row['attacker_ip'])) {
+            $ip_list[] = $row['attacker_ip'];
+        }
+    }
+    $stmt->close();
 }
 
-$click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 0;
+$click_rate  = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 0;
+$unique_ips  = array_unique($ip_list);
 ?>
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en" class="dark">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>CyberShield | Phishing Analytics Intelligence</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -106,7 +184,9 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 
 </head>
 
 <body class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
-    <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md">
+
+    <!-- HEADER -->
+    <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md shrink-0">
         <div class="flex items-center gap-8">
             <div class="flex items-center gap-3 text-primary cursor-pointer transition-transform hover:scale-105" onclick="location.href='index.php'">
                 <span class="material-symbols-outlined text-3xl">shield_person</span>
@@ -128,7 +208,10 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col p-6 gap-6 lg:h-[calc(100vh-60px)] overflow-hidden">
+    <!-- MAIN -->
+    <main class="flex-1 flex flex-col p-6 gap-6">
+
+        <!-- Page Title -->
         <div class="flex items-center justify-between shrink-0">
             <div>
                 <h1 class="text-2xl font-black uppercase italic tracking-tight">Campaign <span class="text-primary">Intelligence</span> Dashboard</h1>
@@ -142,7 +225,9 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 shrink-0">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 shrink-0">
+            <!-- Total Targets -->
             <div class="metric-card p-6 rounded-2xl">
                 <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Total Targets Hit</span>
                 <div class="flex items-end gap-2">
@@ -150,31 +235,73 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 
                     <span class="text-primary text-[10px] font-mono mb-1">LIVE</span>
                 </div>
             </div>
+            <!-- Total Clicks -->
             <div class="metric-card p-6 rounded-2xl">
-                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Click-Through Rate</span>
+                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Total Clicks</span>
                 <div class="flex items-end gap-2">
-                    <p class="text-3xl font-black"><?php echo $click_rate; ?>%</p>
-                    <span class="text-primary text-[10px] font-mono mb-1">AVG. 12%</span>
+                    <p class="text-3xl font-black"><?php echo number_format($total_clicks); ?></p>
+                    <span class="text-primary text-[10px] font-mono mb-1"><?php echo $click_rate; ?>% CTR</span>
                 </div>
             </div>
+            <!-- Credential Captures -->
             <div class="metric-card p-6 rounded-2xl">
-                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Avg. Time to Action</span>
-                <div class="flex items-end gap-2">
-                    <p class="text-3xl font-black">4m 12s</p>
-                    <span class="text-amber-500 text-[10px] font-mono mb-1">CRITICAL</span>
-                </div>
-            </div>
-            <div class="metric-card p-6 rounded-2xl">
-                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Security Failures</span>
+                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Credential Captures</span>
                 <div class="flex items-end gap-2">
                     <p class="text-3xl font-black"><?php echo number_format($total_creds); ?></p>
                     <span class="text-red-500 text-[10px] font-mono mb-1">COMPROMISED</span>
                 </div>
             </div>
+            <!-- Unique IPs -->
+            <div class="metric-card p-6 rounded-2xl">
+                <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Unique IPs Recorded</span>
+                <div class="flex items-end gap-2">
+                    <p class="text-3xl font-black"><?php echo count($unique_ips); ?></p>
+                    <span class="text-amber-500 text-[10px] font-mono mb-1">TRACKED</span>
+                </div>
+            </div>
         </div>
 
-        <div class="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
-            <section class="flex-1 flex flex-col min-h-[400px] metric-card rounded-2xl p-6 overflow-hidden">
+        <!-- Tracking URL + Landing Image Row (campaign-specific) -->
+        <?php if ($campaign_id > 0): ?>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
+                <!-- Tracking URL -->
+                <div class="metric-card p-5 rounded-2xl flex flex-col gap-2">
+                    <span class="text-[#b0bc9a] text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm text-primary">link</span>
+                        Tracking URL
+                    </span>
+                    <div class="flex items-center gap-2 bg-background-dark/60 border border-border-muted rounded-lg px-3 py-2">
+                        <span class="text-primary font-mono text-xs break-all flex-1"><?php echo htmlspecialchars($tracking_url); ?></span>
+                        <button onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($tracking_url, ENT_QUOTES); ?>')" title="Copy URL"
+                            class="shrink-0 text-[#b0bc9a] hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-sm">content_copy</span>
+                        </button>
+                    </div>
+                </div>
+                <!-- Landing Image -->
+                <div class="metric-card p-5 rounded-2xl flex flex-col gap-2">
+                    <span class="text-[#b0bc9a] text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm text-primary">image</span>
+                        Landing Page Preview
+                    </span>
+                    <?php if (!empty($landing_img)): ?>
+                        <img src="<?php echo htmlspecialchars($landing_img); ?>" alt="Landing page preview"
+                            class="w-full max-h-32 object-cover rounded-lg border border-border-muted" />
+                    <?php else: ?>
+                        <div class="flex items-center justify-center h-20 bg-background-dark/50 border border-border-muted rounded-lg text-[#b0bc9a] text-xs font-mono gap-2">
+                            <span class="material-symbols-outlined text-sm opacity-40">hide_image</span>
+                            No landing image configured
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <!-- Event Feed + Sidebar Row -->
+        <div class="flex-1 flex flex-col lg:flex-row gap-6">
+
+            <!-- Real-time Event Feed -->
+            <section class="flex-1 metric-card rounded-2xl p-6 flex flex-col min-h-[380px]">
                 <div class="flex items-center justify-between mb-6 shrink-0">
                     <h2 class="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
                         <span class="size-2 rounded-full bg-primary animate-pulse"></span>
@@ -184,26 +311,26 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 
                 </div>
 
                 <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 font-mono text-xs pr-2">
-                    <?php if ($events_res && $events_res->num_rows > 0): ?>
-                        <?php while ($event = $events_res->fetch_assoc()): ?>
+                    <?php if (!empty($events)): ?>
+                        <?php foreach ($events as $event): ?>
                             <div class="p-4 rounded-xl bg-background-dark/50 border border-white/5 hover:border-primary/20 transition-all flex items-start gap-4">
                                 <div class="size-8 rounded-lg bg-surface-dark flex items-center justify-center flex-shrink-0">
-                                    <span class="material-symbols-outlined text-sm <?php echo $event['event_type'] == 'credential' ? 'text-red-500' : 'text-primary'; ?>">
-                                        <?php echo $event['event_type'] == 'credential' ? 'key' : 'ads_click'; ?>
+                                    <span class="material-symbols-outlined text-sm <?php echo $event['event_type'] === 'credential' ? 'text-red-500' : 'text-primary'; ?>">
+                                        <?php echo $event['event_type'] === 'credential' ? 'key' : 'ads_click'; ?>
                                     </span>
                                 </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center justify-between mb-1">
-                                        <span class="text-primary font-bold">EVENT_<?php echo strtoupper($event['event_type']); ?></span>
-                                        <span class="text-[10px] text-[#b0bc9a]"><?php echo date('H:i:s', strtotime($event['created_at'])); ?></span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1 gap-2">
+                                        <span class="text-primary font-bold truncate">EVENT_<?php echo strtoupper(htmlspecialchars($event['event_type'])); ?></span>
+                                        <span class="text-[10px] text-[#b0bc9a] shrink-0"><?php echo date('H:i:s', strtotime($event['created_at'])); ?></span>
                                     </div>
                                     <p class="text-white/80 leading-relaxed">
                                         Subject: <span class="text-white"><?php echo htmlspecialchars($event['subject'] ?? 'System Alert'); ?></span><br>
-                                        Origin: <span class="text-white"><?php echo $event['attacker_ip'] ?: '192.168.1.45'; ?></span>
+                                        Origin IP: <span class="text-amber-400"><?php echo htmlspecialchars($event['attacker_ip'] ?? '—'); ?></span>
                                     </p>
                                 </div>
                             </div>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     <?php else: ?>
                         <div class="flex flex-col items-center justify-center h-full text-[#b0bc9a] gap-4">
                             <span class="material-symbols-outlined text-4xl opacity-20">sensors_off</span>
@@ -213,31 +340,53 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 
                 </div>
             </section>
 
+            <!-- Sidebar -->
             <section class="w-full lg:w-80 flex flex-col gap-4 shrink-0">
+
+                <!-- IP Address Log -->
                 <div class="metric-card rounded-2xl p-6">
-                    <h3 class="text-xs font-black uppercase italic text-primary mb-4">Traffic analysis</h3>
+                    <h3 class="text-xs font-black uppercase italic text-primary mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">travel_explore</span>
+                        Captured IP Addresses
+                    </h3>
+                    <?php if (!empty($unique_ips)): ?>
+                        <div class="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                            <?php foreach ($unique_ips as $ip): ?>
+                                <div class="flex items-center justify-between bg-background-dark/60 border border-border-muted rounded-lg px-3 py-2">
+                                    <span class="font-mono text-xs text-amber-400"><?php echo htmlspecialchars($ip); ?></span>
+                                    <span class="text-[10px] text-[#b0bc9a] uppercase">Logged</span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p class="text-[10px] text-[#b0bc9a] font-mono uppercase">No IPs captured yet</p>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Traffic Analysis -->
+                <div class="metric-card rounded-2xl p-6">
+                    <h3 class="text-xs font-black uppercase italic text-primary mb-4">Traffic Analysis</h3>
                     <div class="space-y-4">
                         <div class="space-y-2">
                             <div class="flex justify-between text-[10px] font-bold uppercase">
-                                <span>Desktop</span>
-                                <span>65%</span>
+                                <span>Desktop</span><span>65%</span>
                             </div>
                             <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                <div class="h-full bg-primary" style="width: 65%"></div>
+                                <div class="h-full bg-primary" style="width:65%"></div>
                             </div>
                         </div>
                         <div class="space-y-2">
                             <div class="flex justify-between text-[10px] font-bold uppercase">
-                                <span>Mobile</span>
-                                <span>35%</span>
+                                <span>Mobile</span><span>35%</span>
                             </div>
                             <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                <div class="h-full bg-amber-500" style="width: 35%"></div>
+                                <div class="h-full bg-amber-500" style="width:35%"></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Security Advice -->
                 <div class="flex-1 metric-card rounded-2xl p-6 bg-primary/5 border-primary/20 flex flex-col justify-center text-center">
                     <span class="material-symbols-outlined text-primary text-4xl mb-4">insights</span>
                     <h3 class="text-sm font-bold uppercase tracking-widest mb-2">Security Advice</h3>
@@ -249,7 +398,8 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100, 1) : 
         </div>
     </main>
 
-    <footer class="sticky bottom-0 z-50 px-6 py-2 bg-background-dark border-t border-border-muted flex items-center justify-between text-[10px] text-[#b0bc9a] font-mono">
+    <!-- FOOTER -->
+    <footer class="shrink-0 px-6 py-2 bg-background-dark border-t border-border-muted flex items-center justify-between text-[10px] text-[#b0bc9a] font-mono">
         <div class="flex gap-4"><span>TELEMETRY: ONLINE</span><span>STATUS: ENCRYPTED</span></div>
         <div class="uppercase tracking-tighter">CyberShield Intel Ops © 2024</div>
     </footer>
