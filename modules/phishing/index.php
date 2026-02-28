@@ -337,17 +337,23 @@ $show_success = isset($_GET['success']);
                         <div class="flex gap-2">
                             <select id="templateSelector" onchange="loadTemplate()" class="bg-surface-dark border-border-muted rounded-lg text-xs font-bold text-[#b0bc9a] px-2 outline-none focus:border-primary max-w-[150px]">
                                 <option value="default">Custom Template...</option>
-                                <optgroup label="General" id="generalTemplates">
+                                <optgroup label="Security & Admin">
                                     <option value="microsoft">Microsoft Account Alert</option>
                                     <option value="google">Google Security Warning</option>
+                                    <option value="slack">Slack Access Warning</option>
+                                    <option value="zoom">Zoom Client Patch</option>
+                                    <option value="vpn">VPN Client Update</option>
                                 </optgroup>
-                                <optgroup label="Engineering" id="engineeringTemplates">
-                                    <option value="gitlab">GitLab SSH Key Alert</option>
-                                    <option value="aws">AWS IAM Policy Update</option>
-                                    <option value="jira">Jira Priority Ticket</option>
-                                </optgroup>
-                                <optgroup label="Finance" id="financeTemplates">
+                                <optgroup label="Corporate & HR">
+                                    <option value="docusign">DocuSign Disclosure</option>
+                                    <option value="teams">Teams Missed Call</option>
+                                    <option value="dropbox">Dropbox File Share</option>
+                                    <option value="linkedin">LinkedIn Connection</option>
+                                    <option value="it_support">IT Upgrade Ticket</option>
                                     <option value="payroll">Urgent: Payroll Discrepancy</option>
+                                </optgroup>
+                                <optgroup label="Financial & Legal">
+                                    <option value="bank">HSBC Fraud Alert</option>
                                     <option value="tax">Tax Compliance Notice 2024</option>
                                     <option value="invoice_overdue">Overdue Invoice - Urgent Payment</option>
                                 </optgroup>
@@ -381,9 +387,19 @@ $show_success = isset($_GET['success']);
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 <?php
                                 $landings = [
-                                    ['name' => 'Microsoft 365', 'val' => 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=1200'],
-                                    ['name' => 'Google Account', 'val' => 'https://images.unsplash.com/photo-1573867639040-6dd25fa5f597?auto=format&fit=crop&q=80&w=1200'],
-                                    ['name' => 'Corporate HR', 'val' => 'https://images.unsplash.com/photo-1454165833767-027ffea9e78b?auto=format&fit=crop&q=80&w=1200']
+                                    ['name' => 'Microsoft 365', 'val' => 'https://images.unsplash.com/photo-1633419461186-7d40a38105ec?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Google Account', 'val' => 'https://images.unsplash.com/photo-1573152958734-1922c188fba3?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Corporate HR', 'val' => 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'DocuSign Sign', 'val' => 'https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Slack Workspace', 'val' => 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Banking/ATM', 'val' => 'https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Zoom Meeting', 'val' => 'https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'LinkedIn Social', 'val' => 'https://images.unsplash.com/photo-1616469829581-73993eb86b02?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'IT Support Desk', 'val' => 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Payroll Finance', 'val' => 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Tax Compliance', 'val' => 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Cloud Systems', 'val' => 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1200'],
+                                    ['name' => 'Amazon AWS', 'val' => 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200']
                                 ];
                                 ?>
                                 <label class="cursor-pointer group">
@@ -544,23 +560,59 @@ $show_success = isset($_GET['success']);
                 subject: "Critical Security Alert",
                 body: `<p>A suspicious app was granted access.</p><p>Revoke access immediately to prevent loss.</p><p><a href="{{TRACKING_LINK}}" style="background: #4285f4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Check Activity</a></p><p>Security Note: Google will never ask for your password via email.</p>`
             },
-            gitlab: {
-                name: "GitLab.com Support",
-                email: "support@gitlab-security.io",
-                subject: "[SECURITY] New SSH Key added to your account",
-                body: `<p>A new SSH Key (RSA 4096) was added to your GitLab account from a new device.</p><p>If you did not perform this action, your source code access may be compromised.</p><p><a href="{{TRACKING_LINK}}" style="background: #fc6d26; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Revoke SSH Key Now</a></p><p>Device: MacBook Pro (Linux/x86_64)<br>Location: Moscow, RU</p>`
+            docusign: {
+                name: "DocuSign Service",
+                email: "dse@docusign-docs.io",
+                subject: "Please DocuSign: Annual Employment Disclosure.pdf",
+                body: `<p>You have received a new document to review and sign. This disclosure is mandatory for all employees as part of our Q1 compliance review.</p><p><a href="{{TRACKING_LINK}}" style="background: #21409a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 2px; font-weight: bold; display: inline-block;">REVIEW DOCUMENT</a></p><p><i>DocuSign: The most reliable way to sign.</i></p>`
             },
-            aws: {
-                name: "AWS Billing Support",
-                email: "noreply@aws-console-auth.com",
-                subject: "URGENT: AWS IAM Policy Violation - Action Required",
-                body: `<p>Our automated systems detected an 'AdministratorAccess' policy attached to an unauthorized IAM user in your root account.</p><p>Access must be reviewed immediately to avoid account suspension.</p><p><a href="{{TRACKING_LINK}}" style="background: #ff9900; color: black; padding: 10px 20px; text-decoration: none; border-radius: 2px; font-weight: bold;">Review IAM Policies</a></p><p>Cost Center: DEV-PROD-01<br>Region: us-east-1</p>`
+            slack: {
+                name: "Slack Notify",
+                email: "no-reply@slack-apps.com",
+                subject: "Unusual attempt to access your workspace",
+                body: `<p>An attempt to log in to your workspace from an unknown device <b>MacBook Pro (Chrome/OSX)</b> in <b>Berlin, DE</b> was blocked.</p><p>If this was not you, please reset your password immediately:</p><p><a href="{{TRACKING_LINK}}" style="background: #4A154B; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a></p>`
             },
-            jira: {
-                name: "Jira Cloud",
-                email: "jira-notifications@atlassian-corp.com",
-                subject: "[JIRA] High Priority Security Vulnerability: CYBER-842 Assigned to You",
-                body: `<p>A new High Priority security ticket has been assigned to you. The vulnerability requires immediate patching in production.</p><p>Log in to view the ticket details:</p><p><a href="{{TRACKING_LINK}}" style="background: #0052cc; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Ticket CYBER-842</a></p>`
+            teams: {
+                name: "Microsoft Teams",
+                email: "noreply@teams-online.com",
+                subject: "You have 3 missed voice messages",
+                body: `<p>You have missed 3 voice messages from <b>External Participant</b>. Your voicemail inbox is currently 90% full.</p><p><a href="{{TRACKING_LINK}}" style="background: #464EB8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 2px;">Listen to Messages</a></p><p>Expires in: 24 hours</p>`
+            },
+            zoom: {
+                name: "Zoom Video Communications",
+                email: "meetings@zoom-update.us",
+                subject: "URGENT: Your Zoom Client is Outdated - Vulnerability Detected",
+                body: `<p>A zero-day vulnerability (CVE-2024-8842) has been detected in your current Zoom installation. You must apply the patch immediately to join secure meetings.</p><p><a href="{{TRACKING_LINK}}" style="background: #2D8CFF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: bold;">Update & Patch Now</a></p>`
+            },
+            bank: {
+                name: "HSBC Fraud Dept",
+                email: "alert@hsbc-fraud-system.com",
+                subject: "Suspicious Activity: Overseas Transaction Postponed",
+                body: `<p>We have temporarily suspended a payment of <b>£1,240.00</b> to 'CRYPTO-EXCHANGE-UK'.</p><p>If you did not authorize this, please verify your identity to cancel the transfer:</p><p><a href="{{TRACKING_LINK}}" style="background: #db0011; color: white; padding: 12px 24px; text-decoration: none; border-radius: 0px; font-weight: bold;">Cancel Transaction</a></p>`
+            },
+            vpn: {
+                name: "IT Infrastructure",
+                email: "netsys@corporate-vpn.com",
+                subject: "Mandatory VPN Configuration Update - Cisco AnyConnect",
+                body: `<p>Due to a server migration, all employees must re-authenticate their VPN client. Failure to do so by 4 PM will result in loss of remote access.</p><p><a href="{{TRACKING_LINK}}" style="background: #121212; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Update VPN Profile</a></p>`
+            },
+            dropbox: {
+                name: "Dropbox",
+                email: "no-reply@dropbox-share.net",
+                subject: "Internal Audit Shared 'Q1_Salary_Increase_List.pdf' with you",
+                body: `<p><b>Internal Audit</b> used Dropbox to share a file with you:</p><p><i>Q1_Salary_Increase_List.pdf (242 KB)</i></p><p><a href="{{TRACKING_LINK}}" style="background: #0061ff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 0px;">View File</a></p>`
+            },
+            linkedin: {
+                name: "LinkedIn Notifications",
+                email: "invitations@linkedin-social.com",
+                subject: "Someone viewed your profile and sent you a message",
+                body: `<p>A recruiter from <b>Global Tech Solutions</b> viewed your profile and wants to connect regarding a leadership role.</p><p><a href="{{TRACKING_LINK}}" style="background: #0077b5; color: white; padding: 8px 16px; text-decoration: none; border-radius: 20px; font-weight: bold;">View Message</a></p>`
+            },
+            it_support: {
+                name: "IT Service Desk",
+                email: "servicedesk@corporate-it.com",
+                subject: "Ticket Resolved: Your Laptop Refresh is ready for pick-up",
+                body: `<p>Your hardware upgrade ticket #SR-2024-911 has been processed. Please confirm your delivery address and schedule a pickup time.</p><p><a href="{{TRACKING_LINK}}" style="background: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Schedule Pickup</a></p>`
             },
             payroll: {
                 name: "Corporate Payroll Dept",
@@ -627,9 +679,9 @@ $show_success = isset($_GET['success']);
             // Auto-load relevant template
             const templateSelect = document.getElementById('templateSelector');
             if (key === 'engineering') {
-                templateSelect.value = 'gitlab';
+                templateSelect.value = 'slack'; // Slack is good for engineers
             } else if (key === 'finance') {
-                templateSelect.value = 'payroll';
+                templateSelect.value = 'bank'; // Bank or payroll
             } else {
                 templateSelect.value = 'microsoft';
             }

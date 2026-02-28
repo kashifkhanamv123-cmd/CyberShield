@@ -22,3 +22,27 @@ FILES custom_landing: Array
     [size] => 0
 )
 
+--- 2026-02-28 08:52:32 ---
+POST landing_image: 
+FILES custom_landing: Array
+(
+    [name] => kali-linux-dark-3840x2160-15965.jpg
+    [full_path] => kali-linux-dark-3840x2160-15965.jpg
+    [type] => 
+    [tmp_name] => 
+    [error] => 1
+    [size] => 0
+)
+
+--- 2026-02-28 08:52:42 ---
+POST landing_image: https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1200
+FILES custom_landing: Array
+(
+    [name] => 
+    [full_path] => 
+    [type] => 
+    [tmp_name] => 
+    [error] => 4
+    [size] => 0
+)
+

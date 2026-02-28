@@ -42,6 +42,6 @@ if (!$stmt->execute()) {
 
 $stmt->close();
 
-// Redirect directly to analytics (REAL SOC flow)
-header("Location: analytics.php?id=" . $campaign_id);
+// Redirect to the phishing landing page
+header("Location: landing.php?id=" . $campaign_id);
 exit();
