@@ -353,8 +353,12 @@ $unique_ips  = array_unique($ip_list);
                         <span class="material-symbols-outlined text-sm text-primary">image</span>
                         Landing Page Preview
                     </span>
-                    <?php if (!empty($landing_img)): ?>
-                        <img src="<?php echo htmlspecialchars($landing_img); ?>" alt="Landing page preview"
+                    <?php
+                    if (!empty($landing_img)):
+                        // Resolve path: if it doesn't start with http, it's a local path relative to root
+                        $display_path = (strpos($landing_img, 'http') === 0) ? $landing_img : "../../" . $landing_img;
+                    ?>
+                        <img src="<?php echo htmlspecialchars($display_path); ?>" alt="Landing page preview"
                             class="w-full max-h-32 object-cover rounded-lg border border-border-muted" />
                     <?php else: ?>
                         <div class="flex items-center justify-center h-20 bg-background-dark/50 border border-border-muted rounded-lg text-[#b0bc9a] text-xs font-mono gap-2">

@@ -16,12 +16,29 @@ if (isset($_POST['launch'])) {
     $body         = $_POST['body'];
     $landing_img  = $_POST['landing_image'] ?? '';
 
+    // DEBUG LOG
+    file_put_contents(__DIR__ . '/../../upload_debug.log', "--- " . date('Y-m-d H:i:s') . " ---\n", FILE_APPEND);
+    file_put_contents(__DIR__ . '/../../upload_debug.log', "POST landing_image: " . $landing_img . "\n", FILE_APPEND);
+    if (!empty($_FILES)) {
+        file_put_contents(__DIR__ . '/../../upload_debug.log', "FILES custom_landing: " . print_r($_FILES['custom_landing'] ?? 'EMPTY', true) . "\n", FILE_APPEND);
+    }
+
     // Handle Custom Upload if provided
     if (isset($_FILES['custom_landing']) && $_FILES['custom_landing']['error'] === UPLOAD_ERR_OK) {
         $file_tmp  = $_FILES['custom_landing']['tmp_name'];
         $file_name = $_FILES['custom_landing']['name'];
         $file_size = $_FILES['custom_landing']['size'];
-        $file_type = mime_content_type($file_tmp);
+
+        // Robust MIME type check
+        $file_type = '';
+        if (function_exists('mime_content_type')) {
+            $file_type = mime_content_type($file_tmp);
+        } else {
+            // Fallback for systems without fileinfo
+            $ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+            if ($ext === 'png') $file_type = 'image/png';
+            if (in_array($ext, ['jpg', 'jpeg'])) $file_type = 'image/jpeg';
+        }
 
         $allowed_types = ['image/png', 'image/jpeg'];
         $max_size = 2 * 1024 * 1024; // 2MB
@@ -33,12 +50,13 @@ if (isset($_POST['launch'])) {
             }
 
             // Secure Rename: timestamp + random hash
-            $ext = ($file_type === 'image/png') ? '.png' : '.jpg';
-            $new_name = time() . "_" . bin2hex(random_bytes(8)) . $ext;
+            $ext_suffix = ($file_type === 'image/png') ? '.png' : '.jpg';
+            $new_name = time() . "_" . bin2hex(random_bytes(8)) . $ext_suffix;
             $target_path = $upload_dir . $new_name;
 
             if (move_uploaded_file($file_tmp, $target_path)) {
-                $landing_img = "../../uploads/landing_pages/" . $new_name;
+                // Store project-root relative path (starts with uploads/)
+                $landing_img = "uploads/landing_pages/" . $new_name;
             }
         }
     }

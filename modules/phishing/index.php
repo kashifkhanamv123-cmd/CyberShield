@@ -387,10 +387,18 @@ $show_success = isset($_GET['success']);
                                 ];
                                 ?>
                                 <label class="cursor-pointer group">
-                                    <input type="radio" name="landing_image" value="" class="hidden peer" checked>
-                                    <div class="p-2 h-full rounded-xl border-2 border-border-muted bg-surface-dark/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all hover:border-primary/50 text-center flex flex-col items-center justify-center">
-                                        <span class="material-symbols-outlined text-2xl mb-1 opacity-40">block</span>
-                                        <p class="text-[10px] font-bold uppercase text-[#b0bc9a]">None / Custom</p>
+                                    <input type="radio" name="landing_image" id="radio_custom_landing" value="" class="hidden peer" checked>
+                                    <div id="custom_tile_content" class="p-2 h-full rounded-xl border-2 border-border-muted bg-surface-dark/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all hover:border-primary/50 text-center flex flex-col items-center justify-center min-h-[100px]">
+                                        <div id="custom_tile_image_placeholder" class="flex flex-col items-center justify-center">
+                                            <span class="material-symbols-outlined text-2xl mb-1 opacity-40">block</span>
+                                            <p class="text-[10px] font-bold uppercase text-[#b0bc9a]">None / Custom</p>
+                                        </div>
+                                        <div id="custom_tile_image_container" class="hidden w-full h-full">
+                                            <div class="aspect-video bg-background-dark rounded-lg overflow-hidden mb-1">
+                                                <img id="custom_tile_image" src="" class="w-full h-full object-cover">
+                                            </div>
+                                            <p class="text-[9px] font-bold uppercase text-primary">Active Upload</p>
+                                        </div>
                                     </div>
                                 </label>
                                 <?php foreach ($landings as $idx => $l): ?>
@@ -745,6 +753,11 @@ $show_success = isset($_GET['success']);
         const landingPreviewContainer = document.getElementById('landingPreviewContainer');
         const landingPreviewImg = document.getElementById('landingPreviewImg');
 
+        // Grid Tile Elements
+        const customTileImage = document.getElementById('custom_tile_image');
+        const customTileImageContainer = document.getElementById('custom_tile_image_container');
+        const customTilePlaceholder = document.getElementById('custom_tile_image_placeholder');
+
         uploadInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
 
@@ -763,8 +776,13 @@ $show_success = isset($_GET['success']);
                     if (landingPreviewImg) landingPreviewImg.src = event.target.result;
                     if (landingPreviewContainer) landingPreviewContainer.classList.remove('hidden');
 
-                    // Deselect presets
-                    document.querySelector('input[name="landing_image"][value=""]').checked = true;
+                    // Deselect presets and check None/Custom radio
+                    document.getElementById('radio_custom_landing').checked = true;
+
+                    // Show in the grid tile as well
+                    if (customTileImage) customTileImage.src = event.target.result;
+                    if (customTileImageContainer) customTileImageContainer.classList.remove('hidden');
+                    if (customTilePlaceholder) customTilePlaceholder.classList.add('hidden');
                 };
                 reader.readAsDataURL(file);
             }
@@ -790,6 +808,11 @@ $show_success = isset($_GET['success']);
             if (uploadPreviewContainer) uploadPreviewContainer.classList.add('hidden');
             if (uploadControls) uploadControls.classList.add('hidden');
             if (uploadCheck) uploadCheck.classList.add('hidden');
+
+            // Reset Grid Tile
+            if (customTileImage) customTileImage.src = "";
+            if (customTileImageContainer) customTileImageContainer.classList.add('hidden');
+            if (customTilePlaceholder) customTilePlaceholder.classList.remove('hidden');
 
             // Hide from target preview
             if (landingPreviewContainer) {
@@ -824,7 +847,7 @@ $show_success = isset($_GET['success']);
                             updateLandingFromPreset();
                         } else {
                             // Re-select None/Custom
-                            document.querySelector('input[name="landing_image"][value=""]').checked = true;
+                            document.getElementById('radio_custom_landing').checked = true;
                         }
                     } else {
                         updateLandingFromPreset();
@@ -838,9 +861,6 @@ $show_success = isset($_GET['success']);
         initTemplates();
         updatePreview();
         updateLandingFromPreset();
-
-        initTemplates();
-        updatePreview();
     </script>
 </body>
 
