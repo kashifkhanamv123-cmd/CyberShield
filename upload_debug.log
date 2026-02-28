@@ -202,3 +202,15 @@ FILES custom_landing: Array
     [size] => 0
 )
 
+--- 2026-02-28 16:51:20 ---
+POST landing_image: 
+FILES custom_landing: Array
+(
+    [name] => 
+    [full_path] => 
+    [type] => 
+    [tmp_name] => 
+    [error] => 4
+    [size] => 0
+)
+
