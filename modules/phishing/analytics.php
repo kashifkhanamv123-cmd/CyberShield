@@ -300,7 +300,7 @@ $unique_ips  = array_unique($ip_list);
             <div class="metric-card p-6 rounded-2xl">
                 <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Total Targets Hit</span>
                 <div class="flex items-end gap-2">
-                    <p class="text-3xl font-black"><?php echo number_format($total_sent); ?></p>
+                    <p id="kpi-targets" class="text-3xl font-black"><?php echo number_format($total_sent); ?></p>
                     <span class="text-primary text-[10px] font-mono mb-1">LIVE</span>
                 </div>
             </div>
@@ -308,15 +308,15 @@ $unique_ips  = array_unique($ip_list);
             <div class="metric-card p-6 rounded-2xl">
                 <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Total Clicks</span>
                 <div class="flex items-end gap-2">
-                    <p class="text-3xl font-black"><?php echo number_format($total_clicks); ?></p>
-                    <span class="text-primary text-[10px] font-mono mb-1"><?php echo $click_rate; ?>% CTR</span>
+                    <p id="kpi-clicks" class="text-3xl font-black"><?php echo number_format($total_clicks); ?></p>
+                    <span id="kpi-ctr" class="text-primary text-[10px] font-mono mb-1"><?php echo $click_rate; ?>% CTR</span>
                 </div>
             </div>
             <!-- Credential Captures -->
             <div class="metric-card p-6 rounded-2xl">
                 <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Credential Captures</span>
                 <div class="flex items-end gap-2">
-                    <p class="text-3xl font-black"><?php echo number_format($total_creds); ?></p>
+                    <p id="kpi-creds" class="text-3xl font-black"><?php echo number_format($total_creds); ?></p>
                     <span class="text-red-500 text-[10px] font-mono mb-1">COMPROMISED</span>
                 </div>
             </div>
@@ -324,7 +324,7 @@ $unique_ips  = array_unique($ip_list);
             <div class="metric-card p-6 rounded-2xl">
                 <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-2 tracking-widest">Unique IPs Recorded</span>
                 <div class="flex items-end gap-2">
-                    <p class="text-3xl font-black"><?php echo count($unique_ips); ?></p>
+                    <p id="kpi-ips" class="text-3xl font-black"><?php echo count($unique_ips); ?></p>
                     <span class="text-amber-500 text-[10px] font-mono mb-1">TRACKED</span>
                 </div>
             </div>
@@ -438,7 +438,7 @@ $unique_ips  = array_unique($ip_list);
                     <div class="space-y-4">
                         <div class="space-y-2">
                             <div class="flex justify-between text-[10px] font-bold uppercase">
-                                <span>Desktop</span><span>65%</span>
+                                <span>Desktop</span><span id="stat-desktop">65%</span>
                             </div>
                             <div class="h-1 w-full bg-surface-dark/5 rounded-full overflow-hidden">
                                 <div class="h-full bg-primary" style="width:65%"></div>
@@ -446,7 +446,7 @@ $unique_ips  = array_unique($ip_list);
                         </div>
                         <div class="space-y-2">
                             <div class="flex justify-between text-[10px] font-bold uppercase">
-                                <span>Mobile</span><span>35%</span>
+                                <span>Mobile</span><span id="stat-mobile">35%</span>
                             </div>
                             <div class="h-1 w-full bg-surface-dark/5 rounded-full overflow-hidden">
                                 <div class="h-full bg-amber-500" style="width:35%"></div>
@@ -469,9 +469,105 @@ $unique_ips  = array_unique($ip_list);
 
     <!-- FOOTER -->
     <footer class="shrink-0 px-6 py-2 bg-background-dark border-t border-border-muted flex items-center justify-between text-[10px] text-[#b0bc9a] font-mono">
-        <div class="flex gap-4"><span>TELEMETRY: ONLINE</span><span>STATUS: ENCRYPTED</span></div>
+        <div class="flex gap-4"><span>TELEMETRY: <span id="telemetry-status" class="text-primary">ONLINE</span></span><span>STATUS: ENCRYPTED</span></div>
         <div class="uppercase tracking-tighter">CyberShield Intel Ops © 2024</div>
     </footer>
+
+    <script>
+        const campaignId = <?php echo (int)$campaign_id; ?>;
+
+        async function fetchLiveData() {
+            if (campaignId <= 0) return;
+
+            try {
+                const response = await fetch(`live_feed.php?id=${campaignId}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+
+                updateDashboard(data);
+                document.getElementById('telemetry-status').textContent = 'ONLINE';
+                document.getElementById('telemetry-status').className = 'text-primary';
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('telemetry-status').textContent = 'OFFLINE';
+                document.getElementById('telemetry-status').className = 'text-red-500';
+            }
+        }
+
+        function updateDashboard(data) {
+            const feedContainer = document.querySelector('.flex-1.overflow-y-auto.custom-scrollbar.space-y-4');
+            const ipLogContainer = document.querySelector('.space-y-2.max-h-40.overflow-y-auto.custom-scrollbar');
+
+            // Re-render feed
+            if (data.events && data.events.length > 0) {
+                let html = '';
+                let ipsHtml = '';
+                const uniqueIps = new Set();
+
+                data.events.forEach(event => {
+                    const time = new Date(event.created_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    const isCred = event.event_type === 'credential';
+
+                    html += `
+                        <div class="p-4 rounded-xl bg-background-dark/50 border border-white/5 hover:border-primary/20 transition-all flex items-start gap-4">
+                            <div class="size-8 rounded-lg bg-surface-dark flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-sm ${isCred ? 'text-red-500' : 'text-primary'}">
+                                    ${isCred ? 'key' : 'ads_click'}
+                                </span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1 gap-2">
+                                    <span class="text-primary font-bold truncate">EVENT_${event.event_type.toUpperCase()}</span>
+                                    <span class="text-[10px] text-[#b0bc9a] shrink-0">${time}</span>
+                                </div>
+                                <p class="text-white/80 leading-relaxed">
+                                    Origin IP: <span class="text-amber-400">${event.attacker_ip}</span>
+                                </p>
+                            </div>
+                        </div>`;
+
+                    if (event.attacker_ip && !uniqueIps.has(event.attacker_ip)) {
+                        uniqueIps.add(event.attacker_ip);
+                        ipsHtml += `
+                            <div class="flex items-center justify-between bg-background-dark/60 border border-border-muted rounded-lg px-3 py-2">
+                                <span class="font-mono text-xs text-amber-400">${event.attacker_ip}</span>
+                                <span class="text-[10px] text-[#b0bc9a] uppercase">Logged</span>
+                            </div>`;
+                    }
+                });
+
+                if (feedContainer) feedContainer.innerHTML = html;
+                if (ipLogContainer) ipLogContainer.innerHTML = ipsHtml;
+            }
+
+            // Update stats
+            if (data.stats) {
+                const s = data.stats;
+                const updateKpi = (id, val) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = val.toLocaleString();
+                };
+
+                updateKpi('kpi-targets', s.sent);
+                updateKpi('kpi-clicks', s.clicks);
+                updateKpi('kpi-creds', s.creds);
+                updateKpi('kpi-ips', s.ips);
+
+                const ctrEl = document.getElementById('kpi-ctr');
+                if (ctrEl && s.sent > 0) {
+                    const rate = Math.round((s.clicks / s.sent) * 100);
+                    ctrEl.textContent = `${rate}% CTR`;
+                }
+            }
+        }
+
+        // Poll every 3 seconds
+        setInterval(fetchLiveData, 3000);
+    </script>
 </body>
 
 </html>

@@ -375,6 +375,29 @@ $show_success = isset($_GET['success']);
                             <span class="text-xs font-bold uppercase text-[#b0bc9a] block">Email Subject</span>
                             <input id="subject" name="subject" class="w-full bg-surface-dark border-border-muted rounded-lg p-3 text-sm focus:border-primary outline-none" type="text" value="URGENT: Your account requires verification" />
                         </div>
+
+                        <div class="space-y-4 pt-4 border-t border-border-muted/30">
+                            <span class="text-xs font-bold uppercase text-primary block tracking-widest">Target Landing Page Preview</span>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <?php
+                                $landings = [
+                                    ['name' => 'Microsoft 365', 'val' => 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=400'],
+                                    ['name' => 'Google Account', 'val' => 'https://images.unsplash.com/photo-1573867639040-6dd25fa5f597?auto=format&fit=crop&q=80&w=400'],
+                                    ['name' => 'Corporate HR', 'val' => 'https://images.unsplash.com/photo-1554224155-1696413575b9?auto=format&fit=crop&q=80&w=400']
+                                ];
+                                foreach ($landings as $idx => $l): ?>
+                                    <label class="cursor-pointer group">
+                                        <input type="radio" name="landing_image" value="<?php echo $l['val']; ?>" class="hidden peer" <?php echo $idx === 0 ? 'checked' : ''; ?>>
+                                        <div class="p-2 rounded-xl border-2 border-border-muted bg-surface-dark/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all hover:border-primary/50">
+                                            <div class="aspect-video bg-background-dark rounded-lg overflow-hidden mb-2">
+                                                <img src="<?php echo $l['val']; ?>" class="w-full h-full object-cover">
+                                            </div>
+                                            <p class="text-[10px] font-bold uppercase text-center text-[#b0bc9a] group-hover:text-white"><?php echo $l['name']; ?></p>
+                                        </div>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                         <div class="space-y-2 flex flex-col">
                             <span class="text-xs font-bold uppercase text-[#b0bc9a] block">Body (HTML OK)</span>
                             <textarea id="email_body" name="body" class="w-full bg-surface-dark border-border-muted rounded-lg p-4 text-sm font-mono focus:border-primary outline-none custom-scrollbar" rows="8">&lt;p&gt;Dear Employee,&lt;/p&gt;
