@@ -62,7 +62,7 @@ $click_rate = $total_sent > 0 ? round(($total_clicks / $total_sent) * 100) : 0;
 $all_emp_count = $total_sent * 1;
 $eng_count = $total_sent > 1 ? floor($total_sent * 0.4) : 0;
 $finance_count = $total_sent > 3 ? floor($total_sent * 0.2) : 0;
-$show_success = false;
+$campaign_completed = isset($_GET['completed']);
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
@@ -137,6 +137,67 @@ $show_success = false;
 </head>
 
 <body class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
+<?php if ($campaign_completed): ?>
+<div id="completionModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+
+    <div class="bg-surface-dark border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl">
+
+        <div class="flex items-center gap-4 mb-6">
+            <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-3xl">verified</span>
+            </div>
+            <div>
+                <h2 class="text-2xl font-black uppercase">
+                    Simulation <span class="text-primary">Completed</span>
+                </h2>
+                <p class="text-xs text-[#b0bc9a]">Campaign lifecycle executed successfully.</p>
+            </div>
+        </div>
+
+        <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+
+            <p>
+                ✔ The phishing email was deployed.<br>
+                ✔ Tracking infrastructure was activated.<br>
+                ✔ User interaction telemetry was logged.<br>
+                ✔ Intelligence dashboard updated in real-time.
+            </p>
+
+            <div class="bg-background-dark border border-border-muted rounded-lg p-4 text-xs font-mono space-y-2">
+                <div class="flex justify-between">
+                    <span>Total Campaigns:</span>
+                    <span class="text-primary"><?php echo number_format($total_sent); ?></span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Total Clicks:</span>
+                    <span class="text-primary"><?php echo number_format($total_clicks); ?></span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Credentials Captured:</span>
+                    <span class="text-red-500"><?php echo number_format($total_creds); ?></span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Risk Level:</span>
+                    <span class="<?php echo $total_creds > 0 ? 'text-red-500' : 'text-primary'; ?>">
+                        <?php echo $total_creds > 0 ? 'CRITICAL' : 'LOW'; ?>
+                    </span>
+                </div>
+            </div>
+
+            <p class="text-[11px] text-[#b0bc9a] italic">
+                "Human behavior is the weakest link in cybersecurity. Continuous training reduces breach probability."
+            </p>
+
+        </div>
+
+        <button onclick="closeCompletionModal()" 
+            class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">
+            Acknowledge
+        </button>
+
+    </div>
+</div>
+<?php endif; ?>
     <?php if ($show_success): ?>
         <div id="successModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background-dark/80 backdrop-blur-sm">
             <div class="glass-panel max-w-lg w-full rounded-2xl p-8 border-primary/30 shadow-2xl bg-surface-dark border border-white/10">
@@ -573,6 +634,16 @@ $show_success = false;
         initTemplates();
         updatePreview();
     </script>
+    <script>
+function closeCompletionModal() {
+    const modal = document.getElementById('completionModal');
+    if (modal) {
+        modal.remove();
+        // Remove query string from URL
+        window.history.replaceState({}, document.title, "index.php");
+    }
+}
+</script>
 </body>
 
 </html>

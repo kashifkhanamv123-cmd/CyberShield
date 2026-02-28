@@ -211,7 +211,7 @@ $unique_ips  = array_unique($ip_list);
         <div class="flex items-center gap-4">
 <div class="flex items-center gap-4">
 
-    <a href="index.php"
+    <a href="index.php?completed=1"
     class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2">
         <span class="material-symbols-outlined text-sm">arrow_back</span>
         BACK TO SIMULATION
