@@ -92,14 +92,14 @@ $show_success = isset($_GET['success']);
             border-color: rgba(160, 240, 0, 0.2);
         }
 
-        #emailPreviewContainer {
-            flex: 1;
-            overflow-y: auto;
-            max-height: 600px;
-            border-radius: 12px;
-            background: white;
-            border: 1px solid rgba(160, 240, 0, 0.1);
-        }
+      #emailPreviewContainer {
+    flex: 1;
+    overflow-y: auto;
+    height: 100%;
+    border-radius: 12px;
+    background: white;
+    border: 1px solid rgba(160, 240, 0, 0.1);
+}
     </style>
 </head>
 
@@ -133,7 +133,7 @@ $show_success = isset($_GET['success']);
                         </div>
                     </div>
                 </div>
-                <button onclick="document.getElementById('successModal').remove()" class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">UNDERSTOOD</button>
+               <button onclick="window.location.href='analytics.php?id=<?php echo $_GET['id'] ?? ''; ?>'" class="w-full mt-8 py-3 bg-primary text-background-dark font-black rounded-xl hover:scale-[1.02] transition-all uppercase tracking-widest">UNDERSTOOD</button>
             </div>
         </div>
     <?php endif; ?>

@@ -25,6 +25,6 @@ if (isset($_POST['launch'])) {
 
     $campaign_id = $stmt->insert_id;
 
-    header("Location: analytics.php?id=$campaign_id");
-    exit();
+ header("Location: analytics.php?id=$campaign_id");
+exit();
 }

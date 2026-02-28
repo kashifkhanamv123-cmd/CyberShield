@@ -15,7 +15,7 @@ $ip_list     = [];
 $tracking_url = '';
 $landing_img  = '';
 
-if ($campaign_id > 0) {
+if ($campaign_id > 0 && $campaign) {
     // Fetch campaign details – prepared statement
     $stmt = $conn->prepare(
         "SELECT * FROM phishing_campaigns WHERE id = ? AND user_id = ?"
@@ -181,6 +181,17 @@ $unique_ips  = array_unique($ip_list);
             border: 1px solid rgba(160, 240, 0, 0.1);
         }
     </style>
+    <style>
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    .metric-card {
+        border: 1px solid black !important;
+    }
+}
+</style>
 </head>
 
 <body class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar">
@@ -198,7 +209,7 @@ $unique_ips  = array_unique($ip_list);
             </div>
         </div>
         <div class="flex items-center gap-4">
-            <a href="../../dashboard/dashboard.php" class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-white/5 text-xs font-bold transition-all flex items-center gap-2">
+            <a href="../../dashboard/dashboard.php" class="px-4 py-1.5 rounded-lg border border-border-muted text-[#b0bc9a] hover:text-white hover:bg-surface-dark/5 text-xs font-bold transition-all flex items-center gap-2">
                 <span class="material-symbols-outlined text-sm">dashboard</span>
                 BACK TO DASHBOARD
             </a>
@@ -218,13 +229,61 @@ $unique_ips  = array_unique($ip_list);
                 <p class="text-xs text-[#b0bc9a] font-mono uppercase">Reference: #<?php echo $campaign_id ?: 'OVERALL_OPS'; ?></p>
             </div>
             <div class="flex gap-2">
-                <button onclick="window.print()" class="px-4 py-2 bg-surface-dark border border-border-muted rounded-lg text-xs font-bold hover:bg-white/5 transition-all flex items-center gap-2">
+                <button onclick="window.print()" class="px-4 py-2 bg-surface-dark border border-border-muted rounded-lg text-xs font-bold hover:bg-surface-dark/5 transition-all flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">print</span>
                     EXPORT REPORT
                 </button>
             </div>
         </div>
+    <?php if ($campaign_id > 0 && $campaign): ?>
+<div class="metric-card p-6 rounded-2xl">
+    <h2 class="text-sm font-bold uppercase tracking-widest mb-4 text-primary">
+        Campaign Metadata
+    </h2>
 
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+        <div>
+            <span class="text-[#b0bc9a]">Campaign ID:</span>
+            <span class="text-white">#<?php echo $campaign['id']; ?></span>
+        </div>
+
+        <div>
+            <span class="text-[#b0bc9a]">Launched By:</span>
+            <span class="text-white">
+                <?php echo htmlspecialchars($_SESSION['user_name']); ?>
+            </span>
+        </div>
+
+        <div>
+            <span class="text-[#b0bc9a]">Sender Name:</span>
+            <span class="text-white">
+                <?php echo htmlspecialchars($campaign['sender_name']); ?>
+            </span>
+        </div>
+
+        <div>
+            <span class="text-[#b0bc9a]">Spoof Email:</span>
+            <span class="text-white">
+                <?php echo htmlspecialchars($campaign['spoof_email']); ?>
+            </span>
+        </div>
+
+        <div>
+            <span class="text-[#b0bc9a]">Subject Line:</span>
+            <span class="text-white">
+                <?php echo htmlspecialchars($campaign['subject']); ?>
+            </span>
+        </div>
+
+        <div>
+            <span class="text-[#b0bc9a]">Launch Time:</span>
+            <span class="text-white">
+                <?php echo date('Y-m-d H:i:s'); ?>
+            </span>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
         <!-- KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 shrink-0">
             <!-- Total Targets -->
@@ -371,7 +430,7 @@ $unique_ips  = array_unique($ip_list);
                             <div class="flex justify-between text-[10px] font-bold uppercase">
                                 <span>Desktop</span><span>65%</span>
                             </div>
-                            <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-1 w-full bg-surface-dark/5 rounded-full overflow-hidden">
                                 <div class="h-full bg-primary" style="width:65%"></div>
                             </div>
                         </div>
@@ -379,7 +438,7 @@ $unique_ips  = array_unique($ip_list);
                             <div class="flex justify-between text-[10px] font-bold uppercase">
                                 <span>Mobile</span><span>35%</span>
                             </div>
-                            <div class="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-1 w-full bg-surface-dark/5 rounded-full overflow-hidden">
                                 <div class="h-full bg-amber-500" style="width:35%"></div>
                             </div>
                         </div>
