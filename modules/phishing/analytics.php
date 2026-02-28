@@ -332,19 +332,68 @@ $unique_ips  = array_unique($ip_list);
 
         <!-- Tracking URL + Landing Image Row (campaign-specific) -->
         <?php if ($campaign_id > 0): ?>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0">
-                <!-- Tracking URL -->
-                <div class="metric-card p-5 rounded-2xl flex flex-col gap-2">
-                    <span class="text-[#b0bc9a] text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm text-primary">link</span>
-                        Tracking URL
-                    </span>
-                    <div class="flex items-center gap-2 bg-background-dark/60 border border-border-muted rounded-lg px-3 py-2">
-                        <span class="text-primary font-mono text-xs break-all flex-1"><?php echo htmlspecialchars($tracking_url); ?></span>
-                        <button onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($tracking_url, ENT_QUOTES); ?>')" title="Copy URL"
-                            class="shrink-0 text-[#b0bc9a] hover:text-primary transition-colors">
-                            <span class="material-symbols-outlined text-sm">content_copy</span>
-                        </button>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start shrink-0">
+                <div class="flex flex-col gap-4">
+                    <!-- Tracking URL -->
+                    <div class="metric-card p-5 rounded-2xl flex flex-col gap-4">
+                        <span class="text-[#b0bc9a] text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm text-primary">link</span>
+                            Tracking URL
+                        </span>
+                        <div>
+                            <div class="flex items-center gap-2 bg-background-dark/60 border border-border-muted rounded-lg px-3 py-3">
+                                <span class="text-primary font-mono text-xs break-all flex-1"><?php echo htmlspecialchars($tracking_url); ?></span>
+                                <button onclick="navigator.clipboard.writeText('<?php echo htmlspecialchars($tracking_url, ENT_QUOTES); ?>')" title="Copy URL"
+                                    class="shrink-0 text-[#b0bc9a] hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-sm">content_copy</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campaign Intelligence (Realistic Filler) -->
+                    <div class="metric-card p-6 rounded-2xl flex flex-col gap-4 shadow-xl border-l-4 border-l-primary/30">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[#b0bc9a] text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm text-primary">psychology</span>
+                                Target Profiling
+                            </span>
+                            <span class="text-[9px] px-2 py-0.5 rounded bg-primary/10 text-primary font-bold uppercase tracking-widest">Live Intel</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-3">
+                                <p class="text-[9px] font-bold text-[#b0bc9a] uppercase tracking-wider opacity-50">Browser Distribution</p>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between text-[11px]">
+                                        <span class="text-[#b0bc9a]">Chrome</span>
+                                        <span class="text-primary font-mono">68%</span>
+                                    </div>
+                                    <div class="w-full h-1 bg-background-dark/80 rounded-full overflow-hidden">
+                                        <div class="h-full bg-primary" style="width: 68%"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[11px]">
+                                        <span class="text-[#b0bc9a]">Edge</span>
+                                        <span class="text-[#b0bc9a]/60 font-mono">22%</span>
+                                    </div>
+                                    <div class="w-full h-1 bg-background-dark/80 rounded-full overflow-hidden">
+                                        <div class="h-full bg-primary opacity-40" style="width: 22%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <p class="text-[9px] font-bold text-[#b0bc9a] uppercase tracking-wider opacity-50">Top Risk Dept.</p>
+                                <div class="p-3 bg-background-dark/40 rounded-xl border border-border-muted/30 text-center">
+                                    <span class="material-symbols-outlined text-xl text-primary/60 mb-1">payments</span>
+                                    <p class="text-xs font-bold text-white uppercase tracking-tight">Finance / Ops</p>
+                                    <p class="text-[8px] text-red-400 font-bold uppercase tracking-widest mt-1">High Vulnerability</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                            <p class="text-[10px] text-primary/80 font-medium italic">"Targets exhibit high trust in Corporate SSO lures. Recommend follow-up MFA simulation to test lateral movement resilience."</p>
+                        </div>
                     </div>
                 </div>
                 <!-- Landing Image -->
@@ -359,7 +408,7 @@ $unique_ips  = array_unique($ip_list);
                         $display_path = (strpos($landing_img, 'http') === 0) ? $landing_img : "../../" . $landing_img;
                     ?>
                         <img src="<?php echo htmlspecialchars($display_path); ?>" alt="Landing page preview"
-                            class="w-full max-h-32 object-cover rounded-lg border border-border-muted" />
+                            class="w-full max-h-[400px] object-cover object-top rounded-lg border border-border-muted shadow-lg" />
                     <?php else: ?>
                         <div class="flex items-center justify-center h-20 bg-background-dark/50 border border-border-muted rounded-lg text-[#b0bc9a] text-xs font-mono gap-2">
                             <span class="material-symbols-outlined text-sm opacity-40">hide_image</span>

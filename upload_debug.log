@@ -46,3 +46,15 @@ FILES custom_landing: Array
     [size] => 0
 )
 
+--- 2026-02-28 09:13:45 ---
+POST landing_image: https://images.unsplash.com/photo-1573152958734-1922c188fba3?auto=format&fit=crop&q=80&w=1200
+FILES custom_landing: Array
+(
+    [name] => 
+    [full_path] => 
+    [type] => 
+    [tmp_name] => 
+    [error] => 4
+    [size] => 0
+)
+
