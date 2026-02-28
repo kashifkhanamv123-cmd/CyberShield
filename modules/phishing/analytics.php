@@ -529,22 +529,35 @@ $unique_ips  = array_unique($ip_list);
     <script>
         const campaignId = <?php echo (int)$campaign_id; ?>;
 
-        async function fetchLiveData() {
-            if (campaignId <= 0) return;
+        // Use Server-Sent Events (SSE) instead of setInterval polling
+        if (campaignId > 0) {
+            const eventSource = new EventSource(`live_feed.php?id=${campaignId}`);
 
-            try {
-                const response = await fetch(`live_feed.php?id=${campaignId}`);
-                if (!response.ok) throw new Error('Network response was not ok');
-                const data = await response.json();
-
-                updateDashboard(data);
+            eventSource.onopen = function() {
                 document.getElementById('telemetry-status').textContent = 'ONLINE';
                 document.getElementById('telemetry-status').className = 'text-primary';
-            } catch (error) {
-                console.error('Fetch error:', error);
+                console.log("SSE connection established.");
+            };
+
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    updateDashboard(data);
+                } catch (e) {
+                    console.error("Error parsing SSE data:", e, event.data);
+                }
+            };
+
+            eventSource.onerror = function() {
+                console.error("SSE connection lost. Reconnecting...");
                 document.getElementById('telemetry-status').textContent = 'OFFLINE';
-                document.getElementById('telemetry-status').className = 'text-red-500';
-            }
+                document.getElementById('telemetry-status').className = 'text-red-500 animate-pulse';
+            };
+
+            // Clean up connection when leaving the page
+            window.addEventListener('beforeunload', () => {
+                eventSource.close();
+            });
         }
 
         function updateDashboard(data) {
@@ -617,9 +630,6 @@ $unique_ips  = array_unique($ip_list);
                 }
             }
         }
-
-        // Poll every 3 seconds
-        setInterval(fetchLiveData, 3000);
     </script>
 </body>
 

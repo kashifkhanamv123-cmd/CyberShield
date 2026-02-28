@@ -307,22 +307,22 @@ $show_success = isset($_GET['success']);
             <section class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4 bg-background-dark/30 border-b border-border-muted shrink-0">
                 <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
                     <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Emails Sent</span>
-                    <p class="text-2xl font-bold"><?php echo number_format($total_sent); ?></p>
+                    <p id="kpi_sent" class="text-2xl font-bold"><?php echo number_format($total_sent); ?></p>
                     <span class="text-[10px] text-primary">Live Data</span>
                 </div>
                 <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
                     <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Links Clicked</span>
-                    <p class="text-2xl font-bold"><?php echo number_format($total_clicks); ?></p>
-                    <span class="text-[10px] text-primary"><?php echo $click_rate; ?>% Success</span>
+                    <p id="kpi_clicks" class="text-2xl font-bold"><?php echo number_format($total_clicks); ?></p>
+                    <span id="kpi_ctr" class="text-[10px] text-primary"><?php echo $click_rate; ?>% Success</span>
                 </div>
                 <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
                     <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Credentials Captured</span>
-                    <p class="text-2xl font-bold"><?php echo number_format($total_creds); ?></p>
+                    <p id="kpi_creds" class="text-2xl font-bold"><?php echo number_format($total_creds); ?></p>
                     <span class="text-[10px] text-red-500">Compromised</span>
                 </div>
                 <div class="p-4 rounded-xl border border-border-muted bg-surface-dark/50">
                     <span class="text-[#b0bc9a] text-[10px] font-bold uppercase block mb-1">Risk Profile</span>
-                    <p class="text-2xl font-bold"><?php echo $total_creds > 0 ? 'CRITICAL' : 'SECURE'; ?></p>
+                    <p id="kpi_risk" class="text-2xl font-bold"><?php echo $total_creds > 0 ? 'CRITICAL' : 'SECURE'; ?></p>
                     <span class="text-[10px] text-primary">Real-time Analysis</span>
                 </div>
             </section>
@@ -913,6 +913,32 @@ $show_success = isset($_GET['success']);
         initTemplates();
         updatePreview();
         updateLandingFromPreset();
+
+        // Server-Sent Events for Global Stats
+        const globalEventSource = new EventSource('live_feed.php?id=0');
+
+        globalEventSource.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'global' && data.stats) {
+                    const s = data.stats;
+                    document.getElementById('kpi_sent').textContent = s.sent.toLocaleString();
+                    document.getElementById('kpi_clicks').textContent = s.clicks.toLocaleString();
+                    document.getElementById('kpi_creds').textContent = s.creds.toLocaleString();
+                    document.getElementById('kpi_ctr').textContent = s.rate + '% Success';
+
+                    const riskEl = document.getElementById('kpi_risk');
+                    riskEl.textContent = s.creds > 0 ? 'CRITICAL' : 'SECURE';
+                    // Optional: could add visual flash here to show it updated
+                }
+            } catch (e) {
+                console.error("Error parsing global SSE data:", e);
+            }
+        };
+
+        window.addEventListener('beforeunload', () => {
+            globalEventSource.close();
+        });
     </script>
 </body>
 
