@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/session.php';
 
@@ -37,3 +39,21 @@ if (isset($_POST['reset'])) {
     }
 }
 ?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Forgot Password</title>
+</head>
+<body>
+
+<h2>Forgot Password</h2>
+
+<form method="POST">
+    <input type="email" name="email" required placeholder="Enter your email">
+    <button name="reset">Generate Reset Link</button>
+</form>
+
+<p><?php echo $message ?? ""; ?></p>
+
+</body>
+</html>
