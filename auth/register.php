@@ -1,37 +1,52 @@
 <?php
 require_once __DIR__ . "/../config/session.php";
-include(__DIR__ . "/../config/db.php");
+require_once __DIR__ . "/../config/db.php";
 
 $error = "";
 $success = "";
 
 if (isset($_POST['register'])) {
 
-  $name = mysqli_real_escape_string($conn, trim($_POST['name']));
-  $email = mysqli_real_escape_string($conn, trim($_POST['email']));
-  $password = $_POST['password'];
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    $confirm = $_POST['confirm_password'];
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    $error = "Invalid email format!";
+}
+elseif ($password !== $confirm) {
+    $error = "Passwords do not match!";
+}
+else {
 
-  // Check if email already exists
-  $check = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
+        // Check if email already exists
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $stmt->store_result();
 
-  if (mysqli_num_rows($check) > 0) {
-    $error = "Email already registered!";
-  } else {
+        if ($stmt->num_rows > 0) {
+            $error = "Email already registered!";
+        } else {
 
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-    $insert = mysqli_query($conn, "INSERT INTO users (name,email,password) 
-                                       VALUES ('$name','$email','$hashedPassword')");
+            $insert = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+            $insert->bind_param("sss", $name, $email, $hashedPassword);
 
-    if ($insert) {
-      $success = "Registration successful! You can now login.";
-    } else {
-      $error = "Something went wrong!";
+            if ($insert->execute()) {
+                $success = "Registration successful! You can now login.";
+            } else {
+                $error = "Something went wrong!";
+            }
+
+            $insert->close();
+        }
+
+        $stmt->close();
     }
-  }
 }
 ?>
-
 <!DOCTYPE html>
 <html class="dark" lang="en">
 
@@ -65,11 +80,12 @@ if (isset($_POST['register'])) {
       background-attachment: fixed;
     }
   </style>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 </head>
 
 <body class="terminal-bg min-h-screen flex items-center justify-center text-white">
 
-  <div class="bg-card-dark border border-white/10 rounded-xl p-8 w-full max-w-md">
+ <div class="bg-card-dark/70 backdrop-blur-lg border border-white/10 rounded-2xl p-10 w-full max-w-md shadow-2xl">
 
     <h2 class="text-xl font-bold text-center mb-6 text-primary">Register</h2>
 
@@ -89,11 +105,32 @@ if (isset($_POST['register'])) {
       <input type="email" name="email" required placeholder="Email"
         class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4">
 
-      <input type="password" name="password" required placeholder="Password"
-        class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4">
+     <div class="relative">
+  <input type="password" id="password" name="password" required placeholder="Password"
+    class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 pr-12">
+
+  <span onclick="togglePassword('password', this)"
+    class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-primary">
+    visibility
+  </span>
+</div>
+
+        <div class="h-1 bg-white/10 rounded mt-2">
+  <div id="strengthBar" class="h-full bg-red-500 rounded transition-all"></div>
+</div>
+<p id="strengthText" class="text-xs text-slate-400 mt-1">Weak password</p>
+       <div class="relative">
+  <input type="password" id="confirm_password" name="confirm_password" required placeholder="Confirm Password"
+    class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 pr-12">
+
+  <span onclick="togglePassword('confirm_password', this)"
+    class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-primary">
+    visibility
+  </span>
+</div>
 
       <button name="register" type="submit"
-        class="w-full bg-primary text-black font-bold py-3 rounded-lg">
+        class="w-full bg-primary text-black font-bold py-3 rounded-xl hover:scale-[1.02] active:scale-95 transition-all">
         Create Account
       </button>
 
@@ -105,7 +142,69 @@ if (isset($_POST['register'])) {
     </div>
 
   </div>
+<script>
+const passwordInput = document.getElementById("password");
+const bar = document.getElementById("strengthBar");
+const text = document.getElementById("strengthText");
 
+passwordInput.addEventListener("input", function() {
+
+  const value = passwordInput.value;
+  let score = 0;
+
+  if (value.length >= 8) score++;
+  if (/[A-Z]/.test(value)) score++;
+  if (/[a-z]/.test(value)) score++;
+  if (/[0-9]/.test(value)) score++;
+  if (/[^A-Za-z0-9]/.test(value)) score++;
+
+  switch(score) {
+    case 0:
+    case 1:
+      bar.style.width = "20%";
+      bar.className = "h-full bg-red-600 rounded transition-all duration-300";
+      text.innerText = "Very Weak";
+      break;
+
+    case 2:
+      bar.style.width = "40%";
+      bar.className = "h-full bg-orange-500 rounded transition-all duration-300";
+      text.innerText = "Weak";
+      break;
+
+    case 3:
+      bar.style.width = "60%";
+      bar.className = "h-full bg-yellow-500 rounded transition-all duration-300";
+      text.innerText = "Medium";
+      break;
+
+    case 4:
+      bar.style.width = "80%";
+      bar.className = "h-full bg-blue-500 rounded transition-all duration-300";
+      text.innerText = "Strong";
+      break;
+
+    case 5:
+      bar.style.width = "100%";
+      bar.className = "h-full bg-primary rounded transition-all duration-300";
+      text.innerText = "Very Strong 🔥";
+      break;
+  }
+});
+</script>
+<script>
+function togglePassword(fieldId, icon) {
+  const input = document.getElementById(fieldId);
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.textContent = "visibility_off";
+  } else {
+    input.type = "password";
+    icon.textContent = "visibility";
+  }
+}
+</script>
 </body>
 
 </html>
