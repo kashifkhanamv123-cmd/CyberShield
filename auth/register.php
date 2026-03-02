@@ -12,7 +12,43 @@ if (isset($_POST['register'])) {
   $password = $_POST['password'];
 
   // Check if email already exists
-  $check = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
+  if (isset($_POST['register'])) {
+
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    $confirm = $_POST['confirm_password'];
+
+    if ($password !== $confirm) {
+        $error = "Passwords do not match!";
+    } else {
+
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $stmt->store_result();
+
+        if ($stmt->num_rows > 0) {
+            $error = "Email already registered!";
+        } else {
+
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+            $insert = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+            $insert->bind_param("sss", $name, $email, $hashedPassword);
+
+            if ($insert->execute()) {
+                $success = "Registration successful! You can now login.";
+            } else {
+                $error = "Something went wrong!";
+            }
+
+            $insert->close();
+        }
+
+        $stmt->close();
+    }
+}
 
   if (mysqli_num_rows($check) > 0) {
     $error = "Email already registered!";
@@ -65,11 +101,12 @@ if (isset($_POST['register'])) {
       background-attachment: fixed;
     }
   </style>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 </head>
 
 <body class="terminal-bg min-h-screen flex items-center justify-center text-white">
 
-  <div class="bg-card-dark border border-white/10 rounded-xl p-8 w-full max-w-md">
+ <div class="bg-card-dark/70 backdrop-blur-lg border border-white/10 rounded-2xl p-10 w-full max-w-md shadow-2xl">
 
     <h2 class="text-xl font-bold text-center mb-6 text-primary">Register</h2>
 
@@ -89,11 +126,25 @@ if (isset($_POST['register'])) {
       <input type="email" name="email" required placeholder="Email"
         class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4">
 
-      <input type="password" name="password" required placeholder="Password"
-        class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4">
+     <div class="relative">
+  <input type="password" id="password" name="password" required placeholder="Password"
+    class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 pr-12">
+
+  <span onclick="togglePassword('password', this)"
+    class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-primary">
+    visibility
+  </span>
+</div>
+
+        <div class="h-1 bg-white/10 rounded mt-2">
+  <div id="strengthBar" class="h-full bg-red-500 rounded transition-all"></div>
+</div>
+<p id="strengthText" class="text-xs text-slate-400 mt-1">Weak password</p>
+        <input type="password" name="confirm_password" required placeholder="Confirm Password"
+  class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4">
 
       <button name="register" type="submit"
-        class="w-full bg-primary text-black font-bold py-3 rounded-lg">
+        class="w-full bg-primary text-black font-bold py-3 rounded-xl hover:scale-[1.02] active:scale-95 transition-all">
         Create Account
       </button>
 
@@ -105,7 +156,42 @@ if (isset($_POST['register'])) {
     </div>
 
   </div>
+<script>
+const passwordInput = document.querySelector('input[name="password"]');
+const bar = document.getElementById("strengthBar");
+const text = document.getElementById("strengthText");
 
+passwordInput.addEventListener("input", function() {
+  let val = passwordInput.value.length;
+
+  if(val < 6){
+    bar.style.width = "30%";
+    bar.className = "h-full bg-red-500 rounded";
+    text.innerText = "Weak password";
+  } else if(val < 10){
+    bar.style.width = "60%";
+    bar.className = "h-full bg-yellow-500 rounded";
+    text.innerText = "Medium password";
+  } else {
+    bar.style.width = "100%";
+    bar.className = "h-full bg-primary rounded";
+    text.innerText = "Strong password";
+  }
+});
+</script>
+<script>
+function togglePassword(fieldId, icon) {
+  const input = document.getElementById(fieldId);
+
+  if (input.type === "password") {
+    input.type = "text";
+    icon.textContent = "visibility_off";
+  } else {
+    input.type = "password";
+    icon.textContent = "visibility";
+  }
+}
+</script>
 </body>
 
 </html>
