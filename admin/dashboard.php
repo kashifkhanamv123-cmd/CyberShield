@@ -4,12 +4,12 @@ ini_set('display_errors', 1);
 require_once __DIR__ . '/admin-auth.php';
 
 // ── Stats ──────────────────────────────────────────────────────
-$total_users     = $conn->query("SELECT COUNT(*) FROM users")->fetch_row()[0];
-$total_phishing  = $conn->query("SELECT COUNT(*) FROM phishing_campaigns")->fetch_row()[0];
-$total_bf        = $conn->query("SELECT COUNT(*) FROM bruteforce_logs")->fetch_row()[0];
-$total_malware   = $conn->query("SELECT COUNT(*) FROM malware_samples")->fetch_row()[0];
-$total_ddos      = $conn->query("SELECT COUNT(*) FROM ddos_simulations")->fetch_row()[0];
-$blocked_users   = $conn->query("SELECT COUNT(*) FROM users WHERE status='blocked'")->fetch_row()[0];
+$total_users     = ($q = $conn->query("SELECT COUNT(*) FROM users")) ? $q->fetch_row()[0] : 0;
+$total_phishing  = ($q = $conn->query("SELECT COUNT(*) FROM phishing_campaigns")) ? $q->fetch_row()[0] : 0;
+$total_bf        = ($q = $conn->query("SELECT COUNT(*) FROM bruteforce_logs")) ? $q->fetch_row()[0] : 0;
+$total_malware   = ($q = $conn->query("SELECT COUNT(*) FROM malware_samples")) ? $q->fetch_row()[0] : 0;
+$total_ddos      = ($q = $conn->query("SELECT COUNT(*) FROM ddos_simulations")) ? $q->fetch_row()[0] : 0;
+$blocked_users   = ($q = $conn->query("SELECT COUNT(*) FROM users WHERE status='blocked'")) ? $q->fetch_row()[0] : 0;
 
 // ── Recent logs ────────────────────────────────────────────────
 $recent_logs_res = $conn->query("
@@ -18,14 +18,15 @@ $recent_logs_res = $conn->query("
     LEFT JOIN users u ON u.id = sl.user_id
     ORDER BY sl.created_at DESC
     LIMIT 8
-");
+") or die("Recent logs query failed: " . $conn->error);
 
 // ── Chart data: last 7 days user registrations ─────────────────
 $reg_data = [];
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $label = date('D', strtotime($date));
-    $count = $conn->query("SELECT COUNT(*) FROM users WHERE DATE(created_at)='$date'")->fetch_row()[0];
+    $q = $conn->query("SELECT COUNT(*) FROM users WHERE DATE(created_at)='$date'");
+    $count = ($q) ? $q->fetch_row()[0] : 0;
     $reg_data['labels'][] = $label;
     $reg_data['data'][]   = (int)$count;
 }
