@@ -16,7 +16,7 @@ if (isset($_POST['login'])) {
     $password = $_POST['password'];
 
     // Validate email format
-   if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !str_ends_with($email, "@gmail.com")) {
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !str_ends_with($email, "@gmail.com")) {
         $error = "Invalid email format!";
     } else {
 
@@ -27,26 +27,25 @@ if (isset($_POST['login'])) {
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
-
             $user = $result->fetch_assoc();
 
             if (password_verify($password, $user['password'])) {
-
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['name'];
                 $_SESSION['role'] = $user['role'];
 
-                header("Location: ../dashboard/dashboard.php");
+                if ($user['role'] === 'admin') {
+                    header("Location: ../admin/dashboard.php");
+                } else {
+                    header("Location: ../dashboard/dashboard.php");
+                }
                 exit();
-
             } else {
                 $error = "Invalid email or password!";
             }
-
         } else {
             $error = "Invalid email or password!";
         }
-
         $stmt->close();
     }
 }
@@ -99,7 +98,7 @@ if (isset($_POST['login'])) {
         <h1 class="text-3xl font-bold uppercase tracking-widest text-primary">
             CyberShield
         </h1>
-        <p id="typing" class="text-green-400 font-mono text-sm mt-2">
+        <p id="typing" class="text-green-400 font-mono text-sm mt-2"></p>
         <p class="text-xs text-primary/70 font-mono mt-2 uppercase">
             Secure Access Terminal
         </p>
@@ -127,23 +126,23 @@ if (isset($_POST['login'])) {
                         placeholder="Enter your email">
                 </div>
 
-              <div class="relative">
-    <label class="text-xs text-primary uppercase">Password</label>
+                <div class="relative">
+                    <label class="text-xs text-primary uppercase">Password</label>
 
-    <input id="password" name="password" required type="password"
-        class="w-full mt-2 bg-background-dark/50 border border-white/10 rounded-lg py-3 px-4 pr-12 text-white focus:outline-none focus:border-primary"
-        placeholder="Enter your password">
+                    <input id="password" name="password" required type="password"
+                        class="w-full mt-2 bg-background-dark/50 border border-white/10 rounded-lg py-3 px-4 pr-12 text-white focus:outline-none focus:border-primary"
+                        placeholder="Enter your password">
 
-    <span onclick="togglePassword()"
-        class="material-symbols-outlined absolute right-4 top-[38px] cursor-pointer text-slate-400 hover:text-primary">
-        visibility
-    </span>
-</div>
-<div class="text-right text-sm mt-2">
-    <a href="forgot-password.php" class="text-primary hover:underline">
-        Forgot Password?
-    </a>
-</div>
+                    <span onclick="togglePassword()"
+                        class="material-symbols-outlined absolute right-4 top-[38px] cursor-pointer text-slate-400 hover:text-primary">
+                        visibility
+                    </span>
+                </div>
+                <div class="text-right text-sm mt-2">
+                    <a href="forgot-password.php" class="text-primary hover:underline">
+                        Forgot Password?
+                    </a>
+                </div>
                 <button name="login" type="submit"
                     class="w-full bg-primary hover:bg-primary/90 text-black font-bold py-3 rounded-lg uppercase tracking-widest transition-all">
                     Initialize Connection
@@ -161,31 +160,31 @@ if (isset($_POST['login'])) {
         </div>
 
     </main>
-<script>
-function togglePassword() {
-    const input = document.getElementById("password");
+    <script>
+        function togglePassword() {
+            const input = document.getElementById("password");
 
-    if (input.type === "password") {
-        input.type = "text";
-    } else {
-        input.type = "password";
-    }
-}
-</script>
-<script>
-const text = "Establishing Secure Connection...";
-let i = 0;
+            if (input.type === "password") {
+                input.type = "text";
+            } else {
+                input.type = "password";
+            }
+        }
+    </script>
+    <script>
+        const text = "Establishing Secure Connection...";
+        let i = 0;
 
-function typeWriter() {
-  if (i < text.length) {
-    document.getElementById("typing").innerHTML += text.charAt(i);
-    i++;
-    setTimeout(typeWriter, 50);
-  }
-}
+        function typeWriter() {
+            if (i < text.length) {
+                document.getElementById("typing").innerHTML += text.charAt(i);
+                i++;
+                setTimeout(typeWriter, 50);
+            }
+        }
 
-typeWriter();
-</script>
+        typeWriter();
+    </script>
 </body>
 
 </html>
