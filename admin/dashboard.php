@@ -1,23 +1,21 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 require_once __DIR__ . '/admin-auth.php';
 
 // ── Stats ──────────────────────────────────────────────────────
-$total_users     = ($q = $conn->query("SELECT COUNT(*) FROM users")) ? $q->fetch_row()[0] : 0;
-$total_phishing  = ($q = $conn->query("SELECT COUNT(*) FROM phishing_campaigns")) ? $q->fetch_row()[0] : 0;
-$total_bf        = ($q = $conn->query("SELECT COUNT(*) FROM bruteforce_logs")) ? $q->fetch_row()[0] : 0;
-$total_malware   = ($q = $conn->query("SELECT COUNT(*) FROM malware_samples")) ? $q->fetch_row()[0] : 0;
-$total_ddos      = ($q = $conn->query("SELECT COUNT(*) FROM ddos_simulations")) ? $q->fetch_row()[0] : 0;
-$blocked_users   = ($q = $conn->query("SELECT COUNT(*) FROM users WHERE status='blocked'")) ? $q->fetch_row()[0] : 0;
+$total_users = ($q = $conn->query("SELECT COUNT(*) FROM users")) ? $q->fetch_row()[0] : 0;
+$total_phishing = ($q = $conn->query("SELECT COUNT(*) FROM phishing_campaigns")) ? $q->fetch_row()[0] : 0;
+$total_bf = ($q = $conn->query("SELECT COUNT(*) FROM bruteforce_logs")) ? $q->fetch_row()[0] : 0;
+$total_malware = ($q = $conn->query("SELECT COUNT(*) FROM malware_samples")) ? $q->fetch_row()[0] : 0;
+$total_ddos = ($q = $conn->query("SELECT COUNT(*) FROM ddos_simulations")) ? $q->fetch_row()[0] : 0;
+$blocked_users = ($q = $conn->query("SELECT COUNT(*) FROM users WHERE status='blocked'")) ? $q->fetch_row()[0] : 0;
 
 // ── Recent logs ────────────────────────────────────────────────
 $recent_logs_res = $conn->query("
-    SELECT sl.event_type, sl.description, sl.ip_address, sl.created_at, u.name
-    FROM security_logs sl
-    LEFT JOIN users u ON u.id = sl.user_id
-    ORDER BY sl.created_at DESC
-    LIMIT 8
+SELECT sl.event_type, sl.description, sl.ip_address, sl.created_at, u.name
+FROM security_logs sl
+LEFT JOIN users u ON u.id = sl.user_id
+ORDER BY sl.created_at DESC
+LIMIT 8
 ") or die("Recent logs query failed: " . $conn->error);
 
 // ── Chart data: last 7 days user registrations ─────────────────
@@ -28,15 +26,15 @@ for ($i = 6; $i >= 0; $i--) {
     $q = $conn->query("SELECT COUNT(*) FROM users WHERE DATE(created_at)='$date'");
     $count = ($q) ? $q->fetch_row()[0] : 0;
     $reg_data['labels'][] = $label;
-    $reg_data['data'][]   = (int)$count;
+    $reg_data['data'][] = (int)$count;
 }
 
 // ── Chart data: lab activity counts ───────────────────────────
 $lab_data = [
-    'Phishing'    => (int)$total_phishing,
+    'Phishing' => (int)$total_phishing,
     'Brute Force' => (int)$total_bf,
-    'Malware'     => (int)$total_malware,
-    'DDoS'        => (int)$total_ddos,
+    'Malware' => (int)$total_malware,
+    'DDoS' => (int)$total_ddos,
 ];
 ?>
 <!DOCTYPE html>
@@ -140,18 +138,26 @@ $lab_data = [
                 <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
                     <?php
                     $cards = [
-                        ['Total Users',     $total_users,    'group',           'from-blue-500/20   to-blue-900/10',  'text-blue-400'],
-                        ['Phishing Camps',  $total_phishing, 'alternate_email', 'from-primary/20    to-primary/5',    'text-primary'],
-                        ['Brute Force Logs', $total_bf,       'lock_open',       'from-orange-500/20 to-orange-900/10', 'text-orange-400'],
-                        ['Malware Samples', $total_malware,  'bug_report',      'from-red-500/20    to-red-900/10',   'text-red-400'],
-                        ['DDoS Sims',       $total_ddos,     'thunderstorm',    'from-purple-500/20 to-purple-900/10', 'text-purple-400'],
-                        ['Blocked Users',   $blocked_users,  'block',           'from-slate-500/20  to-slate-900/10', 'text-slate-400'],
+                        ['Total Users',     'total_users',    'group',           'from-blue-500/20   to-blue-900/10',  'text-blue-400'],
+                        ['Phishing Camps',  'total_phishing', 'alternate_email', 'from-primary/20    to-primary/5',    'text-primary'],
+                        ['Brute Force Logs', 'total_bf',       'lock_open',       'from-orange-500/20 to-orange-900/10', 'text-orange-400'],
+                        ['Malware Samples', 'total_malware',  'bug_report',      'from-red-500/20    to-red-900/10',   'text-red-400'],
+                        ['DDoS Sims',       'total_ddos',     'thunderstorm',    'from-purple-500/20 to-purple-900/10', 'text-purple-400'],
+                        ['Blocked Users',   'blocked_users',  'block',           'from-slate-500/20  to-slate-900/10', 'text-slate-400'],
                     ];
-                    foreach ($cards as [$label, $value, $icon, $grad, $color]):
+                    foreach ($cards as [$label, $id, $icon, $grad, $color]):
+                        // Initial values from PHP (for faster load)
+                        $val = 0;
+                        if ($id == 'total_users') $val = $total_users;
+                        if ($id == 'total_phishing') $val = $total_phishing;
+                        if ($id == 'total_bf') $val = $total_bf;
+                        if ($id == 'total_malware') $val = $total_malware;
+                        if ($id == 'total_ddos') $val = $total_ddos;
+                        if ($id == 'blocked_users') $val = $blocked_users;
                     ?>
                         <div class="stat-card glass rounded-2xl p-5 bg-gradient-to-br <?php echo $grad; ?>">
                             <span class="material-symbols-outlined text-2xl <?php echo $color; ?>"><?php echo $icon; ?></span>
-                            <p class="text-2xl font-black text-white mt-2"><?php echo number_format($value); ?></p>
+                            <p id="stat-<?php echo $id; ?>" class="text-2xl font-black text-white mt-2"><?php echo number_format($val); ?></p>
                             <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5"><?php echo $label; ?></p>
                         </div>
                     <?php endforeach; ?>
@@ -169,7 +175,9 @@ $lab_data = [
                             </div>
                             <span class="material-symbols-outlined text-primary">show_chart</span>
                         </div>
-                        <canvas id="regChart" height="120"></canvas>
+                        <div class="h-64">
+                            <canvas id="regChart"></canvas>
+                        </div>
                     </div>
 
                     <!-- Lab Usage Doughnut -->
@@ -181,7 +189,9 @@ $lab_data = [
                             </div>
                             <span class="material-symbols-outlined text-primary">donut_large</span>
                         </div>
-                        <canvas id="labChart" height="160"></canvas>
+                        <div class="h-64 flex items-center justify-center">
+                            <canvas id="labChart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -205,7 +215,7 @@ $lab_data = [
                                     <th class="text-left pb-3">Time</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-border-dim/50">
+                            <tbody id="logs-tbody" class="divide-y divide-border-dim/50">
                                 <?php
                                 $event_colors = [
                                     'login_success'  => 'bg-primary/10 text-primary',
@@ -251,7 +261,7 @@ $lab_data = [
             <footer class="shrink-0 h-8 bg-neutral-dark border-t border-border-dim flex items-center justify-between px-6">
                 <div class="flex items-center gap-4 text-[10px] font-mono">
                     <span class="text-primary">Console:</span>
-                    <span class="text-slate-500">Admin session active</span>
+                    <span id="realtime-status" class="text-slate-500">Admin session active</span>
                 </div>
                 <span class="text-[10px] font-mono text-primary italic">CyberShield Admin v1.0</span>
             </footer>
@@ -275,7 +285,7 @@ $lab_data = [
         };
 
         // Registration line chart
-        new Chart(document.getElementById('regChart'), {
+        const regChart = new Chart(document.getElementById('regChart'), {
             type: 'line',
             data: {
                 labels: <?php echo json_encode($reg_data['labels']); ?>,
@@ -293,6 +303,8 @@ $lab_data = [
             },
             options: {
                 ...chartDefaults,
+                responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     x: {
                         ticks: {
@@ -316,7 +328,7 @@ $lab_data = [
         });
 
         // Lab doughnut chart
-        new Chart(document.getElementById('labChart'), {
+        const labChart = new Chart(document.getElementById('labChart'), {
             type: 'doughnut',
             data: {
                 labels: <?php echo json_encode(array_keys($lab_data)); ?>,
@@ -329,9 +341,73 @@ $lab_data = [
             },
             options: {
                 ...chartDefaults,
-                cutout: '65%'
+                cutout: '65%',
+                responsive: true,
+                maintainAspectRatio: false,
             }
         });
+
+        const eventColors = <?php echo json_encode($event_colors); ?>;
+
+        async function updateDashboard() {
+            try {
+                const res = await fetch('api_stats.php');
+                const data = await res.json();
+
+                // Update Stats
+                document.getElementById('stat-total_users').innerText = data.counts.users.toLocaleString();
+                document.getElementById('stat-total_phishing').innerText = data.counts.phishing.toLocaleString();
+                document.getElementById('stat-total_bf').innerText = data.counts.bruteforce.toLocaleString();
+                document.getElementById('stat-total_malware').innerText = data.counts.malware.toLocaleString();
+                document.getElementById('stat-total_ddos').innerText = data.counts.ddos.toLocaleString();
+                document.getElementById('stat-blocked_users').innerText = data.counts.blocked.toLocaleString();
+
+                // Update reg chart
+                regChart.data.labels = data.charts.registrations.labels;
+                regChart.data.datasets[0].data = data.charts.registrations.data;
+                regChart.update('none');
+
+                // Update lab chart
+                labChart.data.datasets[0].data = [
+                    data.counts.phishing,
+                    data.counts.bruteforce,
+                    data.counts.malware,
+                    data.counts.ddos
+                ];
+                labChart.update('none');
+
+                // Update Logs
+                const tbody = document.getElementById('logs-tbody');
+                tbody.innerHTML = data.recent_logs.map(log => {
+                    const color = eventColors[log.event_type] || 'bg-slate-500/10 text-slate-400';
+                    return `
+                        <tr class="hover:bg-white/[0.02] transition-colors">
+                            <td class="py-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${color}">
+                                    ${log.event_type.replace(/_/g, ' ')}
+                                </span>
+                            </td>
+                            <td class="py-3 text-white font-medium">${log.name || 'System'}</td>
+                            <td class="py-3 text-slate-400 max-w-xs truncate">${log.description || '-'}</td>
+                            <td class="py-3 font-mono text-xs text-slate-500">${log.ip_address || '-'}</td>
+                            <td class="py-3 font-mono text-xs text-slate-500">${log.time_ago}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                const status = document.getElementById('realtime-status');
+                status.innerText = 'Connected: Sync successful';
+                status.classList.add('text-primary');
+                setTimeout(() => status.classList.remove('text-primary'), 1000);
+
+            } catch (e) {
+                console.error("Dashboard Sync Failed", e);
+                document.getElementById('realtime-status').innerText = 'Sync Error: Reconnecting...';
+            }
+        }
+
+        // Poll every 3 seconds for demo (normally 10-30s)
+        setInterval(updateDashboard, 5000);
     </script>
 </body>
 

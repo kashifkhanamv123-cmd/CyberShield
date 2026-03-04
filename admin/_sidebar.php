@@ -20,13 +20,13 @@ $navItems = [
 <aside id="admin-sidebar" class="w-64 shrink-0 border-r border-border-dim bg-neutral-dark/60 backdrop-blur-xl flex flex-col z-20 h-screen sticky top-0">
     <!-- Logo -->
     <div class="p-6 border-b border-border-dim">
-        <div class="flex items-center gap-3 text-primary px-2">
+        <a href="" class="flex items-center gap-3 text-primary px-2 hover:opacity-80 transition-opacity">
             <span class="material-symbols-outlined text-3xl">admin_panel_settings</span>
             <div>
                 <h1 class="text-white text-lg font-black italic uppercase tracking-tight">Cyber<span class="text-primary">Shield</span></h1>
                 <p class="text-[9px] font-mono text-primary/60 uppercase tracking-[0.2em]">Admin Control</p>
             </div>
-        </div>
+        </a>
     </div>
 
     <!-- Navigation -->

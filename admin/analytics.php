@@ -41,6 +41,16 @@ $perf = $conn->query("
         (SELECT SUM(success) FROM bruteforce_logs) as bf_wins
 ")->fetch_assoc();
 
+// 5. Global Summary for Report
+$globalStats = $conn->query("
+    SELECT
+        (SELECT COUNT(*) FROM users) as users,
+        (SELECT COUNT(*) FROM phishing_campaigns) as phishing,
+        (SELECT COUNT(*) FROM bruteforce_logs) as bruteforce,
+        (SELECT COUNT(*) FROM malware_samples) as malware,
+        (SELECT COUNT(*) FROM ddos_simulations) as ddos
+")->fetch_assoc();
+
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
@@ -105,6 +115,107 @@ $perf = $conn->query("
             background: #23281b;
             border-radius: 10px;
         }
+
+        /* ── Print/Export Styles ───────────────────────────────── */
+        @media print {
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+
+            body {
+                background: white !important;
+                color: black !important;
+                overflow: visible !important;
+                height: auto !important;
+            }
+
+            #admin-sidebar,
+            header,
+            footer,
+            .export-btn,
+            .status-bar-print-hide {
+                display: none !important;
+            }
+
+            main {
+                display: block !important;
+                overflow: visible !important;
+                width: 100% !important;
+                position: static !important;
+            }
+
+            section {
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+            }
+
+            .flex,
+            .grid {
+                display: block !important;
+            }
+
+            .glass {
+                background: white !important;
+                border: 1px solid #ddd !important;
+                box-shadow: none !important;
+                backdrop-filter: none !important;
+                margin-bottom: 20px !important;
+                page-break-inside: avoid;
+            }
+
+            .print-header {
+                display: block !important;
+                border-bottom: 3px solid #000;
+                padding-bottom: 15px;
+                margin-bottom: 30px;
+            }
+
+            .print-footer {
+                display: block !important;
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                border-top: 1px solid #ddd;
+                font-size: 10px;
+                padding: 10px 0;
+                text-align: center;
+            }
+
+            h2,
+            h3,
+            h4,
+            p {
+                color: black !important;
+                text-shadow: none !important;
+            }
+
+            canvas {
+                max-width: 100% !important;
+                height: 250px !important;
+            }
+
+            .grid-cols-1,
+            .grid-cols-2,
+            .grid-cols-3,
+            .lg:grid-cols-2,
+            .lg:grid-cols-3 {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                /* Forces 2 columns on print */
+                gap: 20px !important;
+            }
+
+            .summary-card {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+
+        .print-header,
+        .print-footer {
+            display: none;
+        }
     </style>
 </head>
 
@@ -118,34 +229,96 @@ $perf = $conn->query("
                     <p class="text-[10px] font-mono text-primary uppercase tracking-widest">Analytics Core: csh_intelligence_engine</p>
                     <h2 class="text-xl font-black text-white italic uppercase">Security <span class="text-primary glow">Intelligence</span></h2>
                 </div>
-                <button onclick="window.print()" class="px-4 py-2 bg-surface border border-border-dim rounded-lg text-xs font-bold text-slate-400 hover:text-primary transition-all flex items-center gap-2">
+                <button onclick="window.print()" class="export-btn px-4 py-2 bg-surface border border-border-dim rounded-lg text-xs font-bold text-slate-400 hover:text-primary transition-all flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">print</span> Export Report
                 </button>
             </header>
 
+            <!-- Printable Report Header -->
+            <div class="print-header px-8 pt-8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="size-12 bg-black flex items-center justify-center rounded">
+                            <span class="material-symbols-outlined text-primary text-4xl">shield</span>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-black uppercase tracking-tighter">Cyber<span class="text-primary">Shield</span></h1>
+                            <p class="text-[10px] font-mono uppercase tracking-widest">Security Intelligence Unit</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <h2 class="text-lg font-bold text-black uppercase">Intelligence Report</h2>
+                        <p class="text-xs text-slate-500 font-mono">ID: REF-<?php echo strtoupper(substr(md5(time()), 0, 8)); ?></p>
+                    </div>
+                </div>
+                <div class="mt-8 grid grid-cols-2 gap-8 border-t border-black pt-4">
+                    <div>
+                        <p class="text-[10px] font-bold uppercase text-slate-500">Report Entity</p>
+                        <p class="text-sm font-bold">CyberShield SOC Management</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold uppercase text-slate-500">Generated By</p>
+                        <p class="text-sm font-bold"><?php echo htmlspecialchars($adminName); ?> (SOC Admin)</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold uppercase text-slate-500">Timestamp</p>
+                        <p class="text-sm font-bold font-mono"><?php echo date('Y-m-d H:i:s'); ?></p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold uppercase text-slate-500">Security Clearance</p>
+                        <p class="text-sm font-bold text-red-600">LEVEL 4 - INTERNAL ONLY</p>
+                    </div>
+                </div>
+            </div>
+
             <section class="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8">
 
                 <!-- High Level Metrics -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="summary-card grid grid-cols-1 md:grid-cols-5 gap-6">
                     <div class="glass p-6 rounded-2xl border-l-4 border-l-primary">
-                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Avg Response Depth</p>
-                        <h4 class="text-3xl font-black text-white italic"><?php echo round($perf['avg_ddos'] ?? 0, 1); ?>s</h4>
-                        <p class="text-[10px] text-primary mt-2">DDoS Mitigation Efficiency</p>
+                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Total Operators</p>
+                        <h4 class="text-3xl font-black text-white italic"><?php echo number_format($globalStats['users']); ?></h4>
+                        <p class="text-[10px] text-primary mt-2">Active Analyst Base</p>
                     </div>
                     <div class="glass p-6 rounded-2xl border-l-4 border-l-orange-500">
-                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Total Breach Vector</p>
-                        <h4 class="text-3xl font-black text-white italic"><?php echo number_format($perf['total_emails'] ?? 0); ?></h4>
-                        <p class="text-[10px] text-orange-400 mt-2">Phishing Simulation Volume</p>
+                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Phishing Labs</p>
+                        <h4 class="text-3xl font-black text-white italic"><?php echo number_format($globalStats['phishing']); ?></h4>
+                        <p class="text-[10px] text-orange-400 mt-2">Social Engineering Nodes</p>
                     </div>
                     <div class="glass p-6 rounded-2xl border-l-4 border-l-red-500">
+                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Brute Sessions</p>
+                        <h4 class="text-3xl font-black text-white italic"><?php echo number_format($globalStats['bruteforce']); ?></h4>
+                        <p class="text-[10px] text-red-400 mt-2">Auth Breach Attempts</p>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-l-4 border-l-red-600">
+                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Malware Base</p>
+                        <h4 class="text-3xl font-black text-white italic"><?php echo number_format($globalStats['malware']); ?></h4>
+                        <p class="text-[10px] text-red-500 mt-2">Analyzed Threat Samples</p>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-l-4 border-l-blue-500">
+                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">DDoS Activity</p>
+                        <h4 class="text-3xl font-black text-white italic"><?php echo number_format($globalStats['ddos']); ?></h4>
+                        <p class="text-[10px] text-blue-400 mt-2">Volumetric Sims</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass p-6 rounded-2xl border-t-2 border-t-primary/30">
+                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Avg Response Depth</p>
+                        <h4 id="perf-ddos" class="text-3xl font-black text-white italic"><?php echo round($perf['avg_ddos'] ?? 0, 1); ?>s</h4>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-t-2 border-t-orange-500/30">
+                        <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Total Breach Vector</p>
+                        <h4 id="perf-emails" class="text-3xl font-black text-white italic"><?php echo number_format($perf['total_emails'] ?? 0); ?></h4>
+                    </div>
+                    <div class="glass p-6 rounded-2xl border-t-2 border-t-red-500/30">
                         <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Brute Success Rate</p>
-                        <h4 class="text-3xl font-black text-white italic">
+                        <h4 id="perf-bf" class="text-3xl font-black text-white italic">
                             <?php
                             $totalBF = (int)($dist['bruteforce'] ?? 0);
                             echo $totalBF > 0 ? round(($perf['bf_wins'] / $totalBF) * 100, 1) : 0;
                             ?>%
                         </h4>
-                        <p class="text-[10px] text-red-400 mt-2">Authentication vulnerability index</p>
                     </div>
                 </div>
 
@@ -209,9 +382,19 @@ $perf = $conn->query("
                 </div>
 
             </section>
-            <footer class="shrink-0 h-8 bg-neutral-dark border-t border-border-dim flex items-center px-6">
+            <footer class="shrink-0 h-8 bg-neutral-dark border-t border-border-dim flex items-center px-6 justify-between">
                 <span class="text-[10px] font-mono text-primary italic">CyberShield Admin v1.0 Intelligence Unit</span>
+                <span id="realtime-status" class="text-[10px] font-mono text-slate-500">System Ready</span>
             </footer>
+
+            <!-- Printable Report Footer -->
+            <div class="print-footer">
+                <div class="px-8 flex items-center justify-between">
+                    <span class="text-primary font-bold">CYBERSHIELD | CONFIDENTIAL</span>
+                    <span>Page 1 of 1</span>
+                    <span>v1.0.4-LTS</span>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -219,8 +402,18 @@ $perf = $conn->query("
         Chart.defaults.color = '#64748b';
         Chart.defaults.font.family = "'Inter', sans-serif";
 
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        };
+
         // 1. Operational Pulse
-        new Chart(document.getElementById('pulseChart'), {
+        const pulseChart = new Chart(document.getElementById('pulseChart'), {
             type: 'line',
             data: {
                 labels: <?php echo json_encode(array_column($trends, 'date')); ?>,
@@ -232,18 +425,11 @@ $perf = $conn->query("
                     fill: true,
                     tension: 0.4,
                     borderWidth: 2,
-                    pointRadius: 0,
-                    pointHoverRadius: 5
+                    pointRadius: 0
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
+                ...chartOptions,
                 scales: {
                     y: {
                         grid: {
@@ -263,7 +449,7 @@ $perf = $conn->query("
         });
 
         // 2. Growth Adoption
-        new Chart(document.getElementById('growthChart'), {
+        const growthChart = new Chart(document.getElementById('growthChart'), {
             type: 'bar',
             data: {
                 labels: <?php echo json_encode(array_column($growthData, 'month')); ?>,
@@ -275,13 +461,7 @@ $perf = $conn->query("
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
+                ...chartOptions,
                 scales: {
                     y: {
                         grid: {
@@ -301,7 +481,7 @@ $perf = $conn->query("
         });
 
         // 3. Modue Distribution
-        new Chart(document.getElementById('moduleChart'), {
+        const moduleChart = new Chart(document.getElementById('moduleChart'), {
             type: 'doughnut',
             data: {
                 labels: ['Phishing', 'Brute Force', 'Malware', 'DDoS'],
@@ -319,18 +499,64 @@ $perf = $conn->query("
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: {
+                        display: true,
                         position: 'bottom',
                         labels: {
                             padding: 20,
-                            usePointStyle: true
+                            usePointStyle: true,
+                            color: '#94a3b8'
                         }
                     }
                 },
                 cutout: '70%'
             }
         });
+
+        async function updateAnalytics() {
+            try {
+                const res = await fetch('api_stats.php');
+                const data = await res.json();
+
+                // Update Metrics
+                document.getElementById('perf-ddos').innerText = data.performance.avg_ddos + 's';
+                document.getElementById('perf-emails').innerText = data.performance.total_emails.toLocaleString();
+
+                const bfTotal = data.counts.bruteforce;
+                const bfRate = bfTotal > 0 ? ((data.performance.bf_wins / bfTotal) * 100).toFixed(1) : 0;
+                document.getElementById('perf-bf').innerText = bfRate + '%';
+
+                // Update Charts
+                pulseChart.data.labels = data.charts.trends.labels;
+                pulseChart.data.datasets[0].data = data.charts.trends.data;
+                pulseChart.update('none');
+
+                growthChart.data.labels = data.charts.growth.labels;
+                growthChart.data.datasets[0].data = data.charts.growth.data;
+                growthChart.update('none');
+
+                moduleChart.data.datasets[0].data = [
+                    data.counts.phishing,
+                    data.counts.bruteforce,
+                    data.counts.malware,
+                    data.counts.ddos
+                ];
+                moduleChart.update('none');
+
+                const status = document.getElementById('realtime-status');
+                status.innerText = 'Sync: Active (' + new Date().toLocaleTimeString() + ')';
+                status.classList.add('text-primary');
+                setTimeout(() => status.classList.remove('text-primary'), 1000);
+
+            } catch (e) {
+                console.error("Analytics Sync Failed", e);
+                document.getElementById('realtime-status').innerText = 'Sync Error: Retrying...';
+            }
+        }
+
+        setInterval(updateAnalytics, 15000); // 15s updates for analytics
     </script>
 </body>
 
