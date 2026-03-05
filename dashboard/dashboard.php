@@ -13,11 +13,20 @@ $userName = $_SESSION['user_name'];
 // Fetch Phishing Progress
 $phishing_res = $conn->query("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = $user_id");
 $phishing_count = $phishing_res->fetch_row()[0];
-$phishing_progress = min($phishing_count * 20, 100); // 5 campaigns for 100%
+$phishing_progress = min($phishing_count * 20, 100);
 $phishing_level = min(floor($phishing_count / 1) + 1, 5);
 
-// Calculate completed labs (just 1 if they did phishing for now, total labs = 4)
-$completed_labs = ($phishing_count > 0) ? 1 : 0;
+// Fetch Brute Force Progress
+$bruteforce_res = $conn->query("SELECT COUNT(*) as total, MAX(success) as has_success FROM bruteforce_logs WHERE user_id = $user_id");
+$bruteforce_data = $bruteforce_res->fetch_assoc();
+$bruteforce_count = (int)$bruteforce_data['total'];
+$bruteforce_success = (int)$bruteforce_data['has_success'];
+$bruteforce_progress = $bruteforce_success ? 100 : min($bruteforce_count * 10, 90);
+
+// Calculate completed labs
+$completed_labs = ($phishing_count > 0 ? 1 : 0) + ($bruteforce_success > 0 ? 1 : 0);
+
+$lab_completed = $_GET['lab_completed'] ?? '';
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
@@ -86,6 +95,85 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
 </head>
 
 <body id="dashboard-app" class="bg-background-dark text-slate-300 font-display min-h-screen terminal-grid selection:bg-primary selection:text-background-dark overflow-hidden">
+
+    <?php if ($lab_completed === 'bruteforce'): ?>
+        <!-- Brute Force Completion Modal -->
+        <div id="completionModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div class="glass-panel border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="flex items-center gap-4 mb-6 relative z-10 shrink-0">
+                    <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(160,240,0,0.3)]">
+                        <span class="material-symbols-outlined text-3xl">verified</span>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black uppercase italic tracking-tighter">
+                            Lab <span class="text-primary glow-text">Completed</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Subject: Brute Force Intrusion Analysis</p>
+                    </div>
+                </div>
+
+                <div class="space-y-6 text-sm text-slate-300 leading-relaxed relative z-10 overflow-y-auto custom-scrollbar pr-2 mb-2">
+                    <div class="p-5 bg-primary/5 border border-primary/20 rounded-xl">
+                        <h4 class="text-xs font-bold text-primary uppercase mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">analytics</span> Performance Metrics
+                        </h4>
+                        <p class="text-[11px] text-slate-400">
+                            You successfully simulated an automated password recovery attack. Your telemetry indicates a high-velocity crack using dictionary matching.
+                        </p>
+                    </div>
+
+                    <div class="p-5 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                        <h4 class="text-xs font-bold text-white uppercase flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm text-primary">school</span> Analyst Debrief
+                        </h4>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-[11px] font-bold text-primary italic uppercase mb-1">Vulnerability Correlation</p>
+                                <p class="text-[11px] text-slate-500">
+                                    Weak passwords represent the largest attack surface in modern infrastructure. By testing common permutations, attackers bypass core security layers without triggering complex alerts.
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-bold text-red-400 italic uppercase mb-1">Defensive Hardening</p>
+                                <p class="text-[11px] text-slate-500">
+                                    Enforcing <strong class="text-slate-300">Multi-Factor Authentication (MFA)</strong> and <strong class="text-slate-300">Account Lockout Policies</strong> are critical. Without these, even high-entropy passwords can eventually be cracked via distributed brute force.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW: How to Stay Safe Section -->
+                    <div class="p-5 bg-primary/10 border border-primary/20 rounded-xl">
+                        <h4 class="text-xs font-bold text-primary uppercase mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">security</span> How to Stay Safe
+                        </h4>
+                        <ul class="space-y-2 text-[10px] text-slate-400">
+                            <li class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-xs text-primary">check_circle</span>
+                                <span>Use a <strong class="text-white">Password Manager</strong> to generate and store unique, random keys.</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-xs text-primary">check_circle</span>
+                                <span>Enable <strong class="text-white">Two-Factor Authentication (2FA)</strong> on every sensitive account.</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-xs text-primary">check_circle</span>
+                                <span>Avoid using <strong class="text-white">personal information</strong> (names, dates) in your password patterns.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <button onclick="window.history.replaceState(null, null, window.location.pathname); this.closest('#completionModal').remove();"
+                    class="w-full mt-8 py-4 bg-primary text-background-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] shadow-lg shadow-primary/10 relative z-10">
+                    Acknowledge Directive
+                </button>
+
+                <div class="absolute -right-20 -top-20 size-60 bg-primary/5 rounded-full blur-[80px]"></div>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar Navigation -->
         <aside class="w-64 border-r border-border-dim bg-neutral-dark/50 backdrop-blur-xl flex flex-col z-20 shrink-0">
@@ -200,9 +288,9 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
                                     <p class="text-[10px] text-primary mt-1">+1 today</p>
                                 </div>
                                 <div class="p-4 rounded-xl bg-surface border border-border-dim">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">DDoS Mitigation</span>
-                                    <span class="text-3xl font-black text-white">0%</span>
-                                    <p class="text-[10px] text-slate-500 mt-1">Pending Start</p>
+                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Brute Force Progress</span>
+                                    <span class="text-3xl font-black text-white"><?php echo $bruteforce_progress; ?>%</span>
+                                    <p class="text-[10px] text-primary mt-1"><?php echo $bruteforce_success ? 'CERTIFIED' : 'IN TRAINING'; ?></p>
                                 </div>
                             </div>
                         </div>
@@ -285,26 +373,39 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
                                 </div>
                             </div>
 
-                            <!-- Module Card: Malware -->
-                            <div class="glass-panel group rounded-2xl p-1 opacity-60">
+                            <!-- Module Card: Brute Force -->
+                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
                                 <div class="p-6">
                                     <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-500">
-                                            <span class="material-symbols-outlined text-2xl">bug_report</span>
+                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
+                                            <span class="material-symbols-outlined text-2xl">lock_open</span>
                                         </div>
-                                        <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-500 uppercase">Module_03</span>
+                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">Module_04</span>
                                     </div>
-                                    <h4 class="text-lg font-bold text-white mb-2">Malware Sandbox Analysis</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Deconstruct malicious payloads and understand lateral movement within safe VMs.</p>
+                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">Brute Force Intrusion</h4>
+                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Simulate high-velocity dictionary attacks to exploit weak credentials and test account lockout policies.</p>
 
-                                    <div class="p-4 rounded-xl bg-background-dark border border-border-dim text-center">
-                                        <span class="material-symbols-outlined text-slate-600 mb-1">lock</span>
-                                        <p class="text-[10px] font-bold text-slate-500 uppercase">Complete Module 01 to Unlock</p>
+                                    <div class="space-y-4">
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                                                <span class="text-slate-500">Analyst Mastery</span>
+                                                <span class="text-white"><?php echo $bruteforce_progress; ?>%</span>
+                                            </div>
+                                            <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
+                                                <div class="bg-primary h-full rounded-full" style="width: <?php echo $bruteforce_progress; ?>%"></div>
+                                            </div>
+                                            <div class="flex justify-between items-center pt-2">
+                                                <span class="text-[10px] text-slate-500">Tier <?php echo $bruteforce_success ? '2' : '1'; ?> Tactical</span>
+                                                <span class="text-[10px] text-primary font-bold">
+                                                    <?php echo $bruteforce_success ? 'SYSTEM COMPROMISED' : 'NEXT: WORDLIST FUZZING'; ?>
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim text-slate-600">
-                                    Instance Unavailable
-                                </div>
+                                <a href="../labs/bruteforce.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">
+                                    Initialize Lab Instance
+                                </a>
                             </div>
                         </div>
                     </div>
