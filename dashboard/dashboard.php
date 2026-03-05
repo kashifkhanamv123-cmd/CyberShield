@@ -108,6 +108,9 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
                     <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
                         <span class="material-symbols-outlined text-xl">bug_report</span> Malware Analysis
                     </a>
+                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/bruteforce.php">
+                        <span class="material-symbols-outlined text-xl">lock_open</span> Brute Force Lab
+                    </a>
                     <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
                         <span class="material-symbols-outlined text-xl">data_exploration</span> SOC Dashboard
                     </a>

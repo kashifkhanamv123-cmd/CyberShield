@@ -17,7 +17,7 @@ if ($filter === 'failed') {
 }
 if ($search) {
     $like = "%$search%";
-    $where .= " AND (bl.target_system LIKE ? OR bl.username_tried LIKE ? OR u.name LIKE ?)";
+    $where .= " AND (bl.target_username LIKE ? OR bl.attack_type LIKE ? OR u.name LIKE ?)";
     $params = [$like, $like, $like];
     $types  = "sss";
 }
@@ -163,7 +163,7 @@ $stats = $conn->query("
                 <div class="flex flex-wrap gap-3 items-center">
                     <form method="GET" class="flex items-center gap-2">
                         <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filter); ?>">
-                        <input name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search target, username, user…"
+                        <input name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search target user, attack type, analyst…"
                             class="bg-surface border border-border-dim rounded-lg px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary w-64" />
                         <button type="submit" class="px-4 py-2 bg-primary text-background-dark rounded-lg font-bold text-sm">Search</button>
                     </form>
@@ -190,11 +190,11 @@ $stats = $conn->query("
                                 <tr class="border-b border-border-dim text-[10px] font-bold uppercase tracking-widest text-slate-500">
                                     <th class="text-left px-6 py-3">#</th>
                                     <th class="text-left px-6 py-3">Analyst</th>
-                                    <th class="text-left px-6 py-3">Target System</th>
-                                    <th class="text-left px-6 py-3">Username Tried</th>
+                                    <th class="text-left px-6 py-3">Target Username</th>
+                                    <th class="text-left px-6 py-3">Attack Type</th>
                                     <th class="text-left px-6 py-3">Attempts</th>
                                     <th class="text-left px-6 py-3">Result</th>
-                                    <th class="text-left px-6 py-3">Source IP</th>
+                                    <th class="text-left px-6 py-3">Time Taken (s)</th>
                                     <th class="text-left px-6 py-3">Timestamp</th>
                                 </tr>
                             </thead>
@@ -208,8 +208,8 @@ $stats = $conn->query("
                                         <tr class="hover:bg-white/[0.02] transition-colors">
                                             <td class="px-6 py-3 font-mono text-xs text-slate-500">#<?php echo $row['id']; ?></td>
                                             <td class="px-6 py-3 text-white font-medium"><?php echo htmlspecialchars($row['user_name']); ?></td>
-                                            <td class="px-6 py-3 font-mono text-xs text-slate-300"><?php echo htmlspecialchars($row['target_system']); ?></td>
-                                            <td class="px-6 py-3 font-mono text-xs text-yellow-400"><?php echo htmlspecialchars($row['username_tried']); ?></td>
+                                            <td class="px-6 py-3 font-mono text-xs text-slate-300"><?php echo htmlspecialchars($row['target_username']); ?></td>
+                                            <td class="px-6 py-3 font-mono text-xs text-yellow-400"><?php echo htmlspecialchars($row['attack_type']); ?></td>
                                             <td class="px-6 py-3 min-w-[120px]">
                                                 <div class="flex items-center gap-2">
                                                     <span class="font-mono text-xs text-white w-10 shrink-0"><?php echo number_format($row['attempts']); ?></span>
@@ -230,7 +230,7 @@ $stats = $conn->query("
                                                     </span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td class="px-6 py-3 font-mono text-xs text-slate-500"><?php echo htmlspecialchars($row['ip_address'] ?? '-'); ?></td>
+                                            <td class="px-6 py-3 font-mono text-xs text-slate-500"><?php echo htmlspecialchars($row['time_taken'] ?? '0'); ?>s</td>
                                             <td class="px-6 py-3 font-mono text-xs text-slate-500"><?php echo date('Y-m-d H:i', strtotime($row['created_at'])); ?></td>
                                         </tr>
                                     <?php endwhile;
