@@ -560,7 +560,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'log') {
                 reader.onload = (event) => {
                     const content = event.target.result;
                     document.getElementById('custom_payloads').value = content;
-                    logToConsole(`[INFO] Loaded wordlist from file: ${file.name} (${content.split('\n').length} entries)`);
+
+                    // Auto-select Custom radio button
+                    const customRadio = document.querySelector('input[name="attack_type"][value="Custom"]');
+                    if (customRadio) {
+                        customRadio.checked = true;
+                    }
+
+                    logToConsole(`[INFO] Loaded wordlist from file: ${file.name}`, 'info');
+                    logToConsole(`Detected ${content.split(/\r?\n/).filter(l => l.trim()).length} potential credentials.`, 'info');
                 };
                 reader.readAsText(file);
             }
@@ -619,7 +627,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'log') {
                 return;
             }
 
-            currentWordlist = payloadsText.split('\n').filter(p => p.trim() !== '');
+            currentWordlist = payloadsText.split(/\r?\n/).map(p => p.trim()).filter(p => p !== '');
 
             isRunning = true;
             attempts = 0;
