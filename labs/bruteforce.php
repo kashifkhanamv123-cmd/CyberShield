@@ -58,6 +58,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'verify') {
 
 // AJAX Endpoint for logging results
 if (isset($_GET['action']) && $_GET['action'] === 'log') {
+    if (!isset($_POST['csrf_token']) || !validate_csrf_token($_POST['csrf_token'])) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'CSRF validation failed']);
+        exit;
+    }
     header('Content-Type: application/json');
     $target = $_POST['target'] ?? '';
     $type = $_POST['type'] ?? 'Dictionary';
@@ -743,6 +748,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'log') {
             formData.append('attempts', attempts);
             formData.append('success', success);
             formData.append('time', time);
+            formData.append('csrf_token', '<?php echo $_SESSION['csrf_token']; ?>');
             fetch('?action=log', {
                 method: 'POST',
                 body: formData

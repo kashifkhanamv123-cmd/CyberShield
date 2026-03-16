@@ -6,6 +6,9 @@ $msgType = '';
 
 // ── Handle POST actions ────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!isset($_POST['csrf_token']) || !validate_csrf_token($_POST['csrf_token'])) {
+        die("CSRF token validation failed.");
+    }
     $action = $_POST['action'] ?? '';
     $uid    = intval($_POST['uid'] ?? 0);
 
@@ -230,6 +233,7 @@ if ($search) {
                                                     <div class="flex items-center justify-end gap-2">
                                                         <!-- Toggle Role -->
                                                         <form method="POST">
+                                                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                                                             <input type="hidden" name="uid" value="<?php echo $u['id']; ?>">
                                                             <input type="hidden" name="role" value="<?php echo $u['role']; ?>">
                                                             <input type="hidden" name="action" value="role">
@@ -240,6 +244,7 @@ if ($search) {
                                                         </form>
                                                         <!-- Toggle Block -->
                                                         <form method="POST">
+                                                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                                                             <input type="hidden" name="uid" value="<?php echo $u['id']; ?>">
                                                             <input type="hidden" name="status" value="<?php echo $u['status'] ?? 'active'; ?>">
                                                             <input type="hidden" name="action" value="block">

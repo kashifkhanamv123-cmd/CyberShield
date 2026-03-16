@@ -37,14 +37,18 @@ if ($campaign_id > 0) {
     // Landing image placeholder (could be stored in campaigns table)
     $landing_img = $campaign ? ($campaign['landing_image'] ?? '') : '';
 
-    // Stats – prepared statement
+    $stmt->close();
+
+    // Stats – prepared statement with ownership check (IDOR fix)
     $stmt = $conn->prepare(
         "SELECT
             COUNT(CASE WHEN event_type = 'click' THEN 1 END) AS clicks,
             COUNT(CASE WHEN event_type = 'credential' THEN 1 END) AS creds
-         FROM phishing_events WHERE campaign_id = ?"
+         FROM phishing_events pe
+         JOIN phishing_campaigns pc ON pe.campaign_id = pc.id
+         WHERE pe.campaign_id = ? AND pc.user_id = ?"
     );
-    $stmt->bind_param("i", $campaign_id);
+    $stmt->bind_param("ii", $campaign_id, $user_id);
     $stmt->execute();
     $stats = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -57,11 +61,14 @@ if ($campaign_id > 0) {
     $total_clicks = (int)$stats['clicks'];
     $total_creds  = (int)$stats['creds'];
 
-    // Fetch events with IP addresses
+    // Fetch events with IP addresses (IDOR fix)
     $stmt = $conn->prepare(
-        "SELECT * FROM phishing_events WHERE campaign_id = ? ORDER BY created_at DESC"
+        "SELECT pe.* FROM phishing_events pe
+         JOIN phishing_campaigns pc ON pe.campaign_id = pc.id
+         WHERE pe.campaign_id = ? AND pc.user_id = ?
+         ORDER BY pe.created_at DESC"
     );
-    $stmt->bind_param("i", $campaign_id);
+    $stmt->bind_param("ii", $campaign_id, $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
     while ($row = $result->fetch_assoc()) {

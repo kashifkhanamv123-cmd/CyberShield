@@ -8,6 +8,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if (isset($_POST['launch'])) {
+    if (!isset($_POST['csrf_token']) || !validate_csrf_token($_POST['csrf_token'])) {
+        die("CSRF token validation failed.");
+    }
 
     $user_id = $_SESSION['user_id'];
     $sender_name  = $_POST['sender_name'];
