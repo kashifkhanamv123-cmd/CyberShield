@@ -38,7 +38,7 @@ if (isset($_POST['register'])) {
       if ($insert->execute()) {
         $success = "Registration successful! You can now login.";
       } else {
-        $error = "Something went wrong! " . $insert->error;
+        $error = "Registration failed. Please try again or contact support.";
       }
 
       $insert->close();
@@ -85,16 +85,16 @@ if (isset($_POST['register'])) {
 
 <body class="terminal-bg min-h-screen flex items-center justify-center text-white">
 
-  <div class="bg-card-dark/70 backdrop-blur-lg border border-white/10 rounded-2xl p-10 w-full max-w-md shadow-2xl">
+  <div class="bg-card-dark/70 backdrop-blur-lg border border-white/10 rounded-2xl p-6 sm:p-10 mx-4 sm:mx-0 w-full max-w-md shadow-2xl">
 
     <h2 class="text-xl font-bold text-center mb-6 text-primary">Register</h2>
 
     <?php if ($error): ?>
-      <p class="text-red-500 text-sm mb-4 text-center"><?php echo $error; ?></p>
+      <p class="text-red-500 text-sm mb-4 text-center"><?php echo htmlspecialchars($error); ?></p>
     <?php endif; ?>
 
     <?php if ($success): ?>
-      <p class="text-green-500 text-sm mb-4 text-center"><?php echo $success; ?></p>
+      <p class="text-green-500 text-sm mb-4 text-center"><?php echo htmlspecialchars($success); ?></p>
     <?php endif; ?>
 
     <form method="POST" class="space-y-4">

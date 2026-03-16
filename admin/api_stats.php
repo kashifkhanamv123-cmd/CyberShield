@@ -28,23 +28,31 @@ $stats = [
 // ── Weekly Registration Data ─────────────────────────────────────
 $reg_labels = [];
 $reg_counts = [];
+$reg_stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE DATE(created_at) = ?");
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $reg_labels[] = date('D', strtotime($date));
-    $q = $conn->query("SELECT COUNT(*) FROM users WHERE DATE(created_at)='$date'");
+    $reg_stmt->bind_param("s", $date);
+    $reg_stmt->execute();
+    $q = $reg_stmt->get_result();
     $reg_counts[] = ($q) ? (int)$q->fetch_row()[0] : 0;
 }
+$reg_stmt->close();
 $stats['charts']['registrations'] = ['labels' => $reg_labels, 'data' => $reg_counts];
 
 // ── Daily Activity Trend (Last 14 Days) ─────────────────────────
 $trend_labels = [];
 $trend_counts = [];
+$trend_stmt = $conn->prepare("SELECT COUNT(*) FROM security_logs WHERE DATE(created_at) = ?");
 for ($i = 13; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $trend_labels[] = date('M d', strtotime($date));
-    $q = $conn->query("SELECT COUNT(*) FROM security_logs WHERE DATE(created_at)='$date'");
+    $trend_stmt->bind_param("s", $date);
+    $trend_stmt->execute();
+    $q = $trend_stmt->get_result();
     $trend_counts[] = ($q) ? (int)$q->fetch_row()[0] : 0;
 }
+$trend_stmt->close();
 $stats['charts']['trends'] = ['labels' => $trend_labels, 'data' => $trend_counts];
 
 // ── User Growth Monthly ─────────────────────────────────────────

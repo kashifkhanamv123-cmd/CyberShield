@@ -118,12 +118,17 @@ $lab_data = [
         <?php include '_sidebar.php'; ?>
 
         <!-- Main -->
-        <main class="flex-1 flex flex-col overflow-hidden">
+        <main class="flex-1 flex flex-col overflow-hidden relative">
             <!-- Top Bar -->
-            <header class="shrink-0 sticky top-0 z-10 bg-background-dark/80 backdrop-blur-md border-b border-border-dim px-8 py-4 flex items-center justify-between">
-                <div>
-                    <p class="text-[10px] font-mono text-primary uppercase tracking-widest">Node: csh_admin_01</p>
-                    <h2 class="text-xl font-black text-white italic uppercase">Admin <span class="text-primary glow">Control Centre</span></h2>
+            <header class="shrink-0 sticky top-0 z-10 bg-background-dark/80 backdrop-blur-md border-b border-border-dim px-4 md:px-8 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button id="mobile-admin-btn" class="md:hidden text-white hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-2xl">menu</span>
+                    </button>
+                    <div>
+                        <p class="text-[10px] font-mono text-primary uppercase tracking-widest">Node: csh_admin_01</p>
+                        <h2 class="text-xl font-black text-white italic uppercase">Admin <span class="text-primary glow">Control Centre</span></h2>
+                    </div>
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary font-mono uppercase tracking-widest animate-pulse">● LIVE</span>
@@ -349,6 +354,13 @@ $lab_data = [
 
         const eventColors = <?php echo json_encode($event_colors); ?>;
 
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         async function updateDashboard() {
             try {
                 const res = await fetch('api_stats.php');
@@ -384,13 +396,13 @@ $lab_data = [
                         <tr class="hover:bg-white/[0.02] transition-colors">
                             <td class="py-3">
                                 <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${color}">
-                                    ${log.event_type.replace(/_/g, ' ')}
+                                    ${escapeHTML(log.event_type.replace(/_/g, ' '))}
                                 </span>
                             </td>
-                            <td class="py-3 text-white font-medium">${log.name || 'System'}</td>
-                            <td class="py-3 text-slate-400 max-w-xs truncate">${log.description || '-'}</td>
-                            <td class="py-3 font-mono text-xs text-slate-500">${log.ip_address || '-'}</td>
-                            <td class="py-3 font-mono text-xs text-slate-500">${log.time_ago}</td>
+                            <td class="py-3 text-white font-medium">${escapeHTML(log.name || 'System')}</td>
+                            <td class="py-3 text-slate-400 max-w-xs truncate">${escapeHTML(log.description || '-')}</td>
+                            <td class="py-3 font-mono text-xs text-slate-500">${escapeHTML(log.ip_address || '-')}</td>
+                            <td class="py-3 font-mono text-xs text-slate-500">${escapeHTML(log.time_ago)}</td>
                         </tr>
                     `;
                 }).join('');
@@ -408,6 +420,19 @@ $lab_data = [
 
         // Poll every 3 seconds for demo (normally 10-30s)
         setInterval(updateDashboard, 5000);
+
+        // Sidebar Toggle Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileBtn = document.getElementById('mobile-admin-btn');
+            const closeBtn = document.getElementById('close-admin-sidebar');
+            const sidebar = document.getElementById('admin-sidebar');
+            if (mobileBtn && sidebar) {
+                mobileBtn.addEventListener('click', () => sidebar.classList.remove('-translate-x-full'));
+            }
+            if (closeBtn && sidebar) {
+                closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
+            }
+        });
     </script>
 </body>
 

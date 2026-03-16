@@ -17,7 +17,10 @@ $navItems = [
     'analytics'  => ['icon' => 'bar_chart',        'label' => 'Analytics'],
 ];
 ?>
-<aside id="admin-sidebar" class="w-64 shrink-0 border-r border-border-dim bg-neutral-dark/60 backdrop-blur-xl flex flex-col z-20 h-screen sticky top-0">
+<aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r border-border-dim bg-neutral-dark/95 backdrop-blur-xl flex flex-col transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 h-screen sticky top-0">
+    <button id="close-admin-sidebar" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-white z-50">
+        <span class="material-symbols-outlined text-2xl">close</span>
+    </button>
     <!-- Logo -->
     <div class="p-6 border-b border-border-dim">
         <a href="" class="flex items-center gap-3 text-primary px-2 hover:opacity-80 transition-opacity">

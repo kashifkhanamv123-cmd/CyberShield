@@ -11,13 +11,19 @@ $user_id = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 
 // Fetch Phishing Progress
-$phishing_res = $conn->query("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = $user_id");
+$phishing_stmt = $conn->prepare("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = ?");
+$phishing_stmt->bind_param("i", $user_id);
+$phishing_stmt->execute();
+$phishing_res = $phishing_stmt->get_result();
 $phishing_count = $phishing_res->fetch_row()[0];
 $phishing_progress = min($phishing_count * 20, 100);
 $phishing_level = min(floor($phishing_count / 1) + 1, 5);
 
 // Fetch Brute Force Progress
-$bruteforce_res = $conn->query("SELECT COUNT(*) as total, MAX(success) as has_success FROM bruteforce_logs WHERE user_id = $user_id");
+$bruteforce_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(success) as has_success FROM bruteforce_logs WHERE user_id = ?");
+$bruteforce_stmt->bind_param("i", $user_id);
+$bruteforce_stmt->execute();
+$bruteforce_res = $bruteforce_stmt->get_result();
 $bruteforce_data = $bruteforce_res->fetch_assoc();
 $bruteforce_count = (int)$bruteforce_data['total'];
 $bruteforce_success = (int)$bruteforce_data['has_success'];
@@ -176,7 +182,11 @@ $lab_completed = $_GET['lab_completed'] ?? '';
 
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar Navigation -->
-        <aside class="w-64 border-r border-border-dim bg-neutral-dark/50 backdrop-blur-xl flex flex-col z-20 shrink-0">
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 border-r border-border-dim bg-neutral-dark/95 backdrop-blur-xl flex flex-col transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300">
+            <!-- Mobile Close Button -->
+            <button id="close-sidebar" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-white">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
             <div class="p-6">
                 <div class="flex items-center gap-3 text-primary mb-8 px-2 transition-transform hover:scale-105 cursor-pointer">
                     <span class="material-symbols-outlined text-3xl">shield_person</span>
@@ -221,12 +231,17 @@ $lab_completed = $_GET['lab_completed'] ?? '';
         <!-- Main Workspace -->
         <main class="flex-1 flex flex-col overflow-hidden relative">
             <!-- Top Navigation Bar -->
-            <header class="sticky top-0 z-10 bg-background-dark/80 backdrop-blur-md border-b border-border-dim px-8 py-4 flex items-center justify-between shrink-0">
-                <div>
-                    <div class="flex items-center gap-2 mb-0.5">
-                        <span class="text-[10px] font-mono text-primary uppercase tracking-widest">Node: csh_analyst_01</span>
+            <header class="sticky top-0 z-10 bg-background-dark/80 backdrop-blur-md border-b border-border-dim px-4 md:px-8 py-4 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-4">
+                    <button id="mobile-menu-btn" class="md:hidden text-white hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-2xl">menu</span>
+                    </button>
+                    <div>
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="text-[10px] font-mono text-primary uppercase tracking-widest">Node: csh_analyst_01</span>
+                        </div>
+                        <h2 class="text-xl font-black text-white italic uppercase italic">Analyst <span class="text-primary glow-text">Overview</span></h2>
                     </div>
-                    <h2 class="text-xl font-black text-white italic uppercase italic">Analyst <span class="text-primary glow-text">Overview</span></h2>
                 </div>
                 <div class="flex items-center gap-6">
                     <div class="flex items-center gap-4">
@@ -430,6 +445,24 @@ $lab_completed = $_GET['lab_completed'] ?? '';
             </footer>
         </main>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const closeSidebarBtn = document.getElementById('close-sidebar');
+            const sidebar = document.getElementById('sidebar');
+
+            if (mobileMenuBtn && sidebar) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    sidebar.classList.remove('-translate-x-full');
+                });
+            }
+            if (closeSidebarBtn && sidebar) {
+                closeSidebarBtn.addEventListener('click', () => {
+                    sidebar.classList.add('-translate-x-full');
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>

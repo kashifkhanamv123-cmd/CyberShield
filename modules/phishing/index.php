@@ -257,8 +257,11 @@ $show_success = isset($_GET['success']);
         </div>
     <?php endif; ?>
 
-    <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md">
-        <div class="flex items-center gap-8">
+    <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-4 md:px-6 py-3 bg-background-dark/80 backdrop-blur-md">
+        <div class="flex items-center gap-4 md:gap-8">
+            <button id="mobile-phishing-menu-btn" class="md:hidden text-white hover:text-primary transition-colors">
+                <span class="material-symbols-outlined text-2xl">menu</span>
+            </button>
             <div class="flex items-center gap-3 text-primary cursor-pointer transition-transform hover:scale-105" onclick="location.reload()">
                 <span class="material-symbols-outlined text-3xl">shield_person</span>
                 <h2 class="text-white text-xl font-bold tracking-tight uppercase">CyberShield <span class="text-primary/70 text-xs font-mono">v4.2.0</span></h2>
@@ -278,9 +281,13 @@ $show_success = isset($_GET['success']);
         </div>
     </header>
 
-    <main class="flex-1 flex lg:h-[calc(100vh-60px)]">
-        <aside class="hidden md:flex w-64 border-r border-border-muted flex-col bg-background-dark/50 p-6 overflow-y-auto custom-scrollbar shrink-0">
-            <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4">Target Audience</h3>
+    <main class="flex-1 flex lg:h-[calc(100vh-60px)] relative">
+        <aside id="phishing-sidebar" class="fixed inset-y-0 left-0 z-[60] w-64 border-r border-border-muted flex-col bg-background-dark/95 backdrop-blur-xl p-6 overflow-y-auto custom-scrollbar shrink-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 flex">
+            <!-- Mobile Close Button -->
+            <button id="close-phishing-sidebar" class="md:hidden absolute top-4 right-4 text-[#b0bc9a] hover:text-white">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+            <h3 class="text-xs font-bold uppercase tracking-widest text-[#b0bc9a] mb-4 mt-6 md:mt-0">Target Audience</h3>
             <div class="space-y-1 mb-8" id="audienceList">
                 <button onclick="switchAudience('all')" class="audience-btn active w-full flex items-center justify-between px-3 py-2 rounded-lg text-[#b0bc9a] border border-transparent hover:bg-surface-dark hover:text-white transition-all text-left">
                     <span class="text-sm font-medium">All Employees</span>
@@ -497,7 +504,7 @@ $show_success = isset($_GET['success']);
                             <div class="size-2.5 rounded-full bg-primary/20"></div>
                         </div>
                     </div>
-<div id="emailPreviewContainer" class="custom-scrollbar shadow-2xl flex-1 overflow-y-auto">
+                    <div id="emailPreviewContainer" class="custom-scrollbar shadow-2xl flex-1 overflow-y-auto">
                         <div class="flex flex-col text-gray-900 bg-white" id="emailPreviewFrame">
                             <div class="bg-gray-100 px-4 py-2 border-b border-gray-200 text-[10px] text-gray-500 flex justify-between sticky top-0 z-10 w-full">
                                 <span>Preview: Outlook Mobile / Desktop</span>
@@ -555,6 +562,22 @@ $show_success = isset($_GET['success']);
     </footer>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileMenuBtn = document.getElementById('mobile-phishing-menu-btn');
+            const closeSidebarBtn = document.getElementById('close-phishing-sidebar');
+            const sidebar = document.getElementById('phishing-sidebar');
+
+            if (mobileMenuBtn && sidebar) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    sidebar.classList.remove('-translate-x-full');
+                });
+            }
+            if (closeSidebarBtn && sidebar) {
+                closeSidebarBtn.addEventListener('click', () => {
+                    sidebar.classList.add('-translate-x-full');
+                });
+            }
+        });
         const systemTemplates = {
             microsoft: {
                 name: "Microsoft Security",

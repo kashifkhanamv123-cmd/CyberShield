@@ -27,11 +27,15 @@ while ($row = $growthRes->fetch_assoc()) $growthData[] = $row;
 
 // 3. Daily Events (Last 14 Days) - Activity Trend
 $trends = [];
+$trend_stmt = $conn->prepare("SELECT COUNT(*) FROM security_logs WHERE DATE(created_at) = ?");
 for ($i = 13; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
-    $c = $conn->query("SELECT COUNT(*) FROM security_logs WHERE DATE(created_at)='$date'")->fetch_row()[0];
+    $trend_stmt->bind_param("s", $date);
+    $trend_stmt->execute();
+    $c = $trend_stmt->get_result()->fetch_row()[0];
     $trends[] = ['date' => date('M d', strtotime($date)), 'count' => (int)$c];
 }
+$trend_stmt->close();
 
 // 4. Lab Performance Metrics
 $perf = $conn->query("
@@ -757,6 +761,13 @@ $ddosDetail = $conn->query("SELECT ds.*, u.name as analyst FROM ddos_simulations
                 cutout: '70%'
             }
         });
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
 
         async function updateAnalytics() {
             try {

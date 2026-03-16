@@ -59,8 +59,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'verify') {
 // AJAX Endpoint for logging results
 if (isset($_GET['action']) && $_GET['action'] === 'log') {
     header('Content-Type: application/json');
-    $target = mysqli_real_escape_string($conn, $_POST['target'] ?? '');
-    $type = mysqli_real_escape_string($conn, $_POST['type'] ?? 'Dictionary');
+    $target = $_POST['target'] ?? '';
+    $type = $_POST['type'] ?? 'Dictionary';
     $attempts = (int)($_POST['attempts'] ?? 0);
     $success = (int)($_POST['success'] ?? 0);
     $time = (float)($_POST['time'] ?? 0);
@@ -238,25 +238,25 @@ if (isset($_GET['action']) && $_GET['action'] === 'log') {
 <body class="text-slate-300 font-sans min-h-screen overflow-x-hidden selection:bg-primary selection:text-black">
     <div class="scanline"></div>
 
-    <div class="px-6 py-4 border-b border-primary/20 bg-black/60 backdrop-blur-md flex items-center justify-between sticky top-0 z-40">
-        <div class="flex items-center gap-6">
+    <div class="px-4 md:px-6 py-4 border-b border-primary/20 bg-black/60 backdrop-blur-md flex flex-wrap gap-4 items-center justify-between sticky top-0 z-40">
+        <div class="flex items-center gap-4 md:gap-6">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+                <div class="w-8 h-8 bg-primary rounded flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-black font-bold">shield</span>
                 </div>
-                <span class="text-xl font-black text-white tracking-tighter uppercase italic">Cyber<span class="text-primary">Shield</span></span>
+                <span class="text-xl font-black text-white tracking-tighter uppercase italic hidden sm:block">Cyber<span class="text-primary">Shield</span></span>
             </div>
-            <div class="h-6 w-px bg-primary/20"></div>
+            <div class="h-6 w-px bg-primary/20 hidden sm:block"></div>
             <div class="flex items-center gap-2 text-primary/80">
                 <span class="material-symbols-outlined text-sm">grid_view</span>
-                <span class="text-xs font-bold uppercase tracking-widest">Brute Force Simulation Lab</span>
+                <span class="text-[10px] md:text-xs font-bold uppercase tracking-widest truncate">Brute Force Lab</span>
             </div>
         </div>
-        <div class="flex items-center gap-4 text-xs font-mono">
-            <button onclick="window.location.href='../dashboard/dashboard.php'" class="px-4 py-2 bg-surface border border-primary/30 rounded text-primary hover:bg-primary/10 transition-all flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm">arrow_back</span> Back to Dashboard
+        <div class="flex items-center gap-2 md:gap-4 text-[10px] md:text-xs font-mono">
+            <button onclick="window.location.href='../dashboard/dashboard.php'" class="px-3 py-2 bg-surface border border-primary/30 rounded text-primary hover:bg-primary/10 transition-all flex items-center gap-1 md:gap-2">
+                <span class="material-symbols-outlined text-sm">arrow_back</span> <span class="hidden sm:inline">Back</span>
             </button>
-            <div class="px-3 py-1 bg-surface border border-primary/30 rounded text-primary">BF-LAB-01</div>
+            <div class="px-2 md:px-3 py-1 bg-surface border border-primary/30 rounded text-primary shrink-0">BF-01</div>
         </div>
     </div>
 

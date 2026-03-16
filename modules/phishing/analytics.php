@@ -657,6 +657,13 @@ $unique_ips  = array_unique($ip_list);
             });
         }
 
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         function updateDashboard(data) {
             const feedContainer = document.querySelector('.flex-1.overflow-y-auto.custom-scrollbar.space-y-4');
             const ipLogContainer = document.querySelector('.space-y-2.max-h-40.overflow-y-auto.custom-scrollbar');
@@ -684,11 +691,11 @@ $unique_ips  = array_unique($ip_list);
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between mb-1 gap-2">
-                                    <span class="text-primary font-bold truncate">EVENT_${event.event_type.toUpperCase()}</span>
-                                    <span class="text-[10px] text-[#b0bc9a] shrink-0">${time}</span>
+                                    <span class="text-primary font-bold truncate">EVENT_${escapeHTML(event.event_type.toUpperCase())}</span>
+                                    <span class="text-[10px] text-[#b0bc9a] shrink-0">${escapeHTML(time)}</span>
                                 </div>
                                 <p class="text-white/80 leading-relaxed">
-                                    Origin IP: <span class="text-amber-400">${event.attacker_ip}</span>
+                                    Origin IP: <span class="text-amber-400">${escapeHTML(event.attacker_ip)}</span>
                                 </p>
                             </div>
                         </div>`;
@@ -697,7 +704,7 @@ $unique_ips  = array_unique($ip_list);
                         uniqueIps.add(event.attacker_ip);
                         ipsHtml += `
                             <div class="flex items-center justify-between bg-background-dark/60 border border-border-muted rounded-lg px-3 py-2">
-                                <span class="font-mono text-xs text-amber-400">${event.attacker_ip}</span>
+                                <span class="font-mono text-xs text-amber-400">${escapeHTML(event.attacker_ip)}</span>
                                 <span class="text-[10px] text-[#b0bc9a] uppercase">Logged</span>
                             </div>`;
                     }

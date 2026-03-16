@@ -61,7 +61,7 @@ if (!empty($landing_img) && strpos($landing_img, 'http') !== 0) {
             </div>
 
             <form action="capture.php" method="POST" class="space-y-4">
-                <input type="hidden" name="campaign_id" value="<?php echo $campaign_id; ?>">
+                <input type="hidden" name="campaign_id" value="<?php echo htmlspecialchars($campaign_id); ?>">
 
                 <div>
                     <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-1">Email Address</label>

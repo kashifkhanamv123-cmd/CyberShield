@@ -104,7 +104,7 @@ if (isset($_POST['login'])) {
         </p>
     </div>
 
-    <main class="max-w-[420px] w-full">
+    <main class="max-w-[420px] w-full px-4 sm:px-0">
 
         <div class="bg-card-dark/90 border border-white/10 rounded-xl p-8 shadow-2xl">
 
@@ -113,7 +113,7 @@ if (isset($_POST['login'])) {
                 <p class="text-slate-400 text-sm">Initialize encrypted handshake to proceed</p>
 
                 <?php if (!empty($error)): ?>
-                    <p class="text-red-500 text-sm mt-3"><?php echo $error; ?></p>
+                    <p class="text-red-500 text-sm mt-3"><?php echo htmlspecialchars($error); ?></p>
                 <?php endif; ?>
             </div>
 
