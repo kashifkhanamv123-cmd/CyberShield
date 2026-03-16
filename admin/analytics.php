@@ -5,25 +5,34 @@ require_once __DIR__ . '/admin-auth.php';
  * Analytics Data Acquisition
  */
 
-// 1. Lab Activity Distribution (Pie Chart)
-$dist = $conn->query("
-    SELECT
-        (SELECT COUNT(*) FROM phishing_campaigns) as phishing,
-        (SELECT COUNT(*) FROM bruteforce_logs) as bruteforce,
-        (SELECT COUNT(*) FROM malware_samples) as malware,
-        (SELECT COUNT(*) FROM ddos_simulations) as ddos
-")->fetch_assoc();
+// 1. Lab Activity Distribution (Pie Chart - Prepared Statements)
+function get_analytics_count($conn, $sql) {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_row()[0];
+    $stmt->close();
+    return $res;
+}
 
-// 2. User Growth over life (Monthly)
+$dist = [];
+$dist['phishing']   = get_analytics_count($conn, "SELECT COUNT(*) FROM phishing_campaigns");
+$dist['bruteforce'] = get_analytics_count($conn, "SELECT COUNT(*) FROM bruteforce_logs");
+$dist['malware']    = get_analytics_count($conn, "SELECT COUNT(*) FROM malware_samples");
+$dist['ddos']       = get_analytics_count($conn, "SELECT COUNT(*) FROM ddos_simulations");
+
+// 2. User Growth over life (Monthly - Prepared Statement)
 $growthData = [];
-$growthRes = $conn->query("
+$growth_stmt = $conn->prepare("
     SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count
     FROM users
     GROUP BY month
     ORDER BY month ASC
     LIMIT 12
 ");
+$growth_stmt->execute();
+$growthRes = $growth_stmt->get_result();
 while ($row = $growthRes->fetch_assoc()) $growthData[] = $row;
+$growth_stmt->close();
 
 // 3. Daily Events (Last 14 Days) - Activity Trend
 $trends = [];
@@ -37,41 +46,51 @@ for ($i = 13; $i >= 0; $i--) {
 }
 $trend_stmt->close();
 
-// 4. Lab Performance Metrics
-$perf = $conn->query("
-    SELECT
-        (SELECT AVG(duration_sec) FROM ddos_simulations) as avg_ddos,
-        (SELECT SUM(emails_sent) FROM phishing_campaigns) as total_emails,
-        (SELECT SUM(success) FROM bruteforce_logs) as bf_wins
-")->fetch_assoc();
+// 4. Lab Performance Metrics (Prepared Statements)
+$perf = [];
+$perf['avg_ddos']     = get_analytics_count($conn, "SELECT AVG(duration_sec) FROM ddos_simulations");
+$perf['total_emails'] = get_analytics_count($conn, "SELECT SUM(emails_sent) FROM phishing_campaigns");
+$perf['bf_wins']      = get_analytics_count($conn, "SELECT SUM(success) FROM bruteforce_logs");
 
-// 5. Global Summary for Report
-$globalStats = $conn->query("
-    SELECT
-        (SELECT COUNT(*) FROM users) as users,
-        (SELECT COUNT(*) FROM phishing_campaigns) as phishing,
-        (SELECT COUNT(*) FROM bruteforce_logs) as bruteforce,
-        (SELECT COUNT(*) FROM malware_samples) as malware,
-        (SELECT COUNT(*) FROM ddos_simulations) as ddos
-")->fetch_assoc();
+// 5. Global Summary for Report (Prepared Statements)
+$globalStats = [];
+$globalStats['users']      = get_analytics_count($conn, "SELECT COUNT(*) FROM users");
+$globalStats['phishing']   = get_analytics_count($conn, "SELECT COUNT(*) FROM phishing_campaigns");
+$globalStats['bruteforce'] = get_analytics_count($conn, "SELECT COUNT(*) FROM bruteforce_logs");
+$globalStats['malware']    = get_analytics_count($conn, "SELECT COUNT(*) FROM malware_samples");
+$globalStats['ddos']       = get_analytics_count($conn, "SELECT COUNT(*) FROM ddos_simulations");
 
-// 6. Detailed User Roster
-$userRoster = $conn->query("SELECT name, email, role, status, created_at FROM users ORDER BY created_at DESC LIMIT 100");
+// 6. Detailed User Roster (Prepared Statement)
+$roster_stmt = $conn->prepare("SELECT name, email, role, status, created_at FROM users ORDER BY created_at DESC LIMIT 100");
+$roster_stmt->execute();
+$userRoster = $roster_stmt->get_result();
+$roster_stmt->close();
 
-// 7. Security Audit Trail (Recent Logs)
-$recentLogs = $conn->query("
+// 7. Security Audit Trail (Recent Logs - Prepared Statement)
+$recent_stmt = $conn->prepare("
     SELECT sl.*, u.name as analyst
     FROM security_logs sl
     LEFT JOIN users u ON u.id = sl.user_id
     ORDER BY sl.created_at DESC
     LIMIT 50
 ");
+$recent_stmt->execute();
+$recentLogs = $recent_stmt->get_result();
+$recent_stmt->close();
 
-// 8. Module Deep Dive Data
-$phishingDetail = $conn->query("SELECT pc.*, u.name as creator FROM phishing_campaigns pc JOIN users u ON u.id = pc.user_id ORDER BY pc.created_at DESC LIMIT 5");
-$bruteDetail = $conn->query("SELECT bl.*, u.name as analyst FROM bruteforce_logs bl JOIN users u ON u.id = bl.user_id ORDER BY bl.created_at DESC LIMIT 5");
-$malwareDetail = $conn->query("SELECT ms.*, u.name as analyst FROM malware_samples ms JOIN users u ON u.id = ms.user_id ORDER BY ms.upload_date DESC LIMIT 5");
-$ddosDetail = $conn->query("SELECT ds.*, u.name as analyst FROM ddos_simulations ds JOIN users u ON u.id = ds.user_id ORDER BY ds.created_at DESC LIMIT 5");
+// 8. Module Deep Dive Data (Prepared Statements)
+function get_deep_dive($conn, $sql) {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $stmt->close();
+    return $res;
+}
+
+$phishingDetail = get_deep_dive($conn, "SELECT pc.*, u.name as creator FROM phishing_campaigns pc JOIN users u ON u.id = pc.user_id ORDER BY pc.created_at DESC LIMIT 5");
+$bruteDetail    = get_deep_dive($conn, "SELECT bl.*, u.name as analyst FROM bruteforce_logs bl JOIN users u ON u.id = bl.user_id ORDER BY bl.created_at DESC LIMIT 5");
+$malwareDetail  = get_deep_dive($conn, "SELECT ms.*, u.name as analyst FROM malware_samples ms JOIN users u ON u.id = ms.user_id ORDER BY ms.upload_date DESC LIMIT 5");
+$ddosDetail     = get_deep_dive($conn, "SELECT ds.*, u.name as analyst FROM ddos_simulations ds JOIN users u ON u.id = ds.user_id ORDER BY ds.created_at DESC LIMIT 5");
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">

@@ -2,32 +2,53 @@
 require_once __DIR__ . '/admin-auth.php';
 
 // ── Stats ──────────────────────────────────────────────────────
-$total_users = ($q = $conn->query("SELECT COUNT(*) FROM users")) ? $q->fetch_row()[0] : 0;
-$total_phishing = ($q = $conn->query("SELECT COUNT(*) FROM phishing_campaigns")) ? $q->fetch_row()[0] : 0;
-$total_bf = ($q = $conn->query("SELECT COUNT(*) FROM bruteforce_logs")) ? $q->fetch_row()[0] : 0;
-$total_malware = ($q = $conn->query("SELECT COUNT(*) FROM malware_samples")) ? $q->fetch_row()[0] : 0;
-$total_ddos = ($q = $conn->query("SELECT COUNT(*) FROM ddos_simulations")) ? $q->fetch_row()[0] : 0;
-$blocked_users = ($q = $conn->query("SELECT COUNT(*) FROM users WHERE status='blocked'")) ? $q->fetch_row()[0] : 0;
+// ── Stats (Prepared Statements) ──────────────────────────────────
+function get_count($conn, $sql, $types = null, $params = []) {
+    $stmt = $conn->prepare($sql);
+    if ($types && $params) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $res = $stmt->get_result()->fetch_row()[0];
+    $stmt->close();
+    return $res;
+}
+
+$total_users    = get_count($conn, "SELECT COUNT(*) FROM users");
+$total_phishing = get_count($conn, "SELECT COUNT(*) FROM phishing_campaigns");
+$total_bf       = get_count($conn, "SELECT COUNT(*) FROM bruteforce_logs");
+$total_malware  = get_count($conn, "SELECT COUNT(*) FROM malware_samples");
+$total_ddos     = get_count($conn, "SELECT COUNT(*) FROM ddos_simulations");
+$blocked_users  = get_count($conn, "SELECT COUNT(*) FROM users WHERE status='blocked'");
 
 // ── Recent logs ────────────────────────────────────────────────
-$recent_logs_res = $conn->query("
-SELECT sl.event_type, sl.description, sl.ip_address, sl.created_at, u.name
-FROM security_logs sl
-LEFT JOIN users u ON u.id = sl.user_id
-ORDER BY sl.created_at DESC
-LIMIT 8
-") or die("Recent logs query failed: " . $conn->error);
+// ── Recent logs (Prepared Statement) ─────────────────────────────
+$recent_stmt = $conn->prepare("
+    SELECT sl.event_type, sl.description, sl.ip_address, sl.created_at, u.name
+    FROM security_logs sl
+    LEFT JOIN users u ON u.id = sl.user_id
+    ORDER BY sl.created_at DESC
+    LIMIT 8
+");
+$recent_stmt->execute();
+$recent_logs_res = $recent_stmt->get_result();
+$recent_stmt->close();
 
 // ── Chart data: last 7 days user registrations ─────────────────
 $reg_data = [];
+// ── Chart data: last 7 days user registrations (Prepared Statement) 
+$reg_data = [];
+$reg_stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE DATE(created_at) = ?");
 for ($i = 6; $i >= 0; $i--) {
     $date = date('Y-m-d', strtotime("-$i days"));
     $label = date('D', strtotime($date));
-    $q = $conn->query("SELECT COUNT(*) FROM users WHERE DATE(created_at)='$date'");
-    $count = ($q) ? $q->fetch_row()[0] : 0;
+    $reg_stmt->bind_param("s", $date);
+    $reg_stmt->execute();
+    $count = $reg_stmt->get_result()->fetch_row()[0];
     $reg_data['labels'][] = $label;
     $reg_data['data'][] = (int)$count;
 }
+$reg_stmt->close();
 
 // ── Chart data: lab activity counts ───────────────────────────
 $lab_data = [

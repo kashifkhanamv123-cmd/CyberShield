@@ -29,24 +29,27 @@ $sql = "SELECT bl.*, u.name as user_name
         ORDER BY bl.created_at DESC
         LIMIT 200";
 
-if ($search) {
-    $stmt = $conn->prepare($sql);
+// ── Fetch brute force logs (Prepared Statement) ─────────────────
+$stmt = $conn->prepare($sql);
+if ($types) {
     $stmt->bind_param($types, ...$params);
-    $stmt->execute();
-    $logs = $stmt->get_result();
-} else {
-    $logs = $conn->query($sql);
 }
+$stmt->execute();
+$logs = $stmt->get_result();
+$stmt->close();
 
-// Aggregate stats
-$stats = $conn->query("
+// Aggregate stats (Prepared Statement) ──────────────────────────
+$stats_stmt = $conn->prepare("
     SELECT
         COUNT(*) as total,
         SUM(success) as successes,
         SUM(attempts) as total_attempts,
         MAX(attempts) as max_attempts
     FROM bruteforce_logs
-")->fetch_assoc();
+");
+$stats_stmt->execute();
+$stats = $stats_stmt->get_result()->fetch_assoc();
+$stats_stmt->close();
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">

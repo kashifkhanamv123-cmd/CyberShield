@@ -162,6 +162,13 @@ if ($search) {
                     <p class="text-[10px] font-mono text-primary uppercase tracking-widest">Module: user_management</p>
                     <h2 class="text-xl font-black text-white italic uppercase">User <span class="text-primary glow">Management</span></h2>
                 </div>
+                <?php
+                // Check number of administrators to prevent lockout
+                $admin_stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE role = 'admin'");
+                $admin_stmt->execute();
+                $admin_count = $admin_stmt->get_result()->fetch_row()[0];
+                $admin_stmt->close();
+                ?>
                 <form method="GET" class="flex items-center gap-2">
                     <input name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search users…"
                         class="bg-surface border border-border-dim rounded-lg px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-primary w-64" />

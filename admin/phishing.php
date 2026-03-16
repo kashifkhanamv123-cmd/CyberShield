@@ -37,13 +37,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_campaign'])) {
     $msgType = 'success';
 }
 
-// ── Fetch campaigns ────────────────────────────────────────────
-$campaigns = $conn->query("
+// ── Fetch campaigns (Prepared Statement) ───────────────────────
+$campaign_stmt = $conn->prepare("
     SELECT pc.*, u.name as creator
     FROM phishing_campaigns pc
     JOIN users u ON u.id = pc.user_id
     ORDER BY pc.created_at DESC
 ");
+$campaign_stmt->execute();
+$campaigns = $campaign_stmt->get_result();
+$campaign_stmt->close();
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">

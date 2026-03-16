@@ -36,15 +36,18 @@ if ($types) {
 $stmt->execute();
 $simulations = $stmt->get_result();
 
-// Stats for DDoS
-$stats = $conn->query("
+// Stats for DDoS (Prepared Statement) ───────────────────────────
+$stats_stmt = $conn->prepare("
     SELECT
         COUNT(*) as total,
         SUM(status='completed') as completed,
         SUM(status='running') as running,
         SUM(requests_sent) as total_requests
     FROM ddos_simulations
-")->fetch_assoc();
+");
+$stats_stmt->execute();
+$stats = $stats_stmt->get_result()->fetch_assoc();
+$stats_stmt->close();
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">

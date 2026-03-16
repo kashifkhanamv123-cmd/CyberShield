@@ -46,16 +46,19 @@ $stmt->bind_param($types, ...$params);
 $stmt->execute();
 $logs = $stmt->get_result();
 
-// ── Count for Pagination ───────────────────────────────────────
+// ── Count for Pagination (Prepared Statement) ───────────────────
 $countSql = "SELECT COUNT(*) FROM security_logs sl LEFT JOIN users u ON u.id = sl.user_id WHERE $where";
 $countStmt = $conn->prepare($countSql);
 if ($types !== "ii") {
     $countTypes = substr($types, 0, -2);
     $countParams = array_slice($params, 0, -2);
-    $countStmt->bind_param($countTypes, ...$countParams);
+    if ($countTypes) {
+        $countStmt->bind_param($countTypes, ...$countParams);
+    }
 }
 $countStmt->execute();
 $totalLogs = $countStmt->get_result()->fetch_row()[0];
+$countStmt->close();
 $totalPages = ceil($totalLogs / $limit);
 
 // ── Event Type Options ─────────────────────────────────────────
