@@ -187,33 +187,35 @@ $lab_completed = $_GET['lab_completed'] ?? '';
             <button id="close-sidebar" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-white">
                 <span class="material-symbols-outlined text-2xl">close</span>
             </button>
-            <div class="p-6">
-                <div class="flex items-center gap-3 text-primary mb-8 px-2 transition-transform hover:scale-105 cursor-pointer">
+            <!-- Sidebar Header -->
+            <div class="p-6 shrink-0">
+                <div class="flex items-center gap-3 text-primary mb-2 px-2 transition-transform hover:scale-105 cursor-pointer">
                     <span class="material-symbols-outlined text-3xl">shield_person</span>
                     <h1 class="text-white text-xl font-black italic tracking-tighter uppercase">Cyber<span class="text-primary tracking-normal">Shield</span></h1>
                 </div>
-
-                <nav class="space-y-1">
-                    <a class="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all" href="#">
-                        <span class="material-symbols-outlined text-xl">dashboard</span> Dashboard
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../modules/phishing/index.php">
-                        <span class="material-symbols-outlined text-xl">alternate_email</span> Phishing Lab
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
-                        <span class="material-symbols-outlined text-xl">security</span> DDoS Defense
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
-                        <span class="material-symbols-outlined text-xl">bug_report</span> Malware Analysis
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/bruteforce.php">
-                        <span class="material-symbols-outlined text-xl">lock_open</span> Brute Force Lab
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
-                        <span class="material-symbols-outlined text-xl">data_exploration</span> SOC Dashboard
-                    </a>
-                </nav>
             </div>
+
+            <!-- Scrollable Navigation -->
+            <nav class="flex-1 px-6 py-2 space-y-1 overflow-y-auto custom-scrollbar">
+                <a class="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all" href="#">
+                    <span class="material-symbols-outlined text-xl">dashboard</span> Dashboard
+                </a>
+                <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../modules/phishing/index.php">
+                    <span class="material-symbols-outlined text-xl">alternate_email</span> Phishing Lab
+                </a>
+                <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
+                    <span class="material-symbols-outlined text-xl">security</span> DDoS Defense
+                </a>
+                <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
+                    <span class="material-symbols-outlined text-xl">bug_report</span> Malware Analysis
+                </a>
+                <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/bruteforce.php">
+                    <span class="material-symbols-outlined text-xl">lock_open</span> Brute Force Lab
+                </a>
+                <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
+                    <span class="material-symbols-outlined text-xl">data_exploration</span> SOC Dashboard
+                </a>
+            </nav>
 
             <div class="mt-auto p-6 space-y-4">
                 <div class="p-4 rounded-xl bg-primary/5 border border-primary/10">

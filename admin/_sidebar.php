@@ -17,12 +17,12 @@ $navItems = [
     'analytics'  => ['icon' => 'bar_chart',        'label' => 'Analytics'],
 ];
 ?>
-<aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 shrink-0 border-r border-border-dim bg-neutral-dark/95 backdrop-blur-xl flex flex-col transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 h-screen sticky top-0">
+<aside id="admin-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 border-r border-border-dim bg-neutral-dark/95 backdrop-blur-xl flex flex-col transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300">
     <button id="close-admin-sidebar" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-white z-50">
         <span class="material-symbols-outlined text-2xl">close</span>
     </button>
     <!-- Logo -->
-    <div class="p-6 border-b border-border-dim">
+    <div class="p-6 border-b border-border-dim shrink-0">
         <a href="" class="flex items-center gap-3 text-primary px-2 hover:opacity-80 transition-opacity">
             <span class="material-symbols-outlined text-3xl">admin_panel_settings</span>
             <div>
@@ -47,7 +47,7 @@ $navItems = [
     </nav>
 
     <!-- Admin Info & Logout -->
-    <div class="p-4 border-t border-border-dim">
+    <div class="p-4 border-t border-border-dim shrink-0 bg-neutral-dark/50">
         <div class="flex items-center gap-3 mb-4 px-2">
             <div class="size-8 rounded-full bg-gradient-to-tr from-primary to-lime-600 flex items-center justify-center text-background-dark font-bold text-xs shrink-0">
                 <?php
