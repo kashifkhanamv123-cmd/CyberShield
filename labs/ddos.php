@@ -11,7 +11,7 @@ $user_id = $_SESSION['user_id'];
 
 // AJAX: Log DDoS mitigation result
 if (isset($_GET['action']) && $_GET['action'] === 'log') {
-    if (!isset($_POST['csrf_token']) || !validate_csrf_token($_POST['csrf_token'])) {
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
         header('Content-Type: application/json');
         echo json_encode(['status' => 'error', 'message' => 'CSRF validation failed']);
         exit;
