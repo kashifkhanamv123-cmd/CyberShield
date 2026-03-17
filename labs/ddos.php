@@ -17,12 +17,22 @@ if (isset($_GET['action']) && $_GET['action'] === 'log') {
         exit;
     }
     header('Content-Type: application/json');
-    $attack_type  = $_POST['attack_type']  ?? 'SYN Flood';
-    $intensity    = $_POST['intensity']    ?? 'Medium';
-    $mitigated    = (int)($_POST['mitigated'] ?? 0);
-    $time_taken   = (float)($_POST['time_taken'] ?? 0);
 
-    // Create table if not exists (graceful)
+    // Whitelist validation — reject anything outside known values
+    $allowed_attack_types = ['SYN Flood', 'UDP Flood', 'HTTP Flood', 'Slowloris', 'DNS Amplification'];
+    $allowed_intensities  = ['Low', 'Medium', 'High', 'Critical'];
+
+    $attack_type = $_POST['attack_type'] ?? 'SYN Flood';
+    $intensity   = $_POST['intensity']   ?? 'Medium';
+    $mitigated   = (int)($_POST['mitigated'] ?? 0);
+    $time_taken  = (float)($_POST['time_taken'] ?? 0);
+
+    if (!in_array($attack_type, $allowed_attack_types, true)) $attack_type = 'SYN Flood';
+    if (!in_array($intensity,   $allowed_intensities,  true)) $intensity   = 'Medium';
+    $mitigated  = $mitigated ? 1 : 0;
+    $time_taken = max(0, min($time_taken, 86400));
+
+    // Create table if not exists
     $conn->query("CREATE TABLE IF NOT EXISTS ddos_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
@@ -762,7 +772,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'log') {
             fd.append('intensity', currentIntensity);
             fd.append('mitigated', 1);
             fd.append('time_taken', elapsed);
-            fd.append('csrf_token', '<?php echo $_SESSION['csrf_token']; ?>');
+            fd.append('csrf_token', '<?php echo htmlspecialchars($_SESSION["csrf_token"] ?? "", ENT_QUOTES, "UTF-8"); ?>');  
             fetch('?action=log', { method: 'POST', body: fd });
         }
 
