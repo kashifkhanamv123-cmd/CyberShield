@@ -141,7 +141,91 @@ $lab_completed = $_GET['lab_completed'] ?? '';
             background: #23281b;
             border-radius: 10px;
         }
+
+        .lab-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-running { background: #a0f000; box-shadow: 0 0 8px #a0f000; }
+        .status-stopped { background: #64748b; }
+        .status-loading { background: #f59e0b; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
     </style>
+    <script>
+        async function manageLab(lab, action) {
+            const btn = event.currentTarget;
+            const originalText = btn.innerText;
+            const statusEl = document.getElementById(`status-${lab}`);
+            const dotEl = document.getElementById(`dot-${lab}`);
+            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span>';
+            
+            if (statusEl) statusEl.innerText = action === 'start' ? 'Starting...' : (action === 'stop' ? 'Stopping...' : 'Resetting...');
+            if (dotEl) dotEl.className = 'lab-status-dot status-loading';
+
+            try {
+                const response = await fetch(`../labs/manage_lab.php?lab=${lab}&action=${action}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    if (action === 'start') {
+                        statusEl.innerText = 'Running';
+                        dotEl.className = 'lab-status-dot status-running';
+                        // Provide link to user
+                        const host = window.location.hostname;
+                        const url = `http://${host}:${data.port}`;
+                        alert(`Lab is ready! Access it at: ${url}`);
+                        window.open(url, '_blank');
+                    } else if (action === 'stop') {
+                        statusEl.innerText = 'Stopped';
+                        dotEl.className = 'lab-status-dot status-stopped';
+                    } else if (action === 'reset') {
+                        location.reload();
+                    }
+                } else {
+                    alert('Error: ' + data.message);
+                    checkLabStatus(lab);
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Connection to lab controller failed.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalText;
+            }
+        }
+
+        async function checkLabStatus(lab) {
+            try {
+                const response = await fetch(`../labs/manage_lab.php?lab=${lab}&action=status`);
+                const data = await response.json();
+                const statusEl = document.getElementById(`status-${lab}`);
+                const dotEl = document.getElementById(`dot-${lab}`);
+                
+                if (statusEl && dotEl) {
+                    if (data.status === 'running') {
+                        statusEl.innerText = 'Running';
+                        dotEl.className = 'lab-status-dot status-running';
+                    } else {
+                        statusEl.innerText = 'Stopped';
+                        dotEl.className = 'lab-status-dot status-stopped';
+                    }
+                }
+            } catch (e) {}
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            ['juiceshop', 'dvwa', 'bwapp'].forEach(checkLabStatus);
+        });
+    </script>
 </head>
 
 <body id="dashboard-app" class="bg-background-dark text-slate-300 font-display min-h-screen terminal-grid selection:bg-primary selection:text-background-dark overflow-hidden">
@@ -426,6 +510,145 @@ $lab_completed = $_GET['lab_completed'] ?? '';
                                     </div>
                                 </div>
                                 <a href="../labs/malware.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">Initialize Lab Instance</a>
+                            </div>
+
+                            <!-- Module Card: Brute Force -->
+                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
+                                <div class="p-6">
+                                    <div class="flex items-start justify-between mb-6">
+                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
+                                            <span class="material-symbols-outlined text-2xl">lock_open</span>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">MODULE_04</span>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">Brute Force Lab</h4>
+                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Simulate automated credential stuffing attacks and learn how to secure authentication against high-speed brute force attempts.</p>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                                            <span class="text-slate-500">Attack Success</span>
+                                            <span class="text-white"><?php echo $bruteforce_progress; ?>%</span>
+                                        </div>
+                                        <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
+                                            <div class="bg-primary h-full rounded-full" style="width: <?php echo $bruteforce_progress; ?>%"></div>
+                                        </div>
+                                        <div class="flex justify-between items-center pt-2">
+                                            <span class="text-[10px] text-slate-500">Tier <?php echo $bruteforce_success ? '2' : '1'; ?> Attacker</span>
+                                            <span class="text-[10px] text-primary font-bold"><?php echo $bruteforce_success ? 'TARGET CRACKED' : 'NEXT: DICTIONARY SCAN'; ?></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <a href="../labs/bruteforce.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">Initialize Lab Instance</a>
+                            </div>
+
+                            <!-- Module Card: Juice Shop (Docker) -->
+                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
+                                <div class="p-6">
+                                    <div class="flex items-start justify-between mb-6">
+                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
+                                            <span class="material-symbols-outlined text-2xl">shopping_cart</span>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">CONTAINER_NODE</span>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">OWASP Juice Shop</h4>
+                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">A modern, vulnerable web application for security testing. Practice SQLi, XSS, and broken access control in a live container.</p>
+                                    <div class="space-y-4">
+                                        <div class="flex items-center justify-between p-2.5 bg-background-dark/50 rounded-lg border border-border-dim">
+                                            <div class="flex items-center">
+                                                <span id="dot-juiceshop" class="lab-status-dot status-stopped"></span>
+                                                <span id="status-juiceshop" class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Stopped</span>
+                                            </div>
+                                            <div class="flex gap-1.5">
+                                                <button onclick="manageLab('juiceshop', 'start')" class="size-7 flex items-center justify-center rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-black transition-all" title="Start Lab">
+                                                    <span class="material-symbols-outlined text-sm">play_arrow</span>
+                                                </button>
+                                                <button onclick="manageLab('juiceshop', 'stop')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30 transition-all" title="Stop Lab">
+                                                    <span class="material-symbols-outlined text-sm">stop</span>
+                                                </button>
+                                                <button onclick="manageLab('juiceshop', 'reset')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-white/10 hover:text-white transition-all" title="Reset Lab">
+                                                    <span class="material-symbols-outlined text-sm">refresh</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 divide-x divide-border-dim border-t border-border-dim">
+                                    <a href="https://pwning.owasp-juice.shop/" target="_blank" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-all">Challenge Guide</a>
+                                    <a href="#" onclick="manageLab('juiceshop', 'start'); return false;" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-background-dark transition-all">Launch Console</a>
+                                </div>
+                            </div>
+
+                            <!-- Module Card: DVWA (Docker) -->
+                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
+                                <div class="p-6">
+                                    <div class="flex items-start justify-between mb-6">
+                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
+                                            <span class="material-symbols-outlined text-2xl">database</span>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">CONTAINER_NODE</span>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">Web DVWA</h4>
+                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Damn Vulnerable Web Application. A PHP/MySQL web application that is damn vulnerable. Test various security levels.</p>
+                                    <div class="space-y-4">
+                                        <div class="flex items-center justify-between p-2.5 bg-background-dark/50 rounded-lg border border-border-dim">
+                                            <div class="flex items-center">
+                                                <span id="dot-dvwa" class="lab-status-dot status-stopped"></span>
+                                                <span id="status-dvwa" class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Stopped</span>
+                                            </div>
+                                            <div class="flex gap-1.5">
+                                                <button onclick="manageLab('dvwa', 'start')" class="size-7 flex items-center justify-center rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-black transition-all" title="Start Lab">
+                                                    <span class="material-symbols-outlined text-sm">play_arrow</span>
+                                                </button>
+                                                <button onclick="manageLab('dvwa', 'stop')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30 transition-all" title="Stop Lab">
+                                                    <span class="material-symbols-outlined text-sm">stop</span>
+                                                </button>
+                                                <button onclick="manageLab('dvwa', 'reset')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-white/10 hover:text-white transition-all" title="Reset Lab">
+                                                    <span class="material-symbols-outlined text-sm">refresh</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 divide-x divide-border-dim border-t border-border-dim">
+                                    <a href="https://github.com/digininja/DVWA" target="_blank" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-all">Documentation</a>
+                                    <a href="#" onclick="manageLab('dvwa', 'start'); return false;" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-background-dark transition-all">Launch Console</a>
+                                </div>
+                            </div>
+
+                            <!-- Module Card: bWAPP (Docker) -->
+                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
+                                <div class="p-6">
+                                    <div class="flex items-start justify-between mb-6">
+                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
+                                            <span class="material-symbols-outlined text-2xl">bug_report</span>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">CONTAINER_NODE</span>
+                                    </div>
+                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">bWAPP Lab</h4>
+                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">buggy Web Application. A free and open source deliberately insecure web application. Covers over 100 vulnerabilities.</p>
+                                    <div class="space-y-4">
+                                        <div class="flex items-center justify-between p-2.5 bg-background-dark/50 rounded-lg border border-border-dim">
+                                            <div class="flex items-center">
+                                                <span id="dot-bwapp" class="lab-status-dot status-stopped"></span>
+                                                <span id="status-bwapp" class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Stopped</span>
+                                            </div>
+                                            <div class="flex gap-1.5">
+                                                <button onclick="manageLab('bwapp', 'start')" class="size-7 flex items-center justify-center rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-black transition-all" title="Start Lab">
+                                                    <span class="material-symbols-outlined text-sm">play_arrow</span>
+                                                </button>
+                                                <button onclick="manageLab('bwapp', 'stop')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30 transition-all" title="Stop Lab">
+                                                    <span class="material-symbols-outlined text-sm">stop</span>
+                                                </button>
+                                                <button onclick="manageLab('bwapp', 'reset')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-white/10 hover:text-white transition-all" title="Reset Lab">
+                                                    <span class="material-symbols-outlined text-sm">refresh</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 divide-x divide-border-dim border-t border-border-dim">
+                                    <a href="http://www.itsecgames.com/" target="_blank" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-all">Vulnerability List</a>
+                                    <a href="#" onclick="manageLab('bwapp', 'start'); return false;" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-background-dark transition-all">Launch Console</a>
+                                </div>
                             </div>
                         </div>
                     </div>
