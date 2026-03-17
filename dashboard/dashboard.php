@@ -11,13 +11,72 @@ $user_id = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 
 // Fetch Phishing Progress
-$phishing_res = $conn->query("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = $user_id");
-$phishing_count = $phishing_res->fetch_row()[0];
-$phishing_progress = min($phishing_count * 20, 100); // 5 campaigns for 100%
+$phishing_stmt = $conn->prepare("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = ?");
+$phishing_stmt->bind_param("i", $user_id);
+$phishing_stmt->execute();
+$phishing_count = $phishing_stmt->get_result()->fetch_row()[0];
+$phishing_progress = min($phishing_count * 20, 100);
 $phishing_level = min(floor($phishing_count / 1) + 1, 5);
 
-// Calculate completed labs (just 1 if they did phishing for now, total labs = 4)
-$completed_labs = ($phishing_count > 0) ? 1 : 0;
+// Fetch Brute Force Progress
+$conn->query("CREATE TABLE IF NOT EXISTS bruteforce_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    target_username VARCHAR(100),
+    attack_type VARCHAR(50),
+    attempts INT DEFAULT 0,
+    success TINYINT(1) DEFAULT 0,
+    time_taken FLOAT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+$bf_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(success) as has_success FROM bruteforce_logs WHERE user_id = ?");
+$bf_stmt->bind_param("i", $user_id);
+$bf_stmt->execute();
+$bf_data = $bf_stmt->get_result()->fetch_assoc();
+$bruteforce_success  = (int)$bf_data['has_success'];
+$bruteforce_count    = (int)$bf_data['total'];
+$bruteforce_progress = $bruteforce_success ? 100 : min($bruteforce_count * 10, 90);
+
+// Fetch DDoS Progress
+$conn->query("CREATE TABLE IF NOT EXISTS ddos_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    attack_type VARCHAR(50),
+    intensity VARCHAR(20),
+    mitigated TINYINT(1) DEFAULT 0,
+    time_taken FLOAT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+$ddos_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(mitigated) as has_success FROM ddos_logs WHERE user_id = ?");
+$ddos_stmt->bind_param("i", $user_id);
+$ddos_stmt->execute();
+$ddos_data = $ddos_stmt->get_result()->fetch_assoc();
+$ddos_success  = (int)$ddos_data['has_success'];
+$ddos_count    = (int)$ddos_data['total'];
+$ddos_progress = $ddos_success ? 100 : min($ddos_count * 15, 90);
+
+// Fetch Malware Progress
+$conn->query("CREATE TABLE IF NOT EXISTS malware_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    sample_type VARCHAR(50),
+    verdict VARCHAR(20),
+    correct TINYINT(1) DEFAULT 0,
+    time_taken FLOAT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+$mal_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(correct) as has_success FROM malware_logs WHERE user_id = ?");
+$mal_stmt->bind_param("i", $user_id);
+$mal_stmt->execute();
+$mal_data = $mal_stmt->get_result()->fetch_assoc();
+$malware_success  = (int)$mal_data['has_success'];
+$malware_count    = (int)$mal_data['total'];
+$malware_progress = $malware_success ? 100 : min($malware_count * 25, 90);
+
+// Total completed labs
+$completed_labs = ($phishing_count > 0 ? 1 : 0) + ($bruteforce_success ? 1 : 0) + ($ddos_success ? 1 : 0) + ($malware_success ? 1 : 0);
+
+$lab_completed = $_GET['lab_completed'] ?? '';
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
@@ -86,6 +145,55 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
 </head>
 
 <body id="dashboard-app" class="bg-background-dark text-slate-300 font-display min-h-screen terminal-grid selection:bg-primary selection:text-background-dark overflow-hidden">
+
+    <?php if ($lab_completed === 'bruteforce'): ?>
+        <div id="completionModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div class="glass-panel border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="flex items-center gap-4 mb-6 relative z-10 shrink-0">
+                    <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-3xl">verified</span></div>
+                    <div><h2 class="text-2xl font-black uppercase italic tracking-tighter">Lab <span class="text-primary glow-text">Completed</span></h2><p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Subject: Brute Force Intrusion Analysis</p></div>
+                </div>
+                <div class="space-y-4 relative z-10 overflow-y-auto custom-scrollbar pr-2 mb-4">
+                    <div class="p-4 bg-primary/5 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">analytics</span> Debrief</h4><p class="text-[11px] text-slate-400">You successfully cracked credentials via dictionary attack. Enforce <strong class="text-slate-300">MFA + Account Lockout</strong> to prevent this.</p></div>
+                    <div class="p-4 bg-primary/10 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">security</span> Stay Safe</h4><ul class="space-y-1 text-[10px] text-slate-400"><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>Use a <strong class="text-white">Password Manager</strong> for unique keys.</li><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>Enable <strong class="text-white">2FA</strong> on all accounts.</li></ul></div>
+                </div>
+                <button onclick="window.history.replaceState(null,null,window.location.pathname);this.closest('#completionModal').remove();" class="w-full py-4 bg-primary text-background-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] relative z-10">Acknowledge Directive</button>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($lab_completed === 'ddos'): ?>
+        <div id="completionModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div class="glass-panel border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="flex items-center gap-4 mb-6 relative z-10 shrink-0">
+                    <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-3xl">verified_user</span></div>
+                    <div><h2 class="text-2xl font-black uppercase italic tracking-tighter">Lab <span class="text-primary glow-text">Completed</span></h2><p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Subject: DDoS Mitigation Elite</p></div>
+                </div>
+                <div class="space-y-4 relative z-10 overflow-y-auto custom-scrollbar pr-2 mb-4">
+                    <div class="p-4 bg-primary/5 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">analytics</span> Debrief</h4><p class="text-[11px] text-slate-400">Attack neutralized using layered mitigations. <strong class="text-slate-300">Rate Limiting + WAF + Geo-Blocking</strong> form the essential defense stack.</p></div>
+                    <div class="p-4 bg-primary/10 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">security</span> Key Takeaways</h4><ul class="space-y-1 text-[10px] text-slate-400"><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>Enable rate limiting at the edge/CDN level.</li><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>Maintain IP reputation feeds for proactive blocking.</li></ul></div>
+                </div>
+                <button onclick="window.history.replaceState(null,null,window.location.pathname);this.closest('#completionModal').remove();" class="w-full py-4 bg-primary text-background-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] relative z-10">Acknowledge Directive</button>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($lab_completed === 'malware'): ?>
+        <div id="completionModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div class="glass-panel border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="flex items-center gap-4 mb-6 relative z-10 shrink-0">
+                    <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-3xl">verified</span></div>
+                    <div><h2 class="text-2xl font-black uppercase italic tracking-tighter">Lab <span class="text-primary glow-text">Completed</span></h2><p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Subject: Malware Analysis — Threat Classification</p></div>
+                </div>
+                <div class="space-y-4 relative z-10 overflow-y-auto custom-scrollbar pr-2 mb-4">
+                    <div class="p-4 bg-primary/5 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">analytics</span> Debrief</h4><p class="text-[11px] text-slate-400">You extracted IOCs and classified a malware sample via static + behavioral analysis. Share IOCs via <strong class="text-slate-300">threat intelligence platforms</strong> to protect the community.</p></div>
+                    <div class="p-4 bg-primary/10 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">security</span> Key Takeaways</h4><ul class="space-y-1 text-[10px] text-slate-400"><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>Always analyze in an <strong class="text-white">isolated sandbox</strong>.</li><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>High entropy → likely <strong class="text-white">packed/encrypted</strong> payload.</li></ul></div>
+                </div>
+                <button onclick="window.history.replaceState(null,null,window.location.pathname);this.closest('#completionModal').remove();" class="w-full py-4 bg-primary text-background-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] relative z-10">Acknowledge Directive</button>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar Navigation -->
         <aside class="w-64 border-r border-border-dim bg-neutral-dark/50 backdrop-blur-xl flex flex-col z-20 shrink-0">
@@ -102,11 +210,14 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
                     <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../modules/phishing/index.php">
                         <span class="material-symbols-outlined text-xl">alternate_email</span> Phishing Lab
                     </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
+                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/ddos.php">
                         <span class="material-symbols-outlined text-xl">security</span> DDoS Defense
                     </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
+                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/malware.php">
                         <span class="material-symbols-outlined text-xl">bug_report</span> Malware Analysis
+                    </a>
+                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/bruteforce.php">
+                        <span class="material-symbols-outlined text-xl">lock_open</span> Brute Force Lab
                     </a>
                     <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
                         <span class="material-symbols-outlined text-xl">data_exploration</span> SOC Dashboard
@@ -185,6 +296,7 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
                                     <div class="w-full bg-background-dark h-1 rounded-full mt-2">
                                         <div class="bg-primary h-full" style="width: <?php echo ($completed_labs / 4) * 100; ?>%"></div>
                                     </div>
+                                    <p class="text-[10px] text-primary mt-1"><?php echo $completed_labs >= 4 ? 'ALL COMPLETE' : $completed_labs . ' / 4 DONE'; ?></p>
                                 </div>
                                 <div class="p-4 rounded-xl bg-surface border border-border-dim">
                                     <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Phishing Level</span>
@@ -198,8 +310,8 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
                                 </div>
                                 <div class="p-4 rounded-xl bg-surface border border-border-dim">
                                     <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">DDoS Mitigation</span>
-                                    <span class="text-3xl font-black text-white">0%</span>
-                                    <p class="text-[10px] text-slate-500 mt-1">Pending Start</p>
+                                    <span class="text-3xl font-black text-white"><?php echo $ddos_progress; ?>%</span>
+                                    <p class="text-[10px] text-primary mt-1"><?php echo $ddos_success ? 'NEUTRALIZED' : 'IN TRAINING'; ?></p>
                                 </div>
                             </div>
                         </div>
@@ -261,47 +373,59 @@ $completed_labs = ($phishing_count > 0) ? 1 : 0;
                             </div>
 
                             <!-- Module Card: DDoS -->
-                            <div class="glass-panel group rounded-2xl p-1 opacity-60">
+                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
                                 <div class="p-6">
                                     <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-500">
+                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
                                             <span class="material-symbols-outlined text-2xl">security</span>
                                         </div>
-                                        <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-500 uppercase">Module_02</span>
+                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">MODULE_02</span>
                                     </div>
-                                    <h4 class="text-lg font-bold text-white mb-2">DDoS Mitigation Elite</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Configure scrubbing centers and WAF rules to defend against high-volume traffic attacks.</p>
-
-                                    <div class="p-4 rounded-xl bg-background-dark border border-border-dim text-center">
-                                        <span class="material-symbols-outlined text-slate-600 mb-1">lock</span>
-                                        <p class="text-[10px] font-bold text-slate-500 uppercase">Complete Module 01 to Unlock</p>
+                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">DDoS Mitigation Elite</h4>
+                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Deploy rate limiting, WAF rules, and geo-blocking to neutralize high-volume distributed traffic attacks in real time.</p>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                                            <span class="text-slate-500">Mitigation Mastery</span>
+                                            <span class="text-white"><?php echo $ddos_progress; ?>%</span>
+                                        </div>
+                                        <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
+                                            <div class="bg-primary h-full rounded-full" style="width: <?php echo $ddos_progress; ?>%"></div>
+                                        </div>
+                                        <div class="flex justify-between items-center pt-2">
+                                            <span class="text-[10px] text-slate-500">Tier <?php echo $ddos_success ? '2' : '1'; ?> Defense</span>
+                                            <span class="text-[10px] text-primary font-bold"><?php echo $ddos_success ? 'ATTACK NEUTRALIZED' : 'NEXT: DEPLOY MITIGATIONS'; ?></span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim text-slate-600">
-                                    Instance Unavailable
-                                </div>
+                                <a href="../labs/ddos.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">Initialize Lab Instance</a>
                             </div>
 
                             <!-- Module Card: Malware -->
-                            <div class="glass-panel group rounded-2xl p-1 opacity-60">
+                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
                                 <div class="p-6">
                                     <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-500">
+                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
                                             <span class="material-symbols-outlined text-2xl">bug_report</span>
                                         </div>
-                                        <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-500 uppercase">Module_03</span>
+                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">MODULE_03</span>
                                     </div>
-                                    <h4 class="text-lg font-bold text-white mb-2">Malware Sandbox Analysis</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Deconstruct malicious payloads and understand lateral movement within safe VMs.</p>
-
-                                    <div class="p-4 rounded-xl bg-background-dark border border-border-dim text-center">
-                                        <span class="material-symbols-outlined text-slate-600 mb-1">lock</span>
-                                        <p class="text-[10px] font-bold text-slate-500 uppercase">Complete Module 01 to Unlock</p>
+                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">Malware Analysis Lab</h4>
+                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Perform static and behavioral sandbox analysis on malware samples. Extract IOCs and classify threats like a professional analyst.</p>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                                            <span class="text-slate-500">Analysis Progress</span>
+                                            <span class="text-white"><?php echo $malware_progress; ?>%</span>
+                                        </div>
+                                        <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
+                                            <div class="bg-primary h-full rounded-full" style="width: <?php echo $malware_progress; ?>%"></div>
+                                        </div>
+                                        <div class="flex justify-between items-center pt-2">
+                                            <span class="text-[10px] text-slate-500">Tier <?php echo $malware_success ? '2' : '1'; ?> Analyst</span>
+                                            <span class="text-[10px] text-primary font-bold"><?php echo $malware_success ? 'SAMPLE CLASSIFIED' : 'NEXT: BEHAVIORAL SCAN'; ?></span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim text-slate-600">
-                                    Instance Unavailable
-                                </div>
+                                <a href="../labs/malware.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">Initialize Lab Instance</a>
                             </div>
                         </div>
                     </div>
