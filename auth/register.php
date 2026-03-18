@@ -7,240 +7,324 @@ $success = "";
 
 if (isset($_POST['register'])) {
 
-  $name = trim($_POST['name']);
-  $email = trim($_POST['email']);
-  $password = $_POST['password'];
-  $confirm = $_POST['confirm_password'];
-  $country = trim($_POST['country'] ?? '');
-  $organization = trim($_POST['organization'] ?? '');
-  $program_level = $_POST['program_level'] ?? '';
-  $gender = trim($_POST['gender'] ?? '');
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    $confirm = $_POST['confirm_password'];
+    $country = trim($_POST['country'] ?? '');
+    $gender = trim($_POST['gender'] ?? '');
 
-  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $error = "Invalid email format!";
-  } elseif ($password !== $confirm) {
-    $error = "Passwords do not match!";
-  } else {
-    // Check if email already exists
-    $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $stmt->store_result();
-
-    if ($stmt->num_rows > 0) {
-      $error = "Email already registered!";
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format!";
+    } elseif ($password !== $confirm) {
+        $error = "Passwords do not match!";
     } else {
-      $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        // Check if email already exists
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $stmt->store_result();
 
-      $insert = $conn->prepare("INSERT INTO users (name, email, password, country, organization, program_level, gender) VALUES (?, ?, ?, ?, ?, ?, ?)");
-      $insert->bind_param("sssssss", $name, $email, $hashedPassword, $country, $organization, $program_level, $gender);
+        if ($stmt->num_rows > 0) {
+            $error = "Email already registered!";
+        } else {
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-      if ($insert->execute()) {
-        $success = "Registration successful! You can now login.";
-      } else {
-        $error = "Registration failed. Please try again or contact support.";
-      }
+            $insert = $conn->prepare("INSERT INTO users (name, email, password, country, gender) VALUES (?, ?, ?, ?, ?)");
+            $insert->bind_param("sssss", $name, $email, $hashedPassword, $country, $gender);
 
-      $insert->close();
+            if ($insert->execute()) {
+                $success = "Registration successful! Initializing encrypted access...";
+            } else {
+                $error = "Registration failed. Please try again or contact support.";
+            }
+
+            $insert->close();
+        }
+        $stmt->close();
     }
-    $stmt->close();
-  }
 }
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CyberShield | Register</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CyberShield | Register New Operator</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            primary: "#a0f000",
-            "background-dark": "#0d0f0a",
-            "card-dark": "#161810",
-          }
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#a0f000",
+                        "background-dark": "#0d0f0a",
+                        "card-dark": "#161810",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"]
+                    }
+                }
+            }
         }
-      }
-    }
-  </script>
-  <style>
-    .terminal-bg {
-      background: linear-gradient(rgba(13, 15, 10, 0.95), rgba(13, 15, 10, 0.95)),
-        url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?...');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-    }
-  </style>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    </script>
+    <style>
+        body {
+            background: linear-gradient(rgba(13, 15, 10, 0.95), rgba(13, 15, 10, 0.95)),
+                url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=2070');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* reCAPTCHA Animation */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .recaptcha-spinner {
+            border: 2px solid rgba(160, 240, 0, 0.1);
+            border-left-color: #a0f000;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+    </style>
 </head>
 
-<body class="terminal-bg min-h-screen flex items-center justify-center text-white">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 font-display text-white">
 
-  <div class="bg-card-dark/70 backdrop-blur-lg border border-white/10 rounded-2xl p-6 sm:p-10 mx-4 sm:mx-0 w-full max-w-md shadow-2xl">
-
-    <h2 class="text-xl font-bold text-center mb-6 text-primary">Register</h2>
-
-    <?php if ($error): ?>
-      <p class="text-red-500 text-sm mb-4 text-center"><?php echo htmlspecialchars($error); ?></p>
-    <?php endif; ?>
-
-    <?php if ($success): ?>
-      <p class="text-green-500 text-sm mb-4 text-center"><?php echo htmlspecialchars($success); ?></p>
-    <?php endif; ?>
-
-    <form method="POST" class="space-y-4">
-
-      <input type="text" name="name" required placeholder="Full Name"
-        class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 focus:border-primary outline-none transition-all">
-
-      <input type="email" name="email" required placeholder="Email"
-        class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 focus:border-primary outline-none transition-all">
-
-      <div class="relative">
-        <input type="password" id="password" name="password" required placeholder="Password"
-          class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 pr-12 focus:border-primary outline-none transition-all">
-        <span onclick="togglePassword('password', this)"
-          class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-primary">
-          visibility
-        </span>
-      </div>
-
-      <div class="h-1 bg-white/10 rounded mt-2 overflow-hidden">
-        <div id="strengthBar" class="h-full bg-red-500 rounded transition-all duration-300 w-0"></div>
-      </div>
-      <p id="strengthText" class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Password Strength</p>
-
-      <div class="relative">
-        <input type="password" id="confirm_password" name="confirm_password" required placeholder="Confirm Password"
-          class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 pr-12 focus:border-primary outline-none transition-all">
-        <span onclick="togglePassword('confirm_password', this)"
-          class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-primary">
-          visibility
-        </span>
-      </div>
-
-      <!-- Reference Image Style reCAPTCHA Placeholder -->
-      <div class="bg-card-dark border border-white/10 rounded-lg p-3 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <input type="checkbox" required class="w-5 h-5 rounded border-white/10 bg-background-dark text-primary focus:ring-primary">
-          <span class="text-sm text-slate-300">I'm not a robot</span>
-        </div>
-        <div class="flex flex-col items-center">
-          <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA" class="w-8 h-8 opacity-70">
-          <span class="text-[8px] text-slate-500">reCAPTCHA</span>
-        </div>
-      </div>
-
-      <div class="space-y-4 pt-2">
-        <label class="text-xs text-slate-400 font-medium px-1">Country *</label>
-        <input type="text" name="country" required placeholder="Country (e.g. Pakistan)"
-          class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 focus:border-primary outline-none transition-all">
-
-        <label class="text-xs text-slate-400 font-medium px-1">School / Organization Name (optional)</label>
-        <input type="text" name="organization" placeholder="University or Organization"
-          class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 focus:border-primary outline-none transition-all">
-
-        <label class="text-xs text-slate-400 font-medium px-1">Program Level *</label>
-        <select name="program_level" required
-          class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 focus:border-primary outline-none transition-all text-slate-300 appearance-none">
-          <option value="" disabled selected>Select Program Level</option>
-          <option value="Middle School">Middle School</option>
-          <option value="High School">High School</option>
-          <option value="Undergraduate">Undergraduate</option>
-          <option value="Graduate">Graduate</option>
-          <option value="Other">Other</option>
-        </select>
-
-        <label class="text-xs text-slate-400 font-medium px-1">Gender *</label>
-        <input type="text" name="gender" required placeholder="Gender identity"
-          class="w-full bg-background-dark border border-white/10 rounded-lg py-3 px-4 focus:border-primary outline-none transition-all">
-      </div>
-
-      <button name="register" type="submit"
-        class="w-full bg-primary text-black font-bold py-3 rounded-xl hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20 mt-4">
-        Create Account
-      </button>
-
-    </form>
-
-    <div class="mt-4 text-center text-sm text-slate-400">
-      Already have account?
-      <a href="login.php" class="text-primary ml-1">Login</a>
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold uppercase tracking-widest text-primary">
+            CyberShield
+        </h1>
+        <p id="typing" class="text-green-400 font-mono text-sm mt-2"></p>
+        <p class="text-xs text-primary/70 font-mono mt-2 uppercase">
+            New Operator Registration
+        </p>
     </div>
 
-  </div>
-  <script>
-    const passwordInput = document.getElementById("password");
-    const bar = document.getElementById("strengthBar");
-    const text = document.getElementById("strengthText");
+    <main class="max-w-[480px] w-full">
+        <div class="bg-card-dark/90 border border-white/10 rounded-xl p-8 shadow-2xl backdrop-blur-md">
 
-    passwordInput.addEventListener("input", function() {
+            <div class="text-center mb-8">
+                <h2 class="text-lg font-semibold mb-1">Create Account</h2>
+                <p class="text-slate-400 text-sm">Join the elite cybersecurity training platform</p>
 
-      const value = passwordInput.value;
-      let score = 0;
+                <?php if ($error): ?>
+                    <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                        <p class="text-red-500 text-sm font-medium"><?php echo htmlspecialchars($error); ?></p>
+                    </div>
+                <?php endif; ?>
 
-      if (value.length >= 8) score++;
-      if (/[A-Z]/.test(value)) score++;
-      if (/[a-z]/.test(value)) score++;
-      if (/[0-9]/.test(value)) score++;
-      if (/[^A-Za-z0-9]/.test(value)) score++;
+                <?php if ($success): ?>
+                    <div class="mt-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                        <p class="text-primary text-sm font-medium"><?php echo htmlspecialchars($success); ?></p>
+                        <script>
+                            setTimeout(() => {
+                                window.location.href = "login.php";
+                            }, 3000);
+                        </script>
+                    </div>
+                <?php endif; ?>
+            </div>
 
-      switch (score) {
-        case 0:
-        case 1:
-          bar.style.width = "20%";
-          bar.className = "h-full bg-red-600 rounded transition-all duration-300";
-          text.innerText = "Very Weak";
-          break;
+            <form method="POST" class="space-y-6">
 
-        case 2:
-          bar.style.width = "40%";
-          bar.className = "h-full bg-orange-500 rounded transition-all duration-300";
-          text.innerText = "Weak";
-          break;
+                <!-- Account Essentials -->
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <label class="text-[10px] text-primary uppercase font-bold tracking-wider mb-1 block">Full Name</label>
+                            <input type="text" name="name" required placeholder="John Doe"
+                                class="w-full bg-background-dark/50 border border-white/10 rounded-lg py-2.5 px-4 focus:border-primary outline-none transition-all text-sm">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-primary uppercase font-bold tracking-wider mb-1 block">Email Address</label>
+                            <input type="email" name="email" required placeholder="operator@cybershield.com"
+                                class="w-full bg-background-dark/50 border border-white/10 rounded-lg py-2.5 px-4 focus:border-primary outline-none transition-all text-sm">
+                        </div>
+                    </div>
 
-        case 3:
-          bar.style.width = "60%";
-          bar.className = "h-full bg-yellow-500 rounded transition-all duration-300";
-          text.innerText = "Medium";
-          break;
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="relative">
+                            <label class="text-[10px] text-primary uppercase font-bold tracking-wider mb-1 block">Password</label>
+                            <input type="password" id="password" name="password" required
+                                class="w-full bg-background-dark/50 border border-white/10 rounded-lg py-2.5 px-4 pr-10 focus:border-primary outline-none transition-all text-sm">
+                            <span onclick="togglePassword('password', this)"
+                                class="material-symbols-outlined absolute right-3 top-[32px] cursor-pointer text-slate-400 hover:text-primary text-lg">
+                                visibility
+                            </span>
+                        </div>
+                        <div class="relative">
+                            <label class="text-[10px] text-primary uppercase font-bold tracking-wider mb-1 block">Confirm</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required
+                                class="w-full bg-background-dark/50 border border-white/10 rounded-lg py-2.5 px-4 pr-10 focus:border-primary outline-none transition-all text-sm">
+                            <span onclick="togglePassword('confirm_password', this)"
+                                class="material-symbols-outlined absolute right-3 top-[32px] cursor-pointer text-slate-400 hover:text-primary text-lg">
+                                visibility
+                            </span>
+                        </div>
+                    </div>
 
-        case 4:
-          bar.style.width = "80%";
-          bar.className = "h-full bg-blue-500 rounded transition-all duration-300";
-          text.innerText = "Strong";
-          break;
+                    <div>
+                        <div class="h-1 bg-white/5 rounded-full overflow-hidden mt-1">
+                            <div id="strengthBar" class="h-full bg-red-500 rounded-full transition-all duration-500 w-0"></div>
+                        </div>
+                        <p id="strengthText" class="text-[9px] text-slate-500 mt-1 uppercase tracking-tighter">Password Complexity: NULL</p>
+                    </div>
+                </div>
 
-        case 5:
-          bar.style.width = "100%";
-          bar.className = "h-full bg-primary rounded transition-all duration-300";
-          text.innerText = "Very Strong 🔥";
-          break;
-      }
-    });
-  </script>
-  <script>
-    function togglePassword(fieldId, icon) {
-      const input = document.getElementById(fieldId);
+                <!-- Profile Metadata -->
+                <div class="p-4 bg-white/[0.02] border border-white/5 rounded-xl space-y-4">
+                    <h3 class="text-[11px] text-slate-400 font-bold uppercase border-b border-white/5 pb-2">Profile Details</h3>
 
-      if (input.type === "password") {
-        input.type = "text";
-        icon.textContent = "visibility_off";
-      } else {
-        input.type = "password";
-        icon.textContent = "visibility";
-      }
-    }
-  </script>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Country</label>
+                            <input type="text" name="country" required placeholder="Pakistan"
+                                class="w-full bg-background-dark/30 border border-white/10 rounded-lg py-2 px-3 focus:border-primary outline-none transition-all text-xs">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 uppercase font-bold mb-1 block">Gender</label>
+                            <input type="text" name="gender" required placeholder="Identity"
+                                class="w-full bg-background-dark/30 border border-white/10 rounded-lg py-2 px-3 focus:border-primary outline-none transition-all text-xs">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Captcha Placeholder -->
+                <div class="bg-black/20 border border-white/5 rounded-lg p-3 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="relative flex items-center justify-center w-6 h-6">
+                            <input type="checkbox" id="captchaCheck" required class="peer w-5 h-5 appearance-none border border-white/20 bg-background-dark rounded checked:bg-primary checked:border-primary transition-all cursor-pointer">
+                            <span id="captchaIcon" class="material-symbols-outlined absolute pointer-events-none text-black text-sm font-bold opacity-0 peer-checked:opacity-100">check</span>
+                            <div id="captchaLoader" class="recaptcha-spinner absolute inset-0 hidden"></div>
+                        </div>
+                        <span id="captchaText" class="text-xs text-slate-400">Verifying human operator...</span>
+                    </div>
+                    <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA" class="w-6 h-6 opacity-40 grayscale">
+                </div>
+
+                <button id="submitBtn" name="register" type="submit" disabled
+                    class="w-full bg-primary/20 text-black/50 font-bold py-3 rounded-lg uppercase tracking-widest transition-all shadow-lg active:scale-[0.98] cursor-not-allowed">
+                    Initialize Operator Profile
+                </button>
+
+            </form>
+
+            <div class="mt-8 text-center text-xs text-slate-500">
+                Already registered in the system?
+                <a href="login.php" class="text-primary hover:underline ml-1 font-semibold uppercase tracking-wider">Secure Login</a>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Typing Effect
+        const typeText = "Establishing encrypted handshake...";
+        let i = 0;
+
+        function typeWriter() {
+            if (i < typeText.length) {
+                document.getElementById("typing").innerHTML += typeText.charAt(i);
+                i++;
+                setTimeout(typeWriter, 50);
+            }
+        }
+        window.onload = typeWriter;
+
+        // Password Strength
+        const passwordInput = document.getElementById("password");
+        const bar = document.getElementById("strengthBar");
+        const text = document.getElementById("strengthText");
+
+        passwordInput.addEventListener("input", function() {
+            const value = passwordInput.value;
+            let score = 0;
+
+            if (value.length >= 8) score++;
+            if (/[A-Z]/.test(value)) score++;
+            if (/[a-z]/.test(value)) score++;
+            if (/[0-9]/.test(value)) score++;
+            if (/[^A-Za-z0-9]/.test(value)) score++;
+
+            const states = [
+                { width: '20%', color: 'bg-red-600', label: 'Critical' },
+                { width: '40%', color: 'bg-orange-500', label: 'Weak' },
+                { width: '60%', color: 'bg-yellow-500', label: 'Moderate' },
+                { width: '80%', color: 'bg-blue-500', label: 'Secure' },
+                { width: '100%', color: 'bg-primary', label: 'Max Security' }
+            ];
+
+            if (value.length === 0) {
+                bar.style.width = '0%';
+                text.innerText = "Complexity: NULL";
+                return;
+            }
+
+            const state = states[Math.min(score, 4)];
+            bar.style.width = state.width;
+            bar.className = `h-full ${state.color} rounded-full transition-all duration-500`;
+            text.innerText = `Complexity: ${state.label}`;
+            text.className = `text-[9px] mt-1 uppercase tracking-tighter ${state.color.replace('bg-', 'text-')}`;
+        });
+
+        // Visibility Toggle
+        function togglePassword(fieldId, icon) {
+            const input = document.getElementById(fieldId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.textContent = "visibility_off";
+            } else {
+                input.type = "password";
+                icon.textContent = "visibility";
+            }
+        }
+
+        // Animated reCAPTCHA
+        const captchaCheck = document.getElementById('captchaCheck');
+        const captchaIcon = document.getElementById('captchaIcon');
+        const captchaLoader = document.getElementById('captchaLoader');
+        const captchaText = document.getElementById('captchaText');
+        const submitBtn = document.getElementById('submitBtn');
+
+        captchaCheck.addEventListener('change', function() {
+            if (this.checked) {
+                this.classList.add('hidden');
+                captchaLoader.classList.remove('hidden');
+                captchaText.innerText = "Analyzing biometric patterns...";
+                
+                setTimeout(() => {
+                    captchaLoader.classList.add('hidden');
+                    captchaIcon.classList.remove('opacity-0');
+                    captchaIcon.classList.add('opacity-100');
+                    captchaCheck.classList.remove('hidden');
+                    captchaCheck.checked = true;
+                    captchaCheck.disabled = true;
+                    captchaText.innerText = "Human verified";
+                    captchaText.classList.replace('text-slate-400', 'text-primary');
+                    
+                    submitBtn.disabled = false;
+                    submitBtn.classList.replace('bg-primary/20', 'bg-primary');
+                    submitBtn.classList.replace('text-black/50', 'text-black');
+                    submitBtn.classList.replace('cursor-not-allowed', 'cursor-pointer');
+                }, 1800);
+            }
+        });
+    </script>
 </body>
 
-</html>
+</html>
