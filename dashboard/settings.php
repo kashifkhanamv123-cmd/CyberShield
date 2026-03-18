@@ -95,33 +95,33 @@ if (isset($_POST['update_password'])) {
 }
 
 // Lab completion stats for ranking
-$phishing_stmt = $conn->prepare("SELECT COUNT(*) as count FROM lab_results WHERE user_id = ? AND lab_name = 'phishing' AND success = 1");
+$phishing_stmt = $conn->prepare("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = ?");
 $phishing_stmt->bind_param("i", $user_id);
 $phishing_stmt->execute();
-$phishing_count = $phishing_stmt->get_result()->fetch_assoc()['count'];
+$phishing_count = $phishing_stmt->get_result()->fetch_row()[0];
 
-$brute_stmt = $conn->prepare("SELECT COUNT(*) as count FROM lab_results WHERE user_id = ? AND lab_name = 'bruteforce' AND success = 1");
-$brute_stmt->bind_param("i", $user_id);
-$brute_stmt->execute();
-$brute_count = $brute_stmt->get_result()->fetch_assoc()['count'];
+$bruteforce_stmt = $conn->prepare("SELECT MAX(success) as has_success FROM bruteforce_logs WHERE user_id = ?");
+$bruteforce_stmt->bind_param("i", $user_id);
+$bruteforce_stmt->execute();
+$brute_success = (int)$bruteforce_stmt->get_result()->fetch_assoc()['has_success'];
 
-$ddos_stmt = $conn->prepare("SELECT COUNT(*) as count FROM lab_results WHERE user_id = ? AND lab_name = 'ddos' AND success = 1");
+$ddos_stmt = $conn->prepare("SELECT MAX(mitigated) as has_success FROM ddos_logs WHERE user_id = ?");
 $ddos_stmt->bind_param("i", $user_id);
 $ddos_stmt->execute();
-$ddos_count = $ddos_stmt->get_result()->fetch_assoc()['count'];
+$ddos_success = (int)$ddos_stmt->get_result()->fetch_assoc()['has_success'];
 
-$mal_stmt = $conn->prepare("SELECT COUNT(*) as count FROM malware_submissions WHERE user_id = ? AND is_malicious = 1");
+$mal_stmt = $conn->prepare("SELECT MAX(correct) as has_success FROM malware_logs WHERE user_id = ?");
 $mal_stmt->bind_param("i", $user_id);
 $mal_stmt->execute();
-$mal_count = $mal_stmt->get_result()->fetch_assoc()['count'];
+$mal_success = (int)$mal_stmt->get_result()->fetch_assoc()['has_success'];
 
-$total_completed = ($phishing_count > 0 ? 1 : 0) + ($brute_count > 0 ? 1 : 0) + ($ddos_count > 0 ? 1 : 0) + ($mal_count > 0 ? 1 : 0);
+$total_completed = ($phishing_count > 0 ? 1 : 0) + ($brute_success ? 1 : 0) + ($ddos_success ? 1 : 0) + ($mal_success ? 1 : 0);
 
 // Determine rank
 if ($total_completed === 0) $rank = "Untrusted Node";
-elseif ($total_completed <= 1) $rank = "Lvl_01 Analyst";
-elseif ($total_completed <= 2) $rank = "Lvl_02 Operative";
-elseif ($total_completed <= 3) $rank = "Lvl_03 Specialist";
+elseif ($total_completed == 1) $rank = "Lvl_01 Analyst";
+elseif ($total_completed == 2) $rank = "Lvl_02 Operative";
+elseif ($total_completed == 3) $rank = "Lvl_03 Specialist";
 else $rank = "Lvl_04 Commander";
 
 // Get user IP
@@ -483,18 +483,15 @@ $presets = [
                             <div class="space-y-4">
                                 <div class="flex justify-between items-center py-4 border-b border-border-dim">
                                     <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authorization</span>
-                                    <span class="text-[10px] font-black text-primary uppercase tracking-[0.1em]">Lvl_04 Specialist</span>
+                                    <span class="text-[10px] font-black text-primary uppercase tracking-[0.1em]"><?php echo $rank; ?></span>
                                 </div>
                                 <div class="flex justify-between items-center py-4 border-b border-border-dim">
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Connection</span>
-                                    <div class="flex items-center gap-2">
-                                        <div class="size-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_#a0f000]"></div>
-                                        <span class="text-[10px] font-black text-white uppercase tracking-[0.1em]">Established</span>
-                                    </div>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Node IP</span>
+                                    <span class="text-[10px] font-black text-white uppercase tracking-[0.1em]"><?php echo $user_ip; ?></span>
                                 </div>
                                 <div class="flex justify-between items-center py-4 border-b border-border-dim">
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Last Sync</span>
-                                    <span class="text-[10px] font-black text-white uppercase tracking-[0.1em]"><?php echo date('H:i:s'); ?> Zulu</span>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">System Time</span>
+                                    <span id="live-clock" class="text-[10px] font-black text-white uppercase tracking-[0.1em]">Initializing...</span>
                                 </div>
                             </div>
                         </div>
@@ -599,6 +596,17 @@ $presets = [
                 uploadSection.classList.remove('hidden');
             }
         });
+
+        // Live Zulu Clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getUTCHours()).padStart(2, '0');
+            const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+            document.getElementById('live-clock').innerText = `${hours}:${minutes}:${seconds} ZULU`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
         // Smooth reveal on load
         window.addEventListener('load', () => {

@@ -49,8 +49,8 @@ $mal_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(correct) as has_succes
 $mal_stmt->bind_param("i", $user_id);
 $mal_stmt->execute();
 $mal_data = $mal_stmt->get_result()->fetch_assoc();
-$malware_success  = (int)($malware_data['has_success'] ?? 0);
-$malware_count    = (int)($malware_data['total'] ?? 0);
+$malware_success  = (int)($mal_data['has_success'] ?? 0);
+$malware_count    = (int)($mal_data['total'] ?? 0);
 $malware_progress = $malware_success ? 100 : min($malware_count * 25, 90);
 
 // Total completed labs
