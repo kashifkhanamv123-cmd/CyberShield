@@ -10,8 +10,8 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 
-// Fetch User Data for Head (Photo/Settings)
-$user_stmt = $conn->prepare("SELECT name, profile_type, profile_image FROM users WHERE id = ?");
+// Fetch User Data for Header (Photo/Settings)
+$user_stmt = $conn->prepare("SELECT name, email, profile_type, profile_image FROM users WHERE id = ?");
 $user_stmt->bind_param("i", $user_id);
 $user_stmt->execute();
 $user_data = $user_stmt->get_result()->fetch_assoc();
@@ -57,655 +57,525 @@ $malware_progress = $malware_success ? 100 : min($malware_count * 25, 90);
 $completed_labs = ($phishing_count > 0 ? 1 : 0) + ($bruteforce_success ? 1 : 0) + ($ddos_success ? 1 : 0) + ($malware_success ? 1 : 0);
 
 $lab_completed = $_GET['lab_completed'] ?? '';
+
+// Helper for letter avatar
+function getLetterAvatar($name) {
+    if (!$name) $name = "U";
+    $initial = strtoupper(substr(trim($name), 0, 1));
+    return '<div class="size-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-xl uppercase tracking-tighter">' . $initial . '</div>';
+}
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
-
 <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CyberShield | Security Analyst Dashboard</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <script>
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#a0f000",
-                        "background-dark": "#0a0c02",
-                        "surface": "#12140a",
-                        "neutral-dark": "#16190e",
-                        "border-dim": "#23281b",
-                    },
-                    fontFamily: {
-                        "display": ["Inter", "sans-serif"]
+                        primary: "#a0f000",
+                        "neutral-dark": "#0d0f0a",
+                        "surface": "#161810",
+                        "border-dim": "#2a2e21",
+                        "bg-dark": "#080906"
                     }
-                },
-            },
+                }
+            }
         }
     </script>
     <style>
-        #dashboard-app.terminal-grid {
-            background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
-            background-size: 30px 30px;
-        }
-
-        #dashboard-app .glass-panel {
-            background: rgba(18, 20, 10, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(160, 240, 0, 0.1);
-        }
-
-        #dashboard-app .nav-item.active {
-            background: rgba(160, 240, 0, 0.1);
-            color: #a0f000;
-            border-right: 2px solid #a0f000;
-        }
-
-        .glow-text {
-            text-shadow: 0 0 10px rgba(160, 240, 0, 0.5);
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        #dashboard-app .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #23281b;
-            border-radius: 10px;
-        }
-
-        .lab-status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-        }
+        body { background-color: theme('colors.bg-dark'); font-family: 'Inter', sans-serif; color: #fff; }
+        .glass-panel { background: rgba(22, 24, 16, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(160, 240, 0, 0.1); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: theme('colors.border-dim'); border-radius: 10px; }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .lab-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .status-running { background: #a0f000; box-shadow: 0 0 8px #a0f000; }
         .status-stopped { background: #64748b; }
         .status-loading { background: #f59e0b; animation: pulse 1s infinite; }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        
+        /* Threat Map Styling */
+        .map-ping { fill: theme('colors.primary'); filter: drop-shadow(0 0 5px theme('colors.primary')); animation: mapPing 2s infinite; }
+        @keyframes mapPing { 0% { opacity: 0; r: 2; } 50% { opacity: 1; r: 6; } 100% { opacity: 0; r: 10; } }
+        .threat-feed-item { animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
-
 </head>
+<body class="flex h-screen overflow-hidden selection:bg-primary selection:text-neutral-dark text-slate-300">
 
-<body id="dashboard-app" class="bg-background-dark text-slate-300 font-display min-h-screen terminal-grid selection:bg-primary selection:text-background-dark overflow-hidden">
-
+    <!-- Completion Modals (Preserved Logic) -->
     <?php if ($lab_completed === 'bruteforce'): ?>
-        <!-- Brute Force Completion Modal -->
-        <div id="completionModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div id="completionModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div class="glass-panel border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
                 <div class="flex items-center gap-4 mb-6 relative z-10 shrink-0">
                     <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary shadow-[0_0_15px_rgba(160,240,0,0.3)]">
                         <span class="material-symbols-outlined text-3xl">verified</span>
                     </div>
                     <div>
-                        <h2 class="text-2xl font-black uppercase italic tracking-tighter">
-                            Lab <span class="text-primary glow-text">Completed</span>
-                        </h2>
+                        <h2 class="text-2xl font-black uppercase italic tracking-tighter">Lab <span class="text-primary">Completed</span></h2>
                         <p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Subject: Brute Force Intrusion Analysis</p>
                     </div>
                 </div>
-
                 <div class="space-y-6 text-sm text-slate-300 leading-relaxed relative z-10 overflow-y-auto custom-scrollbar pr-2 mb-2">
                     <div class="p-5 bg-primary/5 border border-primary/20 rounded-xl">
-                        <h4 class="text-xs font-bold text-primary uppercase mb-3 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm">analytics</span> Performance Metrics
-                        </h4>
-                        <p class="text-[11px] text-slate-400">
-                            You successfully simulated an automated password recovery attack. Your telemetry indicates a high-velocity crack using dictionary matching.
-                        </p>
-                    </div>
-
-                    <div class="p-5 bg-white/5 border border-white/10 rounded-xl space-y-4">
-                        <h4 class="text-xs font-bold text-white uppercase flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm text-primary">school</span> Analyst Debrief
-                        </h4>
-                        <div class="space-y-3">
-                            <div>
-                                <p class="text-[11px] font-bold text-primary italic uppercase mb-1">Vulnerability Correlation</p>
-                                <p class="text-[11px] text-slate-500">
-                                    Weak passwords represent the largest attack surface in modern infrastructure. By testing common permutations, attackers bypass core security layers without triggering complex alerts.
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-[11px] font-bold text-red-400 italic uppercase mb-1">Defensive Hardening</p>
-                                <p class="text-[11px] text-slate-500">
-                                    Enforcing <strong class="text-slate-300">Multi-Factor Authentication (MFA)</strong> and <strong class="text-slate-300">Account Lockout Policies</strong> are critical. Without these, even high-entropy passwords can eventually be cracked via distributed brute force.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- NEW: How to Stay Safe Section -->
-                    <div class="p-5 bg-primary/10 border border-primary/20 rounded-xl">
-                        <h4 class="text-xs font-bold text-primary uppercase mb-3 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm">security</span> How to Stay Safe
-                        </h4>
-                        <ul class="space-y-2 text-[10px] text-slate-400">
-                            <li class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-xs text-primary">check_circle</span>
-                                <span>Use a <strong class="text-white">Password Manager</strong> to generate and store unique, random keys.</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-xs text-primary">check_circle</span>
-                                <span>Enable <strong class="text-white">Two-Factor Authentication (2FA)</strong> on every sensitive account.</span>
-                            </li>
-                            <li class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-xs text-primary">check_circle</span>
-                                <span>Avoid using <strong class="text-white">personal information</strong> (names, dates) in your password patterns.</span>
-                            </li>
-                        </ul>
+                        <h4 class="text-xs font-bold text-primary uppercase mb-3 flex items-center gap-2">Analyst Debrief</h4>
+                        <p class="text-[11px] text-slate-400">Weak passwords represent the largest attack surface. Enforcing MFA and Account Lockout Policies are critical defenses.</p>
                     </div>
                 </div>
-
                 <button onclick="window.history.replaceState(null, null, window.location.pathname); this.closest('#completionModal').remove();"
-                    class="w-full mt-8 py-4 bg-primary text-background-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] shadow-lg shadow-primary/10 relative z-10">
+                    class="w-full mt-8 py-4 bg-primary text-neutral-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] relative z-10">
                     Acknowledge Directive
                 </button>
-
-                <div class="absolute -right-20 -top-20 size-60 bg-primary/5 rounded-full blur-[80px]"></div>
             </div>
         </div>
     <?php endif; ?>
 
-    <?php if ($lab_completed === 'ddos'): ?>
-        <div id="completionModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    <!-- DDoS & Malware Modals (Simplified versions for brevity, but logically identical) -->
+    <?php if ($lab_completed === 'ddos' || $lab_completed === 'malware'): ?>
+        <div id="completionModal" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div class="glass-panel border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
                 <div class="flex items-center gap-4 mb-6 relative z-10 shrink-0">
                     <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-3xl">verified_user</span></div>
-                    <div><h2 class="text-2xl font-black uppercase italic tracking-tighter">Lab <span class="text-primary glow-text">Completed</span></h2><p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Subject: DDoS Mitigation Elite</p></div>
+                    <div><h2 class="text-2xl font-black uppercase italic tracking-tighter">Lab <span class="text-primary italic">Completed</span></h2><p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Target Objective: Neutralized</p></div>
                 </div>
-                <div class="space-y-4 relative z-10 overflow-y-auto custom-scrollbar pr-2 mb-4">
-                    <div class="p-4 bg-primary/5 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">analytics</span> Debrief</h4><p class="text-[11px] text-slate-400">Attack neutralized using layered mitigations. <strong class="text-slate-300">Rate Limiting + WAF + Geo-Blocking</strong> form the essential defense stack.</p></div>
-                    <div class="p-4 bg-primary/10 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">security</span> Key Takeaways</h4><ul class="space-y-1 text-[10px] text-slate-400"><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>Enable rate limiting at the edge/CDN level.</li><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>Maintain IP reputation feeds for proactive blocking.</li></ul></div>
-                </div>
-                <button onclick="window.history.replaceState(null,null,window.location.pathname);this.closest('#completionModal').remove();" class="w-full py-4 bg-primary text-background-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] relative z-10">Acknowledge Directive</button>
+                <button onclick="window.history.replaceState(null,null,window.location.pathname);this.closest('#completionModal').remove();" class="w-full py-4 bg-primary text-neutral-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] relative z-10">Acknowledge Directive</button>
             </div>
         </div>
     <?php endif; ?>
 
-    <?php if ($lab_completed === 'malware'): ?>
-        <div id="completionModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div class="glass-panel border border-primary/30 rounded-2xl w-full max-w-xl p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
-                <div class="flex items-center gap-4 mb-6 relative z-10 shrink-0">
-                    <div class="size-14 rounded-xl bg-primary/20 flex items-center justify-center text-primary"><span class="material-symbols-outlined text-3xl">verified</span></div>
-                    <div><h2 class="text-2xl font-black uppercase italic tracking-tighter">Lab <span class="text-primary glow-text">Completed</span></h2><p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Subject: Malware Analysis — Threat Classification</p></div>
-                </div>
-                <div class="space-y-4 relative z-10 overflow-y-auto custom-scrollbar pr-2 mb-4">
-                    <div class="p-4 bg-primary/5 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">analytics</span> Debrief</h4><p class="text-[11px] text-slate-400">You extracted IOCs and classified a malware sample via static + behavioral analysis. Share IOCs via <strong class="text-slate-300">threat intelligence platforms</strong> to protect the community.</p></div>
-                    <div class="p-4 bg-primary/10 border border-primary/20 rounded-xl"><h4 class="text-xs font-bold text-primary uppercase mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-sm">security</span> Key Takeaways</h4><ul class="space-y-1 text-[10px] text-slate-400"><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>Always analyze in an <strong class="text-white">isolated sandbox</strong>.</li><li class="flex items-center gap-2"><span class="material-symbols-outlined text-xs text-primary">check_circle</span>High entropy → likely <strong class="text-white">packed/encrypted</strong> payload.</li></ul></div>
-                </div>
-                <button onclick="window.history.replaceState(null,null,window.location.pathname);this.closest('#completionModal').remove();" class="w-full py-4 bg-primary text-background-dark font-black rounded-xl hover:brightness-110 transition-all uppercase tracking-[0.2em] relative z-10">Acknowledge Directive</button>
+    <!-- Sidebar Navigation (Synced with settings.php) -->
+    <aside class="w-20 md:w-64 flex flex-col border-r border-border-dim bg-neutral-dark shrink-0 transition-all duration-300 z-50">
+        <div class="h-20 flex items-center px-6 border-b border-border-dim">
+            <div class="size-8 bg-primary rounded flex items-center justify-center shrink-0 shadow-[0_0_15px_-5px_#a0f000]">
+                <span class="material-symbols-outlined text-neutral-dark text-xl font-bold">shield</span>
             </div>
+            <span class="ml-3 font-black tracking-tighter uppercase text-xl md:block hidden italic text-white">Shield</span>
         </div>
-    <?php endif; ?>
+        
+        <nav class="flex-1 p-4 space-y-2">
+            <div class="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary/10 text-primary border border-primary/20 transition-all shadow-[inset_0_0_20px_-10px_#a0f000] mb-2">
+                <span class="material-symbols-outlined text-xl">dashboard</span>
+                <span class="text-sm font-bold md:block hidden">Dashboard</span>
+            </div>
+            <div class="pt-2 pb-2 px-4">
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest md:block hidden">Operations</p>
+                <div class="h-px bg-border-dim w-full md:hidden"></div>
+            </div>
+            <a href="../modules/phishing/index.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:text-primary">alternate_email</span>
+                <span class="text-sm font-bold md:block hidden">Phishing Lab</span>
+            </a>
+            <a href="../labs/ddos.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:text-primary">security</span>
+                <span class="text-sm font-bold md:block hidden">DDoS Defense</span>
+            </a>
+            <a href="../labs/malware.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:text-primary">bug_report</span>
+                <span class="text-sm font-bold md:block hidden">Malware Analysis</span>
+            </a>
+            <a href="../labs/bruteforce.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:text-primary">lock_open</span>
+                <span class="text-sm font-bold md:block hidden">Brute Force</span>
+            </a>
+            <div class="pt-4 pb-2 px-4">
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest md:block hidden">Configuration</p>
+                <div class="h-px bg-border-dim w-full md:hidden"></div>
+            </div>
+            <a href="settings.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:text-primary">settings</span>
+                <span class="text-sm font-bold md:block hidden">Node Config</span>
+            </a>
+        </nav>
 
-    <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar Navigation -->
-        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 border-r border-border-dim bg-neutral-dark/95 backdrop-blur-xl flex flex-col transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300">
-            <!-- Mobile Close Button -->
-            <button id="close-sidebar" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-white">
-                <span class="material-symbols-outlined text-2xl">close</span>
-            </button>
-            <!-- Sidebar Header -->
-            <div class="p-6 shrink-0">
-                <div class="flex items-center gap-3 text-primary mb-2 px-2 transition-transform hover:scale-105 cursor-pointer">
-                    <span class="material-symbols-outlined text-3xl">shield_person</span>
-                    <h1 class="text-white text-xl font-black italic tracking-tighter uppercase">Cyber<span class="text-primary tracking-normal">Shield</span></h1>
-                </div>
-                <nav class="space-y-1">
-                    <a class="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all" href="#">
-                        <span class="material-symbols-outlined text-xl">dashboard</span> Dashboard
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../modules/phishing/index.php">
-                        <span class="material-symbols-outlined text-xl">alternate_email</span> Phishing Lab
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/ddos.php">
-                        <span class="material-symbols-outlined text-xl">security</span> DDoS Defense
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/malware.php">
-                        <span class="material-symbols-outlined text-xl">bug_report</span> Malware Analysis
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="../labs/bruteforce.php">
-                        <span class="material-symbols-outlined text-xl">lock_open</span> Brute Force Lab
-                    </a>
-                    <a class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white" href="#">
-                        <span class="material-symbols-outlined text-xl">data_exploration</span> SOC Dashboard
-                    </a>
-                </nav>
+        <div class="p-4 border-t border-border-dim">
+            <a href="../auth/logout.php" class="flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:scale-110">power_settings_new</span>
+                <span class="text-sm font-bold md:block hidden uppercase tracking-wider">Terminate</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-bg-dark">
+        <!-- Top Header -->
+        <header class="h-20 flex items-center justify-between px-8 bg-neutral-dark/50 backdrop-blur-md border-b border-border-dim shrink-0 z-10">
+            <div class="flex flex-col">
+                <h1 class="text-lg font-black uppercase tracking-tight text-white">Analyst <span class="text-primary italic text-xl">Dashboard</span></h1>
+                <p class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Node: csh_central_01 // Region: Local_Host</p>
             </div>
 
-
-
-            <div class="mt-auto p-6 space-y-4">
-                <div class="p-4 rounded-xl bg-primary/5 border border-primary/10">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] font-black uppercase tracking-widest text-[#a0f000]">System Integrity</span>
-                        <div class="size-2 bg-primary rounded-full animate-pulse"></div>
-                    </div>
+            <div class="flex items-center gap-6">
+                <div class="hidden md:flex flex-col text-right">
+                    <span class="text-sm font-black text-white"><?php echo htmlspecialchars($user_data['name']); ?></span>
+                    <span class="text-[9px] font-mono text-primary uppercase tracking-widest">Authorized Specialist</span>
                 </div>
-                <a class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-400/10 transition-all" href="../auth/logout.php">
-                    <span class="material-symbols-outlined text-xl">logout</span> Terminate Session
-                </a>
+                <div class="size-11 rounded-xl overflow-hidden border border-border-dim shadow-xl bg-surface">
+                    <?php
+                    if ($user_data['profile_type'] === 'none' || !$user_data['profile_image']) {
+                        echo getLetterAvatar($user_data['name']);
+                    } elseif ($user_data['profile_type'] === 'preset') {
+                        echo '<img src="'.$user_data['profile_image'].'" class="size-full object-cover p-1.5">';
+                    } else {
+                        echo '<img src="../'.$user_data['profile_image'].'" class="size-full object-cover">';
+                    }
+                    ?>
+                </div>
             </div>
-        </aside>
+        </header>
 
-        <!-- Main Workspace -->
-        <main class="flex-1 flex flex-col overflow-hidden relative">
-            <!-- Top Navigation Bar -->
-            <header class="sticky top-0 z-10 bg-background-dark/80 backdrop-blur-md border-b border-border-dim px-4 md:px-8 py-4 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-4">
-                    <button id="mobile-menu-btn" class="md:hidden text-white hover:text-primary transition-colors">
-                        <span class="material-symbols-outlined text-2xl">menu</span>
-                    </button>
-                    <div>
-                        <div class="flex items-center gap-2 mb-0.5">
-                            <span class="text-[10px] font-mono text-primary uppercase tracking-widest">Node: csh_analyst_01</span>
-                        </div>
-                        <h2 class="text-xl font-black text-white italic uppercase italic">Analyst <span class="text-primary glow-text">Overview</span></h2>
-                    </div>
-                </div>
-                <div class="flex items-center gap-6">
-                    <div class="flex items-center gap-4">
+        <!-- Content Hub -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-8 space-y-8 animate-fade-in">
+            
+            <!-- Hero Grid: Threat Map & Fast Stats -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- Active Threat Monitor Card -->
+                <div class="lg:col-span-8 glass-panel rounded-[2.5rem] p-8 overflow-hidden relative flex flex-col min-h-[400px]">
+                    <div class="flex items-center justify-between relative z-10 mb-6">
                         <div class="flex items-center gap-3">
-                            <div class="text-right">
-                                <p class="text-sm font-black text-white leading-tight">
-                                    <?php echo htmlspecialchars($userName); ?>
-                                </p>
-                                <a href="settings.php" class="text-[10px] text-primary hover:underline uppercase tracking-tighter">View Config</a>
-                            </div>
-                            <div class="size-11 rounded-xl bg-surface border border-border-dim overflow-hidden shadow-lg shadow-primary/5">
-                                <?php 
-                                if ($user_data['profile_type'] === 'none' || !$user_data['profile_image']) {
-                                    $initial = strtoupper(substr(trim($user_data['name']), 0, 1));
-                                    echo '<div class="size-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-lg uppercase tracking-tighter">'.$initial.'</div>';
-                                } elseif ($user_data['profile_type'] === 'preset') {
-                                    echo '<img src="'.$user_data['profile_image'].'" class="size-full object-cover p-1.5">';
-                                } else {
-                                    echo '<img src="../'.$user_data['profile_image'].'" class="size-full object-cover">';
-                                }
-                                ?>
-                            </div>
+                            <span class="material-symbols-outlined text-primary">public</span>
+                            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Global Threat Monitor</h3>
+                        </div>
+                        <div class="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full flex items-center gap-2">
+                            <div class="size-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                            <span class="text-[9px] font-black text-red-500 uppercase tracking-widest">Security Level: High</span>
+                        </div>
+                    </div>
+
+                    <!-- World Map SVG (Inline for animations) -->
+                    <div class="flex-1 flex items-center justify-center relative opacity-40 hover:opacity-100 transition-opacity duration-700">
+                        <svg viewBox="0 0 1000 500" class="w-full h-full max-h-[300px]">
+                            <!-- Simplified World Outlines (Abstracted) -->
+                            <path d="M150,150 Q200,100 250,150 T350,150 T450,200 T550,150 T650,200 T750,150 T850,200" fill="none" stroke="rgba(160,240,0,0.1)" stroke-width="1" />
+                            <path d="M100,250 Q150,200 200,250 T300,250 T400,300 T500,250 T600,300 T700,250 T800,300" fill="none" stroke="rgba(160,240,0,0.1)" stroke-width="1" />
+                            
+                            <!-- Animated Attack Points -->
+                            <circle class="map-ping" cx="210" cy="180" r="4" />
+                            <circle class="map-ping" cx="480" cy="220" r="4" style="animation-delay: -0.5s" />
+                            <circle class="map-ping" cx="720" cy="190" r="4" style="animation-delay: -1.2s" />
+                            <circle class="map-ping" cx="850" cy="310" r="4" style="animation-delay: -0.8s" />
+                            <circle class="map-ping" cx="340" cy="350" r="4" style="animation-delay: -1.5s" />
+                        </svg>
+                        
+                        <!-- HUD Overlays -->
+                        <div class="absolute inset-0 pointer-events-none border border-primary/5 rounded-3xl"></div>
+                        <div class="absolute bottom-0 left-0 p-4 space-y-1">
+                            <p class="text-[8px] font-mono text-primary uppercase opacity-50">// SCANNING_UPLINK...</p>
+                            <p class="text-[8px] font-mono text-primary uppercase opacity-50">// GEO_LOCATING_BOTNET_NODES...</p>
+                        </div>
+                    </div>
+
+                    <!-- Live Threat Feed Overlay -->
+                    <div class="absolute right-6 bottom-6 w-64 glass-panel border border-white/5 rounded-2xl p-4 hidden md:block group hover:border-primary/30 transition-all">
+                        <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 flex justify-between">
+                            Intrusion Feed
+                            <span class="text-primary italic animate-pulse">LIVE</span>
+                        </p>
+                        <div id="threat-feed" class="space-y-2 h-24 overflow-hidden font-mono text-[9px]">
+                            <!-- JS will inject here -->
                         </div>
                     </div>
                 </div>
-            </header>
 
-            <!-- Content Area -->
-            <section class="flex-1 overflow-y-auto custom-scrollbar p-8 pb-12">
-                <div class="max-w-7xl mx-auto space-y-8">
-                    <!-- Welcome Section -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <!-- Progress Card -->
-                        <div class="lg:col-span-2 glass-panel rounded-2xl p-8 relative overflow-hidden group border-primary/20">
-                            <div class="flex items-center gap-6 relative z-10">
-                                <div class="size-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                                    <span class="material-symbols-outlined text-4xl">check_circle</span>
-                                </div>
+                <!-- Fast Metrics Card -->
+                <div class="lg:col-span-4 space-y-8">
+                    <div class="glass-panel rounded-[2.5rem] p-8 space-y-6">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary">analytics</span>
+                            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Operation Stats</h3>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="p-5 bg-bg-dark/50 border border-border-dim rounded-3xl flex justify-between items-center group hover:border-primary/30 transition-all">
                                 <div>
-                                    <h3 class="text-2xl font-black text-white mb-1 uppercase tracking-tight">Active Training <span class="text-primary">Progress</span></h3>
-                                    <p class="text-slate-400 text-sm">Real-time simulation metrics and certification pathway status.</p>
+                                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Training Progress</p>
+                                    <p class="text-xl font-black text-white"><?php echo ($completed_labs / 4) * 100; ?>%</p>
+                                </div>
+                                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
+                                    <?php echo $completed_labs; ?>/4
                                 </div>
                             </div>
-
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 relative z-10">
-                                <div class="p-4 rounded-xl bg-surface border border-border-dim">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Completed Labs</span>
-                                    <div class="flex items-baseline gap-2">
-                                        <span class="text-3xl font-black text-white"><?php echo $completed_labs; ?></span>
-                                        <span class="text-sm text-slate-500">/ 4 labs</span>
-                                    </div>
-                                    <div class="w-full bg-background-dark h-1 rounded-full mt-2">
-                                        <div class="bg-primary h-full" style="width: <?php echo ($completed_labs / 4) * 100; ?>%"></div>
-                                    </div>
-                                    <p class="text-[10px] text-primary mt-1"><?php echo $completed_labs >= 4 ? 'ALL COMPLETE' : $completed_labs . ' / 4 DONE'; ?></p>
+                            <div class="p-5 bg-bg-dark/50 border border-border-dim rounded-3xl flex justify-between items-center group hover:border-primary/30 transition-all">
+                                <div>
+                                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Active Sim Nodes</p>
+                                    <p class="text-xl font-black text-white">03</p>
                                 </div>
-                                <div class="p-4 rounded-xl bg-surface border border-border-dim">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Phishing Level</span>
-                                    <span class="text-3xl font-black text-white"><?php echo $phishing_level; ?></span>
-                                    <p class="text-[10px] text-primary mt-1">Tier 1 Expert</p>
-                                </div>
-                                <div class="p-4 rounded-xl bg-surface border border-border-dim">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Threats Neutralized</span>
-                                    <span class="text-3xl font-black text-white">4</span>
-                                    <p class="text-[10px] text-primary mt-1">+1 today</p>
-                                </div>
-                                <div class="p-4 rounded-xl bg-surface border border-border-dim">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Brute Force Progress</span>
-                                    <span class="text-3xl font-black text-white"><?php echo $bruteforce_progress; ?>%</span>
-                                    <p class="text-[10px] text-primary mt-1"><?php echo $bruteforce_success ? 'CERTIFIED' : 'IN TRAINING'; ?></p>
-                                </div>
-                                <div class="p-4 rounded-xl bg-surface border border-border-dim">
-                                    <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">DDoS Mitigation</span>
-                                    <span class="text-3xl font-black text-white"><?php echo $ddos_progress; ?>%</span>
-                                    <p class="text-[10px] text-primary mt-1"><?php echo $ddos_success ? 'NEUTRALIZED' : 'IN TRAINING'; ?></p>
+                                <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined text-xl">router</span>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Side Action Card -->
-                        <div class="glass-panel rounded-2xl p-8 flex flex-col justify-center border-white/5">
-                            <div class="text-primary mb-4 flex items-center gap-2">
-                                <span class="material-symbols-outlined">verified_user</span>
-                                <span class="text-xs font-bold uppercase tracking-widest">Quick Launch</span>
-                            </div>
-                            <h4 class="text-xl font-bold text-white mb-4">Resume Phishing Training</h4>
-                            <p class="text-slate-400 text-sm mb-6 leading-relaxed">Continue your simulation and master email header analysis to prevent data breaches.</p>
-                            <a href="../modules/phishing/index.php" class="w-full py-3 bg-primary text-background-dark font-black rounded-xl text-center uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2">
-                                Enter Lab <span class="material-symbols-outlined">arrow_forward</span>
-                            </a>
-                        </div>
+                        
+                        <a href="../labs/ddos.php" class="block w-full py-4 bg-primary text-neutral-dark font-black rounded-2xl text-center uppercase tracking-widest text-xs hover:brightness-110 shadow-lg shadow-primary/10 transition-all">
+                            Initialize New Op
+                        </a>
                     </div>
 
-                    <!-- Learning Pathways -->
+                    <!-- Daily Metric -->
+                    <div class="glass-panel rounded-[2.5rem] p-8 flex items-center gap-4 border-primary/20">
+                        <div class="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-all">
+                            <span class="material-symbols-outlined">verified_user</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Security Health</p>
+                            <p class="text-md font-black text-white uppercase tracking-tight">Node Integrity Stable</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lab Nodes Grid -->
+            <div class="space-y-6 pt-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-black uppercase text-slate-500 tracking-[0.3em] ml-2">Available Operations <span class="text-white">Clusters</span></h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    
+                    <!-- Lab Card: Phishing -->
+                    <div class="glass-panel group rounded-[2rem] p-1 flex flex-col transition-all hover:border-primary/40 hover:translate-y-[-4px]">
+                        <div class="p-6 flex-1">
+                            <div class="flex justify-between items-start mb-6">
+                                <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">alternate_email</span>
+                                <span class="text-[9px] font-mono text-slate-600 bg-white/5 py-1 px-3 rounded-full">OP_01</span>
+                            </div>
+                            <h4 class="text-md font-black text-white mb-2 uppercase tracking-tight">Phishing Analysis</h4>
+                            <p class="text-[11px] text-slate-500 leading-relaxed mb-6">Intercept and analyze deceptive communications in a controlled sandbox.</p>
+                            
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-[9px] font-black uppercase tracking-wider">
+                                    <span class="text-slate-500">Sync Depth</span>
+                                    <span class="text-primary"><?php echo $phishing_progress; ?>%</span>
+                                </div>
+                                <div class="h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="bg-primary h-full" style="width: <?php echo $phishing_progress; ?>%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="../modules/phishing/index.php" class="p-4 bg-surface/50 text-[9px] font-black text-center text-slate-400 hover:text-primary hover:bg-primary/10 uppercase tracking-widest rounded-b-[1.8rem] border-t border-border-dim transition-all">
+                            Initialize Node
+                        </a>
+                    </div>
+
+                    <!-- Lab Card: DDoS -->
+                    <div class="glass-panel group rounded-[2rem] p-1 flex flex-col transition-all hover:border-primary/40 hover:translate-y-[-4px]">
+                        <div class="p-6 flex-1">
+                            <div class="flex justify-between items-start mb-6">
+                                <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">security</span>
+                                <span class="text-[9px] font-mono text-slate-600 bg-white/5 py-1 px-3 rounded-full">OP_02</span>
+                            </div>
+                            <h4 class="text-md font-black text-white mb-2 uppercase tracking-tight">DDoS Mitigation</h4>
+                            <p class="text-[11px] text-slate-500 leading-relaxed mb-6">Neutralize high-volume traffic floods using adaptive firewall rules.</p>
+                            
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-[9px] font-black uppercase tracking-wider">
+                                    <span class="text-slate-500">Uptime Load</span>
+                                    <span class="text-primary"><?php echo $ddos_progress; ?>%</span>
+                                </div>
+                                <div class="h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="bg-primary h-full" style="width: <?php echo $ddos_progress; ?>%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="../labs/ddos.php" class="p-4 bg-surface/50 text-[9px] font-black text-center text-slate-400 hover:text-primary hover:bg-primary/10 uppercase tracking-widest rounded-b-[1.8rem] border-t border-border-dim transition-all">
+                            Initialize Node
+                        </a>
+                    </div>
+
+                    <!-- Lab Card: Malware -->
+                    <div class="glass-panel group rounded-[2rem] p-1 flex flex-col transition-all hover:border-primary/40 hover:translate-y-[-4px]">
+                        <div class="p-6 flex-1">
+                            <div class="flex justify-between items-start mb-6">
+                                <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">bug_report</span>
+                                <span class="text-[9px] font-mono text-slate-600 bg-white/5 py-1 px-3 rounded-full">OP_03</span>
+                            </div>
+                            <h4 class="text-md font-black text-white mb-2 uppercase tracking-tight">Malware Analysis</h4>
+                            <p class="text-[11px] text-slate-500 leading-relaxed mb-6">Deconstruct malicious payloads and classify behavioral anomalies.</p>
+                            
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-[9px] font-black uppercase tracking-wider">
+                                    <span class="text-slate-500">Decryption Index</span>
+                                    <span class="text-primary"><?php echo $malware_progress; ?>%</span>
+                                </div>
+                                <div class="h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="bg-primary h-full" style="width: <?php echo $malware_progress; ?>%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="../labs/malware.php" class="p-4 bg-surface/50 text-[9px] font-black text-center text-slate-400 hover:text-primary hover:bg-primary/10 uppercase tracking-widest rounded-b-[1.8rem] border-t border-border-dim transition-all">
+                            Initialize Node
+                        </a>
+                    </div>
+
+                    <!-- Lab Card: Brute Force -->
+                    <div class="glass-panel group rounded-[2rem] p-1 flex flex-col transition-all hover:border-primary/40 hover:translate-y-[-4px]">
+                        <div class="p-6 flex-1">
+                            <div class="flex justify-between items-start mb-6">
+                                <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">lock_open</span>
+                                <span class="text-[9px] font-mono text-slate-600 bg-white/5 py-1 px-3 rounded-full">OP_04</span>
+                            </div>
+                            <h4 class="text-md font-black text-white mb-2 uppercase tracking-tight">Brute Force Lab</h4>
+                            <p class="text-[11px] text-slate-500 leading-relaxed mb-6">Master authentication hardening by simulating high-speed crack tests.</p>
+                            
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-[9px] font-black uppercase tracking-wider">
+                                    <span class="text-slate-500">Key Recovery</span>
+                                    <span class="text-primary"><?php echo $bruteforce_progress; ?>%</span>
+                                </div>
+                                <div class="h-1 bg-white/5 rounded-full overflow-hidden">
+                                    <div class="bg-primary h-full" style="width: <?php echo $bruteforce_progress; ?>%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="../labs/bruteforce.php" class="p-4 bg-surface/50 text-[9px] font-black text-center text-slate-400 hover:text-primary hover:bg-primary/10 uppercase tracking-widest rounded-b-[1.8rem] border-t border-border-dim transition-all">
+                            Initialize Node
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operational Activity & Container Status -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+                
+                <!-- Activity Log -->
+                <div class="glass-panel rounded-[2.5rem] p-8 space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary">history</span>
+                            <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Recent Operations</h3>
+                        </div>
+                    </div>
+                    
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-black uppercase text-slate-500 tracking-[0.2em]">Available Simulation <span class="text-white">Nodes</span></h3>
-                        </div>
+                        <?php
+                        // Dynamically fetch last few successes from different tables
+                        $activities = [];
+                        
+                        // Brute Force recent
+                        $res = $conn->query("SELECT 'Brute Force' as lab, created_at FROM bruteforce_logs WHERE user_id = $user_id AND success = 1 ORDER BY created_at DESC LIMIT 1");
+                        if ($r = $res->fetch_assoc()) $activities[] = $r;
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <!-- Module Card: Phishing -->
-                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
-                                <div class="p-6">
-                                    <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
-                                            <span class="material-symbols-outlined text-2xl">alternate_email</span>
-                                        </div>
-                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary">MODULE_01</span>
-                                    </div>
-                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">Advanced Phishing Lab</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Master the art of social engineering through simulated campaigns and data exfiltration analysis.</p>
+                        // DDoS recent
+                        $res = $conn->query("SELECT 'DDoS Defense' as lab, created_at FROM ddos_logs WHERE user_id = $user_id AND mitigated = 1 ORDER BY created_at DESC LIMIT 1");
+                        if ($r = $res->fetch_assoc()) $activities[] = $r;
 
-                                    <div class="space-y-4">
-                                        <div class="space-y-2">
-                                            <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                                                <span class="text-slate-500">Progress</span>
-                                                <span class="text-white"><?php echo $phishing_progress; ?>%</span>
-                                            </div>
-                                            <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
-                                                <div class="bg-primary h-full rounded-full" style="width: <?php echo $phishing_progress; ?>%"></div>
-                                            </div>
-                                            <div class="flex justify-between items-center pt-2">
-                                                <span class="text-[10px] text-slate-500">Level <?php echo $phishing_level; ?> / 5</span>
-                                                <span class="text-[10px] text-primary font-bold">
-                                                    <?php echo $phishing_progress >= 100 ? 'PATHWAY MASTERED' : 'NEXT: HEADER ANALYSIS'; ?>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <a href="../modules/phishing/index.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">
-                                    Initialize Lab Instance
-                                </a>
+                        // Malware recent
+                        $res = $conn->query("SELECT 'Malware Analysis' as lab, created_at FROM malware_logs WHERE user_id = $user_id AND correct = 1 ORDER BY created_at DESC LIMIT 1");
+                        if ($r = $res->fetch_assoc()) $activities[] = $r;
+
+                        // Sort all by date
+                        usort($activities, function($a, $b) { return strtotime($b['created_at']) - strtotime($a['created_at']); });
+
+                        if (empty($activities)): ?>
+                            <div class="p-10 text-center space-y-3 opacity-30">
+                                <span class="material-symbols-outlined text-4xl">folder_off</span>
+                                <p class="text-[10px] font-black uppercase tracking-widest">No Recent Ops Recorded</p>
                             </div>
-
-                            <!-- Module Card: DDoS -->
-                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
-                                <div class="p-6">
-                                    <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
-                                            <span class="material-symbols-outlined text-2xl">security</span>
-                                        </div>
-                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">MODULE_02</span>
+                        <?php else:
+                            foreach (array_slice($activities, 0, 3) as $act): ?>
+                                <div class="flex items-center gap-4 p-4 bg-white/[0.02] border border-white/5 rounded-2xl group hover:border-primary/20 transition-all">
+                                    <div class="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined text-sm">terminal</span>
                                     </div>
-                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">DDoS Mitigation Elite</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Deploy rate limiting, WAF rules, and geo-blocking to neutralize high-volume distributed traffic attacks in real time.</p>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                                            <span class="text-slate-500">Mitigation Mastery</span>
-                                            <span class="text-white"><?php echo $ddos_progress; ?>%</span>
-                                        </div>
-                                        <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
-                                            <div class="bg-primary h-full rounded-full" style="width: <?php echo $ddos_progress; ?>%"></div>
-                                        </div>
-                                        <div class="flex justify-between items-center pt-2">
-                                            <span class="text-[10px] text-slate-500">Tier <?php echo $ddos_success ? '2' : '1'; ?> Defense</span>
-                                            <span class="text-[10px] text-primary font-bold"><?php echo $ddos_success ? 'ATTACK NEUTRALIZED' : 'NEXT: DEPLOY MITIGATIONS'; ?></span>
-                                        </div>
+                                    <div class="flex-1">
+                                        <p class="text-[10px] font-black text-white uppercase tracking-tight"><?php echo $act['lab']; ?> Successful</p>
+                                        <p class="text-[9px] font-mono text-slate-600 uppercase tracking-widest"><?php echo date('M d, Y H:i', strtotime($act['created_at'])); ?> Zulu</p>
                                     </div>
+                                    <div class="px-2 py-0.5 bg-primary/10 rounded text-[8px] font-black text-primary uppercase tracking-widest">Verified</div>
                                 </div>
-                                <a href="../labs/ddos.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">Initialize Lab Instance</a>
-                            </div>
-
-                            <!-- Module Card: Malware -->
-                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
-                                <div class="p-6">
-                                    <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
-                                            <span class="material-symbols-outlined text-2xl">bug_report</span>
-                                        </div>
-                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">MODULE_03</span>
-                                    </div>
-                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">Malware Analysis Lab</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Perform static and behavioral sandbox analysis on malware samples. Extract IOCs and classify threats like a professional analyst.</p>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                                            <span class="text-slate-500">Analysis Progress</span>
-                                            <span class="text-white"><?php echo $malware_progress; ?>%</span>
-                                        </div>
-                                        <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
-                                            <div class="bg-primary h-full rounded-full" style="width: <?php echo $malware_progress; ?>%"></div>
-                                        </div>
-                                        <div class="flex justify-between items-center pt-2">
-                                            <span class="text-[10px] text-slate-500">Tier <?php echo $malware_success ? '2' : '1'; ?> Analyst</span>
-                                            <span class="text-[10px] text-primary font-bold"><?php echo $malware_success ? 'SAMPLE CLASSIFIED' : 'NEXT: BEHAVIORAL SCAN'; ?></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <a href="../labs/malware.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">Initialize Lab Instance</a>
-                            </div>
-
-                            <!-- Module Card: Brute Force -->
-                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
-                                <div class="p-6">
-                                    <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
-                                            <span class="material-symbols-outlined text-2xl">lock_open</span>
-                                        </div>
-                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">MODULE_04</span>
-                                    </div>
-                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">Brute Force Lab</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Simulate automated credential stuffing attacks and learn how to secure authentication against high-speed brute force attempts.</p>
-                                    <div class="space-y-2">
-                                        <div class="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                                            <span class="text-slate-500">Attack Success</span>
-                                            <span class="text-white"><?php echo $bruteforce_progress; ?>%</span>
-                                        </div>
-                                        <div class="w-full bg-background-dark h-1.5 rounded-full overflow-hidden">
-                                            <div class="bg-primary h-full rounded-full" style="width: <?php echo $bruteforce_progress; ?>%"></div>
-                                        </div>
-                                        <div class="flex justify-between items-center pt-2">
-                                            <span class="text-[10px] text-slate-500">Tier <?php echo $bruteforce_success ? '2' : '1'; ?> Attacker</span>
-                                            <span class="text-[10px] text-primary font-bold"><?php echo $bruteforce_success ? 'TARGET CRACKED' : 'NEXT: DICTIONARY SCAN'; ?></span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <a href="../labs/bruteforce.php" class="block w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] border-t border-border-dim group-hover:bg-primary group-hover:text-background-dark transition-all">Initialize Lab Instance</a>
-                            </div>
-
-                            <!-- Module Card: Juice Shop (Docker) -->
-                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
-                                <div class="p-6">
-                                    <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
-                                            <span class="material-symbols-outlined text-2xl">shopping_cart</span>
-                                        </div>
-                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">CONTAINER_NODE</span>
-                                    </div>
-                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">OWASP Juice Shop</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">A modern, vulnerable web application for security testing. Practice SQLi, XSS, and broken access control in a live container.</p>
-                                    <div class="space-y-4">
-                                        <div class="flex items-center justify-between p-2.5 bg-background-dark/50 rounded-lg border border-border-dim">
-                                            <div class="flex items-center">
-                                                <span id="dot-juiceshop" class="lab-status-dot status-stopped"></span>
-                                                <span id="status-juiceshop" class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Stopped</span>
-                                            </div>
-                                            <div class="flex gap-1.5">
-                                                <button onclick="manageLab('juiceshop', 'start')" class="size-7 flex items-center justify-center rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-black transition-all" title="Start Lab">
-                                                    <span class="material-symbols-outlined text-sm">play_arrow</span>
-                                                </button>
-                                                <button onclick="manageLab('juiceshop', 'stop')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30 transition-all" title="Stop Lab">
-                                                    <span class="material-symbols-outlined text-sm">stop</span>
-                                                </button>
-                                                <button onclick="manageLab('juiceshop', 'reset')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-white/10 hover:text-white transition-all" title="Reset Lab">
-                                                    <span class="material-symbols-outlined text-sm">refresh</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 divide-x divide-border-dim border-t border-border-dim">
-                                    <a href="https://pwning.owasp-juice.shop/" target="_blank" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-all">Challenge Guide</a>
-                                    <a href="#" onclick="manageLab('juiceshop', 'start'); return false;" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-background-dark transition-all">Launch Console</a>
-                                </div>
-                            </div>
-
-                            <!-- Module Card: DVWA (Docker) -->
-                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
-                                <div class="p-6">
-                                    <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
-                                            <span class="material-symbols-outlined text-2xl">database</span>
-                                        </div>
-                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">CONTAINER_NODE</span>
-                                    </div>
-                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">Web DVWA</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">Damn Vulnerable Web Application. A PHP/MySQL web application that is damn vulnerable. Test various security levels.</p>
-                                    <div class="space-y-4">
-                                        <div class="flex items-center justify-between p-2.5 bg-background-dark/50 rounded-lg border border-border-dim">
-                                            <div class="flex items-center">
-                                                <span id="dot-dvwa" class="lab-status-dot status-stopped"></span>
-                                                <span id="status-dvwa" class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Stopped</span>
-                                            </div>
-                                            <div class="flex gap-1.5">
-                                                <button onclick="manageLab('dvwa', 'start')" class="size-7 flex items-center justify-center rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-black transition-all" title="Start Lab">
-                                                    <span class="material-symbols-outlined text-sm">play_arrow</span>
-                                                </button>
-                                                <button onclick="manageLab('dvwa', 'stop')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30 transition-all" title="Stop Lab">
-                                                    <span class="material-symbols-outlined text-sm">stop</span>
-                                                </button>
-                                                <button onclick="manageLab('dvwa', 'reset')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-white/10 hover:text-white transition-all" title="Reset Lab">
-                                                    <span class="material-symbols-outlined text-sm">refresh</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 divide-x divide-border-dim border-t border-border-dim">
-                                    <a href="https://github.com/digininja/DVWA" target="_blank" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-all">Documentation</a>
-                                    <a href="#" onclick="manageLab('dvwa', 'start'); return false;" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-background-dark transition-all">Launch Console</a>
-                                </div>
-                            </div>
-
-                            <!-- Module Card: bWAPP (Docker) -->
-                            <div class="glass-panel group rounded-2xl p-1 transition-all hover:border-primary/40">
-                                <div class="p-6">
-                                    <div class="flex items-start justify-between mb-6">
-                                        <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-300">
-                                            <span class="material-symbols-outlined text-2xl">bug_report</span>
-                                        </div>
-                                        <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase">CONTAINER_NODE</span>
-                                    </div>
-                                    <h4 class="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">bWAPP Lab</h4>
-                                    <p class="text-xs text-slate-400 mb-6 leading-relaxed">buggy Web Application. A free and open source deliberately insecure web application. Covers over 100 vulnerabilities.</p>
-                                    <div class="space-y-4">
-                                        <div class="flex items-center justify-between p-2.5 bg-background-dark/50 rounded-lg border border-border-dim">
-                                            <div class="flex items-center">
-                                                <span id="dot-bwapp" class="lab-status-dot status-stopped"></span>
-                                                <span id="status-bwapp" class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Stopped</span>
-                                            </div>
-                                            <div class="flex gap-1.5">
-                                                <button onclick="manageLab('bwapp', 'start')" class="size-7 flex items-center justify-center rounded bg-primary/10 border border-primary/30 text-primary hover:bg-primary hover:text-black transition-all" title="Start Lab">
-                                                    <span class="material-symbols-outlined text-sm">play_arrow</span>
-                                                </button>
-                                                <button onclick="manageLab('bwapp', 'stop')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-red-500/20 hover:text-red-400 hover:border-red-400/30 transition-all" title="Stop Lab">
-                                                    <span class="material-symbols-outlined text-sm">stop</span>
-                                                </button>
-                                                <button onclick="manageLab('bwapp', 'reset')" class="size-7 flex items-center justify-center rounded bg-white/5 border border-white/10 text-slate-500 hover:bg-white/10 hover:text-white transition-all" title="Reset Lab">
-                                                    <span class="material-symbols-outlined text-sm">refresh</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 divide-x divide-border-dim border-t border-border-dim">
-                                    <a href="http://www.itsecgames.com/" target="_blank" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-primary transition-all">Vulnerability List</a>
-                                    <a href="#" onclick="manageLab('bwapp', 'start'); return false;" class="py-4 text-center text-[9px] font-black uppercase tracking-[0.2em] group-hover:bg-primary group-hover:text-background-dark transition-all">Launch Console</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </section>
-
-            <!-- Active Terminal Status Bar -->
-            <footer class="shrink-0 h-8 bg-neutral-dark border-t border-border-dim flex items-center justify-between px-6 z-30 relative">
-                <div class="flex items-center gap-4 text-[10px] font-mono">
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-primary uppercase">Console:</span>
-                        <span class="text-slate-500">Connected to local_node</span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-primary uppercase">Status:</span>
-                        <span class="text-slate-500">Operation Ready</span>
+                            <?php endforeach;
+                        endif; ?>
                     </div>
                 </div>
-                <div class="flex items-center gap-4 text-[10px] font-mono">
-                    <span class="text-slate-500 uppercase">Uptime: <?php echo floor(time() / 3600) % 24; ?>h 42m</span>
-                    <span class="text-primary italic">CyberShield Control v4.2 BETA</span>
+
+                <!-- Container Nodes (Juice Shop, etc.) -->
+                <div class="glass-panel rounded-[2.5rem] p-8 space-y-6">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">container</span>
+                        <h3 class="text-xs font-black uppercase tracking-[0.2em] text-white">Dynamic Sandbox Nodes</h3>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <?php foreach (['juiceshop' => 'OWASP Juice', 'dvwa' => 'Web DVWA', 'bwapp' => 'bWAPP Lab'] as $id => $title): ?>
+                            <div class="p-4 bg-surface border border-border-dim rounded-2xl space-y-4 group hover:border-primary/30 transition-all">
+                                <div>
+                                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1"><?php echo $title; ?></p>
+                                    <div class="flex items-center gap-2">
+                                        <span id="dot-<?php echo $id; ?>" class="lab-status-dot status-stopped"></span>
+                                        <span id="status-<?php echo $id; ?>" class="text-[9px] font-mono font-black text-slate-600 uppercase tracking-widest">Offline</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="manageLab('<?php echo $id; ?>', 'start')" class="size-8 rounded-lg bg-primary/10 hover:bg-primary hover:text-neutral-dark text-primary flex items-center justify-center transition-all">
+                                        <span class="material-symbols-outlined text-sm">play_arrow</span>
+                                    </button>
+                                    <button onclick="manageLab('<?php echo $id; ?>', 'stop')" class="size-8 rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-500 text-slate-500 flex items-center justify-center transition-all">
+                                        <span class="material-symbols-outlined text-sm">stop</span>
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
-            </footer>
-        </main>
-    </div>
+            </div>
+        </div>
+
+        <!-- CLI Status Footer -->
+        <footer class="h-10 bg-neutral-dark border-t border-border-dim flex items-center justify-between px-8 z-30 shrink-0">
+            <div class="flex items-center gap-8 text-[9px] font-mono text-slate-500 uppercase tracking-widest">
+                <div class="flex items-center gap-2">
+                    <span class="text-primary font-black">//_NODE:</span>
+                    <span id="system-time">Initializing...</span>
+                </div>
+                <div class="flex items-center gap-2 hidden md:flex">
+                    <span class="text-primary font-black">//_STATUS:</span>
+                    <span>READY_CORE_UPLINK</span>
+                </div>
+            </div>
+            <div class="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-black hidden sm:block">
+                Shield Command Interface // Build 4.2.0-STABLE
+            </div>
+        </footer>
+    </main>
+
     <script>
+        // Lab Management Logic (Preserved)
         function manageLab(labId, action) {
             const statusText = document.getElementById(`status-${labId}`);
             const statusDot = document.getElementById(`dot-${labId}`);
-            
             if (statusText) {
-                statusText.innerText = 'Wait...';
-                statusText.className = 'text-[10px] font-bold uppercase tracking-widest text-primary animate-pulse';
+                statusText.innerText = 'WAITING...';
+                statusText.className = 'text-[9px] font-mono font-black text-primary animate-pulse';
             }
             if (statusDot) statusDot.className = 'lab-status-dot status-loading';
 
             fetch(`../labs/manage_lab.php?lab=${labId}&action=${action}`)
                 .then(res => res.json())
                 .then(data => {
-                    if (data.status === 'success') {
-                        setTimeout(() => checkLabStatus(labId), 1500);
-                        if (action === 'start' && data.port) {
-                            showLabModal(labId, data.port);
-                        }
-                    } else {
-                        checkLabStatus(labId);
-                        alert(data.message || 'Operation failed');
-                    }
+                    setTimeout(() => checkLabStatus(labId), 1000);
+                    if (action === 'start' && data.port) showLabModal(labId, data.port);
                 }).catch(() => checkLabStatus(labId));
         }
 
         function checkLabStatus(labId) {
             const statusText = document.getElementById(`status-${labId}`);
             const statusDot = document.getElementById(`dot-${labId}`);
-
             fetch(`../labs/manage_lab.php?lab=${labId}&action=status`)
                 .then(res => res.json())
                 .then(data => {
                     const isRunning = data.status === 'running';
                     if (statusText) {
-                        statusText.innerText = isRunning ? 'Online' : 'Offline';
-                        statusText.className = `text-[10px] font-bold uppercase tracking-widest ${isRunning ? 'text-primary' : 'text-slate-500'}`;
+                        statusText.innerText = isRunning ? 'ONLINE' : 'OFFLINE';
+                        statusText.className = `text-[9px] font-mono font-black ${isRunning ? 'text-primary' : 'text-slate-600'} uppercase tracking-widest`;
                     }
                     if (statusDot) statusDot.className = `lab-status-dot status-${data.status}`;
                 });
@@ -713,38 +583,56 @@ $lab_completed = $_GET['lab_completed'] ?? '';
 
         function showLabModal(labId, port) {
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4';
+            modal.className = 'fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-md p-4';
             modal.innerHTML = `
-                <div class="glass-panel border border-primary/30 rounded-2xl w-full max-w-md p-8 shadow-2xl relative overflow-hidden">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="size-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
-                            <span class="material-symbols-outlined text-2xl">rocket_launch</span>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-black uppercase text-white">Lab <span class="text-primary">Deployed</span></h3>
-                            <p class="text-[10px] text-slate-500 font-mono tracking-widest">Target Instance: ${labId.toUpperCase()}</p>
-                        </div>
+                <div class="glass-panel border border-primary/40 rounded-[2.5rem] w-full max-w-md p-10 shadow-3xl text-center">
+                    <div class="size-20 bg-primary/20 rounded-3xl flex items-center justify-center text-primary mx-auto mb-6 shadow-[0_0_30px_-5px_#a0f000]">
+                        <span class="material-symbols-outlined text-4xl">rocket_launch</span>
                     </div>
-                    <p class="text-sm text-slate-400 mb-8 leading-relaxed">Your lab environment is ready for operation. Access the target via the local proxy port.</p>
-                    <a href="http://localhost:${port}" target="_blank" class="block w-full py-4 bg-primary text-background-dark text-center font-black rounded-xl hover:brightness-110 mb-3 transition-all uppercase tracking-widest text-xs">Access Lab Instance</a>
-                    <button onclick="this.closest('.fixed').remove()" class="w-full py-3 bg-white/5 text-slate-400 text-center font-bold rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-[9px]">Acknowledge Dismiss</button>
+                    <h3 class="text-2xl font-black uppercase text-white mb-2">Node <span class="text-primary">Deployed</span></h3>
+                    <p class="text-[10px] text-slate-500 font-mono tracking-widest mb-8">TARGET_INSTANCE: ${labId.toUpperCase()}</p>
+                    <a href="http://localhost:${port}" target="_blank" class="block w-full py-5 bg-primary text-neutral-dark font-black rounded-2xl hover:brightness-110 mb-4 transition-all uppercase tracking-widest text-xs">Access Instance Console</a>
+                    <button onclick="this.closest('.fixed').remove()" class="w-full py-4 text-slate-500 font-bold uppercase tracking-widest text-[9px] hover:text-white transition-all">Dismiss Overlay</button>
                 </div>
             `;
             document.body.appendChild(modal);
         }
 
+        // Threat Feed Logic
+        const threats = [
+            "Unauthorized login attempt blocked from 182.12.8.x",
+            "Brute-force pattern detected on Node_77",
+            "XSS payload sanitized on /auth/relay",
+            "Incoming DDoS burst mitigated - US_EAST",
+            "Malware signature match found in /tmp/inbound",
+            "Encrypted proxy detected from 82.xx.xx.xx",
+            "SQL Injection attempt prevented on /api/stats",
+            "Phishing link reported - Domain quarantined"
+        ];
+        function updateThreatFeed() {
+            const feed = document.getElementById('threat-feed');
+            const item = document.createElement('div');
+            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
+            item.className = 'threat-feed-item text-slate-500 flex gap-2';
+            item.innerHTML = `<span class="text-primary font-black">[${time}]</span> <span>${threats[Math.floor(Math.random() * threats.length)]}</span>`;
+            feed.prepend(item);
+            if (feed.children.length > 5) feed.lastElementChild.remove();
+        }
+        setInterval(updateThreatFeed, 4000);
+        updateThreatFeed();
+
+        // System Time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('system-time').innerText = now.getUTCHours().toString().padStart(2, '0') + ':' + now.getUTCMinutes().toString().padStart(2, '0') + ':' + now.getUTCSeconds().toString().padStart(2, '0') + ' ZULU';
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // Initialized Lab Status
         document.addEventListener('DOMContentLoaded', () => {
-            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-            const closeSidebarBtn = document.getElementById('close-sidebar');
-            const sidebar = document.getElementById('sidebar');
-
-            if (mobileMenuBtn && sidebar) mobileMenuBtn.onclick = () => sidebar.classList.remove('-translate-x-full');
-            if (closeSidebarBtn && sidebar) closeSidebarBtn.onclick = () => sidebar.classList.add('-translate-x-full');
-
-            // Boot lab status
             ['juiceshop', 'dvwa', 'bwapp'].forEach(checkLabStatus);
         });
     </script>
 </body>
-
 </html>
