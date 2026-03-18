@@ -10,6 +10,13 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 
+// Fetch User Data for Head (Photo/Settings)
+$user_stmt = $conn->prepare("SELECT name, profile_type, profile_image FROM users WHERE id = ?");
+$user_stmt->bind_param("i", $user_id);
+$user_stmt->execute();
+$user_data = $user_stmt->get_result()->fetch_assoc();
+$user_stmt->close();
+
 // Fetch Phishing Progress
 $phishing_stmt = $conn->prepare("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = ?");
 $phishing_stmt->bind_param("i", $user_id);
@@ -42,8 +49,8 @@ $mal_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(correct) as has_succes
 $mal_stmt->bind_param("i", $user_id);
 $mal_stmt->execute();
 $mal_data = $mal_stmt->get_result()->fetch_assoc();
-$malware_success  = (int)($mal_data['has_success'] ?? 0);
-$malware_count    = (int)($mal_data['total'] ?? 0);
+$malware_success  = (int)($malware_data['has_success'] ?? 0);
+$malware_count    = (int)($malware_data['total'] ?? 0);
 $malware_progress = $malware_success ? 100 : min($malware_count * 25, 90);
 
 // Total completed labs
@@ -318,13 +325,18 @@ $lab_completed = $_GET['lab_completed'] ?? '';
                                 <p class="text-sm font-black text-white leading-tight">
                                     <?php echo htmlspecialchars($userName); ?>
                                 </p>
+                                <a href="settings.php" class="text-[10px] text-primary hover:underline uppercase tracking-tighter">View Config</a>
                             </div>
-                            <div class="size-9 rounded-full bg-gradient-to-tr from-primary to-lime-600 border-2 border-surface flex items-center justify-center text-background-dark font-bold text-sm">
-                                <?php
-                                $initials = '';
-                                $parts = explode(' ', $userName);
-                                foreach ($parts as $p) $initials .= strtoupper($p[0]);
-                                echo substr($initials, 0, 2);
+                            <div class="size-11 rounded-xl bg-surface border border-border-dim overflow-hidden shadow-lg shadow-primary/5">
+                                <?php 
+                                if ($user_data['profile_type'] === 'none' || !$user_data['profile_image']) {
+                                    $initial = strtoupper(substr(trim($user_data['name']), 0, 1));
+                                    echo '<div class="size-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-lg uppercase tracking-tighter">'.$initial.'</div>';
+                                } elseif ($user_data['profile_type'] === 'preset') {
+                                    echo '<img src="'.$user_data['profile_image'].'" class="size-full object-cover p-1.5">';
+                                } else {
+                                    echo '<img src="../'.$user_data['profile_image'].'" class="size-full object-cover">';
+                                }
                                 ?>
                             </div>
                         </div>
