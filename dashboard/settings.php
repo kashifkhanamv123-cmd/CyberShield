@@ -13,8 +13,8 @@ $success = "";
 
 // Helper for letter avatar
 function getLetterAvatar($name) {
-    $initial = strtoupper(substr(trim($name), 0, 1));
-    return '<div class="size-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-2xl border border-primary/20 rounded-xl uppercase tracking-tighter">' . $initial . '</div>';
+    $initial = strtoupper(substr(trim($name ?? 'U'), 0, 1));
+    return '<div class="size-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-4xl border border-primary/20 rounded-2xl uppercase tracking-tighter">' . $initial . '</div>';
 }
 
 // Fetch current user data
@@ -93,13 +93,55 @@ if (isset($_POST['update_password'])) {
         $update->close();
     }
 }
+
+// Lab completion stats for ranking
+$phishing_stmt = $conn->prepare("SELECT COUNT(*) as count FROM lab_results WHERE user_id = ? AND lab_name = 'phishing' AND success = 1");
+$phishing_stmt->bind_param("i", $user_id);
+$phishing_stmt->execute();
+$phishing_count = $phishing_stmt->get_result()->fetch_assoc()['count'];
+
+$brute_stmt = $conn->prepare("SELECT COUNT(*) as count FROM lab_results WHERE user_id = ? AND lab_name = 'bruteforce' AND success = 1");
+$brute_stmt->bind_param("i", $user_id);
+$brute_stmt->execute();
+$brute_count = $brute_stmt->get_result()->fetch_assoc()['count'];
+
+$ddos_stmt = $conn->prepare("SELECT COUNT(*) as count FROM lab_results WHERE user_id = ? AND lab_name = 'ddos' AND success = 1");
+$ddos_stmt->bind_param("i", $user_id);
+$ddos_stmt->execute();
+$ddos_count = $ddos_stmt->get_result()->fetch_assoc()['count'];
+
+$mal_stmt = $conn->prepare("SELECT COUNT(*) as count FROM malware_submissions WHERE user_id = ? AND is_malicious = 1");
+$mal_stmt->bind_param("i", $user_id);
+$mal_stmt->execute();
+$mal_count = $mal_stmt->get_result()->fetch_assoc()['count'];
+
+$total_completed = ($phishing_count > 0 ? 1 : 0) + ($brute_count > 0 ? 1 : 0) + ($ddos_count > 0 ? 1 : 0) + ($mal_count > 0 ? 1 : 0);
+
+// Determine rank
+if ($total_completed === 0) $rank = "Untrusted Node";
+elseif ($total_completed <= 1) $rank = "Lvl_01 Analyst";
+elseif ($total_completed <= 2) $rank = "Lvl_02 Operative";
+elseif ($total_completed <= 3) $rank = "Lvl_03 Specialist";
+else $rank = "Lvl_04 Commander";
+
+// Get user IP
+$user_ip = $_SERVER['REMOTE_ADDR'] === '::1' ? '127.0.0.1' : $_SERVER['REMOTE_ADDR'];
+
+$presets = [
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield1',
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield2',
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield3',
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield4',
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield5',
+    'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield6'
+];
 ?>
 <!DOCTYPE html>
 <html class="dark" lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>CyberShield | Node Configuration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Node Config | <?php echo htmlspecialchars($user['name']); ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
@@ -109,240 +151,459 @@ if (isset($_POST['update_password'])) {
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#a0f000",
-                        "background-dark": "#0a0c02",
-                        "surface": "#12140a",
-                        "neutral-dark": "#16190e",
-                        "border-dim": "#23281b",
+                        primary: "#a0f000",
+                        "neutral-dark": "#0d0f0a",
+                        "surface": "#161810",
+                        "border-dim": "#2a2e21",
+                        "bg-dark": "#080906"
                     }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .terminal-grid {
-            background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
-            background-size: 30px 30px;
+        body {
+            background-color: theme('colors.bg-dark');
+            font-family: 'Inter', sans-serif;
+            color: #fff;
         }
         .glass-panel {
-            background: rgba(18, 20, 10, 0.7);
+            background: rgba(22, 24, 16, 0.7);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(160, 240, 0, 0.1);
         }
-        .glow-text { text-shadow: 0 0 10px rgba(160, 240, 0, 0.5); }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #23281b; border-radius: 10px; }
+        .form-input {
+            background: rgba(13, 15, 10, 0.5);
+            border: 1px solid theme('colors.border-dim');
+            transition: all 0.2s;
+        }
+        .form-input:focus {
+            border-color: theme('colors.primary');
+            box-shadow: 0 0 0 1px theme('colors.primary');
+            outline: none;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: theme('colors.border-dim');
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.primary');
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-background-dark text-slate-300 min-h-screen terminal-grid custom-scrollbar overflow-x-hidden">
+<body class="flex h-screen overflow-hidden selection:bg-primary selection:text-neutral-dark text-slate-300">
 
-    <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar Navigation -->
-        <aside class="hidden md:flex flex-col w-64 border-r border-border-dim bg-neutral-dark/95 p-6 space-y-8 shrink-0">
-            <div class="flex items-center gap-3 text-primary px-2 transition-transform hover:scale-105 cursor-pointer">
-                <span class="material-symbols-outlined text-3xl">shield_person</span>
-                <h1 class="text-white text-xl font-black italic tracking-tighter uppercase">Cyber<span class="text-primary tracking-normal">Shield</span></h1>
+    <!-- Sidebar Navigation -->
+    <aside class="w-20 md:w-64 flex flex-col border-r border-border-dim bg-neutral-dark shrink-0 transition-all duration-300">
+        <div class="h-20 flex items-center px-6 border-b border-border-dim">
+            <div class="size-8 bg-primary rounded flex items-center justify-center shrink-0 shadow-[0_0_15px_-5px_#a0f000]">
+                <span class="material-symbols-outlined text-neutral-dark text-xl font-bold">shield</span>
             </div>
-            <nav class="space-y-1">
-                <a href="dashboard.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-white/5 transition-all text-slate-400 hover:text-white">
-                    <span class="material-symbols-outlined">dashboard</span> Dashboard
-                </a>
-                <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold bg-primary/10 text-primary border-r-2 border-primary">
-                    <span class="material-symbols-outlined">settings</span> Config
-                </a>
-            </nav>
-            <div class="mt-auto">
-                <a href="../auth/logout.php" class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:bg-red-400/10 transition-all">
-                    <span class="material-symbols-outlined">logout</span> Logoff
-                </a>
+            <span class="ml-3 font-black tracking-tighter uppercase text-xl md:block hidden italic text-white">Shield</span>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-2">
+            <a href="dashboard.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:text-primary">dashboard</span>
+                <span class="text-sm font-bold md:block hidden">Dashboard</span>
+            </a>
+            <div class="pt-4 pb-2 px-4">
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest md:block hidden">Configuration</p>
+                <div class="h-px bg-border-dim w-full md:hidden"></div>
             </div>
-        </aside>
+            <div class="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary/10 text-primary border border-primary/20 transition-all shadow-[inset_0_0_20px_-10px_#a0f000]">
+                <span class="material-symbols-outlined text-xl">settings</span>
+                <span class="text-sm font-bold md:block hidden">Profile Node</span>
+            </div>
+            <a href="../labs/ddos.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:text-primary">security</span>
+                <span class="text-sm font-bold md:block hidden">Labs Access</span>
+            </a>
+        </nav>
 
-        <main class="flex-1 overflow-y-auto p-4 md:p-12 custom-scrollbar">
-            <div class="max-w-4xl mx-auto space-y-8">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="text-[10px] font-mono text-primary uppercase tracking-[0.3em]">Node: profile_config_01</span>
-                        </div>
-                        <h2 class="text-3xl font-black text-white uppercase italic">Analyst <span class="text-primary glow-text">Parameters</span></h2>
-                        <p class="text-slate-400 text-sm mt-1">Reconfigure operator identity and security protocols.</p>
-                    </div>
-                    <a href="dashboard.php" class="md:hidden text-primary">
-                         <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
+        <div class="p-4 border-t border-border-dim">
+            <a href="../auth/logout.php" class="flex items-center gap-4 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition-all group">
+                <span class="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">power_settings_new</span>
+                <span class="text-sm font-bold md:block hidden uppercase tracking-wider">Terminate</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-bg-dark">
+        
+        <!-- Top Bar -->
+        <header class="h-20 flex items-center justify-between px-8 bg-neutral-dark/50 backdrop-blur-md border-b border-border-dim shrink-0 z-10">
+            <div class="flex flex-col">
+                <h1 class="text-lg font-black uppercase tracking-tight text-white">Security <span class="text-primary italic">Node</span> Config</h1>
+                <p class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Operator: <?php echo htmlspecialchars($user['name']); ?> // Port: 443</p>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="size-11 rounded-xl overflow-hidden border border-border-dim shadow-xl">
+                    <?php
+                    if ($user['profile_type'] === 'none' || !$user['profile_image']) {
+                        echo getLetterAvatar($user['name']);
+                    } elseif ($user['profile_type'] === 'preset') {
+                        echo '<img src="'.$user['profile_image'].'" class="size-full object-cover p-1.5 bg-surface">';
+                    } else {
+                        echo '<img src="../'.$user['profile_image'].'" class="size-full object-cover">';
+                    }
+                    ?>
                 </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-8">
+            <div class="max-w-5xl mx-auto space-y-8 pb-12">
+
+                <!-- Alert Feedback -->
+                <?php if ($success): ?>
+                    <div class="p-4 glass-panel border-primary/30 rounded-2xl flex items-center gap-4 animate-fade-in">
+                        <div class="size-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                            <span class="material-symbols-outlined text-2xl">verified</span>
+                        </div>
+                        <p class="text-xs font-mono text-primary uppercase tracking-widest"><?php echo $success; ?></p>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($error): ?>
-                    <div class="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-mono">
-                        [ERROR] :: <?php echo $error; ?>
+                    <div class="p-4 glass-panel border-red-500/30 rounded-2xl flex items-center gap-4 animate-fade-in">
+                        <div class="size-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500 shrink-0">
+                            <span class="material-symbols-outlined text-2xl">warning</span>
+                        </div>
+                        <p class="text-xs font-mono text-red-500 uppercase tracking-widest"><?php echo $error; ?></p>
                     </div>
                 <?php endif; ?>
 
-                <?php if ($success): ?>
-                    <div class="p-4 bg-primary/10 border border-primary/20 rounded-xl text-primary text-sm font-mono">
-                        [SUCCESS] :: <?php echo $success; ?>
-                    </div>
-                <?php endif; ?>
+                <form method="POST" enctype="multipart/form-data" class="space-y-8">
+                    
+                    <!-- Identity Section -->
+                    <div class="glass-panel rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
+                            <span class="material-symbols-outlined text-[10rem]">person_search</span>
+                        </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Profile Management -->
-                    <div class="glass-panel rounded-2xl p-8 space-y-8">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                                <span class="material-symbols-outlined text-primary">person</span> Identity
-                            </h3>
-                            <div class="size-16 rounded-2xl bg-surface border border-border-dim overflow-hidden shadow-lg shadow-primary/5">
-                                <?php 
-                                if ($user['profile_type'] === 'none' || !$user['profile_image']) {
-                                    echo getLetterAvatar($user['name']);
-                                } elseif ($user['profile_type'] === 'preset') {
-                                    echo '<img src="'.$user['profile_image'].'" class="size-full object-cover p-2">';
-                                } else {
-                                    echo '<img src="../'.$user['profile_image'].'" class="size-full object-cover">';
-                                }
-                                ?>
+                        <div class="flex flex-col lg:flex-row items-center lg:items-start gap-12 relative z-10">
+                            
+                            <!-- Large Avatar Preview -->
+                            <div class="shrink-0">
+                                <div class="size-48 rounded-[3rem] overflow-hidden border-2 border-primary/30 p-2 bg-bg-dark shadow-2xl transition-all duration-500 hover:rotate-2 hover:scale-105">
+                                    <div id="preview-container" class="size-full rounded-[2.2rem] overflow-hidden bg-surface relative">
+                                        <?php
+                                        if ($user['profile_type'] === 'none' || !$user['profile_image']) {
+                                            echo getLetterAvatar($user['name']);
+                                        } elseif ($user['profile_type'] === 'preset') {
+                                            echo '<img src="'.$user['profile_image'].'" class="size-full object-cover p-4">';
+                                        } else {
+                                            echo '<img src="../'.$user['profile_image'].'" class="size-full object-cover">';
+                                        }
+                                        ?>
+                                        <div class="absolute inset-0 bg-gradient-to-t from-bg-dark/40 to-transparent pointer-events-none"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex justify-center gap-2">
+                                    <div class="px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-[9px] font-black text-primary uppercase tracking-widest">Active Alias</div>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 w-full space-y-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="space-y-3">
+                                        <label class="text-[10px] font-black text-primary uppercase tracking-[0.25em] ml-1">Operator Profile Name</label>
+                                        <div class="relative">
+                                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 text-lg">badge</span>
+                                            <input type="text" name="name" value="<?php echo htmlspecialchars($user['name']); ?>" required
+                                                class="w-full form-input rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white transition-all shadow-inner">
+                                        </div>
+                                    </div>
+                                    <div class="space-y-3 opacity-60">
+                                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] ml-1">Encrypted Mail Relay</label>
+                                        <div class="relative">
+                                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-lg">alternate_email</span>
+                                            <input type="email" disabled value="<?php echo htmlspecialchars($user['email']); ?>"
+                                                class="w-full form-input rounded-2xl pl-12 pr-6 py-4 text-sm font-bold cursor-not-allowed">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Avatar Type Selection -->
+                                <div class="space-y-4">
+                                    <label class="text-[10px] font-black text-primary uppercase tracking-[0.25em] ml-1">Visual Identity Protocol</label>
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <label class="cursor-pointer group">
+                                            <input type="radio" name="profile_type" value="none" class="sr-only peer" <?php echo ($user['profile_type'] === 'none') ? 'checked' : ''; ?>>
+                                            <div class="p-4 rounded-2xl glass-panel text-center transition-all peer-checked:bg-primary/10 peer-checked:border-primary group-hover:border-primary/50 relative overflow-hidden">
+                                                <div class="absolute inset-0 bg-primary/5 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                                <span class="material-symbols-outlined text-2xl block mb-2 text-slate-500 peer-checked:text-primary transition-colors">abc</span>
+                                                <span class="text-[10px] font-black uppercase text-slate-500 peer-checked:text-white transition-colors">Letter Fallback</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group">
+                                            <input type="radio" name="profile_type" value="preset" class="sr-only peer" <?php echo ($user['profile_type'] === 'preset') ? 'checked' : ''; ?>>
+                                            <div class="p-4 rounded-2xl glass-panel text-center transition-all peer-checked:bg-primary/10 peer-checked:border-primary group-hover:border-primary/50 relative overflow-hidden">
+                                                <div class="absolute inset-0 bg-primary/5 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                                <span class="material-symbols-outlined text-2xl block mb-2 text-slate-500 peer-checked:text-primary transition-colors">smart_toy</span>
+                                                <span class="text-[10px] font-black uppercase text-slate-500 peer-checked:text-white transition-colors">Neural Presets</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer group">
+                                            <input type="radio" name="profile_type" value="custom" class="sr-only peer" <?php echo ($user['profile_type'] === 'custom') ? 'checked' : ''; ?>>
+                                            <div class="p-4 rounded-2xl glass-panel text-center transition-all peer-checked:bg-primary/10 peer-checked:border-primary group-hover:border-primary/50 relative overflow-hidden">
+                                                <div class="absolute inset-0 bg-primary/5 opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                                                <span class="material-symbols-outlined text-2xl block mb-2 text-slate-500 peer-checked:text-primary transition-colors">upload_file</span>
+                                                <span class="text-[10px] font-black uppercase text-slate-500 peer-checked:text-white transition-colors">File Upload</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <form method="POST" enctype="multipart/form-data" class="space-y-6">
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Operator Name</label>
-                                <input type="text" name="name" value="<?php echo htmlspecialchars($user['name']); ?>" required
-                                    class="w-full bg-background-dark/50 border border-border-dim rounded-xl py-3.5 px-4 focus:border-primary outline-none transition-all text-sm">
+                        <!-- Presets Sub-section -->
+                        <div id="presets-section" class="mt-12 pt-10 border-t border-border-dim animate-fade-in <?php echo ($user['profile_type'] === 'preset') ? '' : 'hidden'; ?>">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-xs font-black uppercase tracking-widest text-white">Available neural signifiers</h3>
+                                <p class="text-[9px] font-mono text-primary/50 uppercase tracking-widest italic">Source: DICEBEAR_OS_V7</p>
+                            </div>
+                            <div class="flex gap-6 overflow-x-auto pb-4 custom-scrollbar snap-x">
+                                <?php foreach ($presets as $p): ?>
+                                    <label class="shrink-0 cursor-pointer group snap-start">
+                                        <input type="radio" name="preset_icon" value="<?php echo $p; ?>" class="sr-only peer" <?php echo ($user['profile_image'] === $p) ? 'checked' : ''; ?>>
+                                        <div class="size-28 rounded-3xl glass-panel p-3 transition-all peer-checked:bg-primary/20 peer-checked:border-primary peer-checked:scale-110 peer-checked:rotate-3 group-hover:brightness-125 hover:shadow-[0_0_30px_-10px_#a0f000]">
+                                            <img src="<?php echo $p; ?>" class="size-full object-contain">
+                                        </div>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- Upload Sub-section -->
+                        <div id="upload-section" class="mt-12 pt-10 border-t border-border-dim animate-fade-in <?php echo ($user['profile_type'] === 'custom') ? '' : 'hidden'; ?>">
+                            <h3 class="text-xs font-black uppercase tracking-widest text-white mb-6">System binary ingestion</h3>
+                            <div class="relative group border-2 border-dashed border-border-dim rounded-[2rem] p-12 text-center hover:border-primary/30 hover:bg-primary/5 transition-all">
+                                <input type="file" name="custom_image" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+                                <div class="space-y-4">
+                                    <div class="size-20 mx-auto rounded-[1.5rem] bg-surface flex items-center justify-center text-slate-600 group-hover:text-primary transition-all group-hover:scale-110">
+                                        <span class="material-symbols-outlined text-5xl">cloud_upload</span>
+                                    </div>
+                                    <div class="space-y-1">
+                                        <p class="text-sm font-black text-white uppercase tracking-tight">Access Local Storage</p>
+                                        <p id="file-status" class="text-[10px] text-primary font-mono uppercase tracking-[0.2em]">Ready for stream ingestion...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-12">
+                            <button type="submit" name="update_profile" class="w-full bg-primary text-neutral-dark font-black py-5 rounded-3xl uppercase tracking-[0.25em] shadow-[0_15px_40px_-15px_#a0f000] hover:scale-[1.01] hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-3">
+                                <span class="material-symbols-outlined font-black">sync_alt</span>
+                                Synchronize Node Identity
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Footer Section: Security & Status -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+                    
+                    <!-- Password Update -->
+                    <form method="POST" class="lg:col-span-7 glass-panel rounded-[2.5rem] p-10 space-y-8 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-8 opacity-5 text-red-500">
+                            <span class="material-symbols-outlined text-[8rem]">security</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-4 relative z-10">
+                            <div class="size-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 shadow-lg">
+                                <span class="material-symbols-outlined">key</span>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black uppercase tracking-widest text-white">Encryption Key Rotation</h3>
+                                <p class="text-[9px] font-mono text-red-500 uppercase tracking-widest">High Security Sector</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6 relative z-10 pt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-3">
+                                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Current Secret</label>
+                                    <input type="password" name="current_password" required placeholder="••••••••"
+                                        class="w-full form-input rounded-2xl px-6 py-4 text-sm font-bold tracking-[0.2em] focus:tracking-normal">
+                                </div>
+                                <div class="hidden md:block self-center p-4 bg-white/[0.02] border border-white/5 rounded-2xl text-[9px] text-slate-500 uppercase leading-relaxed tracking-tighter">
+                                    Confirm authorization before modifying global encryption parameters.
+                                </div>
+                            </div>
+                            
+                            <div class="h-px bg-border-dim w-full opacity-50"></div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-3">
+                                    <label class="text-[10px] font-black text-primary uppercase tracking-widest ml-1">New System Passphrase</label>
+                                    <input type="password" name="new_password" required placeholder="New Entry"
+                                        class="w-full form-input rounded-2xl px-6 py-4 text-sm font-bold tracking-[0.2em] focus:tracking-normal border-primary/20">
+                                </div>
+                                <div class="space-y-3">
+                                    <label class="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Verify Passphrase</label>
+                                    <input type="password" name="confirm_password" required placeholder="Verify Entry"
+                                        class="w-full form-input rounded-2xl px-6 py-4 text-sm font-bold tracking-[0.2em] focus:tracking-normal border-primary/20">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" name="update_password" class="w-full bg-surface hover:bg-white/10 text-white font-black py-4 rounded-2xl uppercase tracking-[0.2em] text-[10px] transition-all border border-border-dim hover:border-primary/30 relative z-10 mt-4 active:scale-[0.98]">
+                            Apply Security Transformation
+                        </button>
+                    </form>
+
+                    <!-- Node Metadata -->
+                    <div class="lg:col-span-5 glass-panel rounded-[2.5rem] p-10 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        
+                        <div class="space-y-8 relative z-10">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-primary text-2xl font-black">hub</span>
+                                <h3 class="text-xs font-black uppercase tracking-[0.25em] text-white">Node Identity Metadata</h3>
                             </div>
 
                             <div class="space-y-4">
-                                <label class="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Avatar Protocol</label>
-                                <div class="grid grid-cols-3 gap-3">
-                                    <label class="cursor-pointer group">
-                                        <input type="radio" name="profile_type" value="none" class="hidden peer" <?php echo $user['profile_type'] === 'none' ? 'checked' : ''; ?>>
-                                        <div class="py-3 px-2 text-center rounded-xl border border-border-dim group-hover:border-primary/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all">
-                                            <span class="text-[10px] font-black uppercase tracking-widest">Fallback</span>
-                                        </div>
-                                    </label>
-                                    <label class="cursor-pointer group">
-                                        <input type="radio" name="profile_type" value="preset" class="hidden peer" <?php echo $user['profile_type'] === 'preset' ? 'checked' : ''; ?>>
-                                        <div class="py-3 px-2 text-center rounded-xl border border-border-dim group-hover:border-primary/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all">
-                                            <span class="text-[10px] font-black uppercase tracking-widest">Presets</span>
-                                        </div>
-                                    </label>
-                                    <label class="cursor-pointer group">
-                                        <input type="radio" name="profile_type" value="custom" class="hidden peer" <?php echo $user['profile_type'] === 'custom' ? 'checked' : ''; ?>>
-                                        <div class="py-3 px-2 text-center rounded-xl border border-border-dim group-hover:border-primary/50 peer-checked:border-primary peer-checked:bg-primary/10 transition-all">
-                                            <span class="text-[10px] font-black uppercase tracking-widest">Upload</span>
-                                        </div>
-                                    </label>
+                                <div class="flex justify-between items-center py-4 border-b border-border-dim">
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authorization</span>
+                                    <span class="text-[10px] font-black text-primary uppercase tracking-[0.1em]">Lvl_04 Specialist</span>
                                 </div>
-                            </div>
-
-                            <!-- Preset Avatars -->
-                            <div id="presets-container" class="<?php echo $user['profile_type'] === 'preset' ? '' : 'hidden'; ?> p-4 bg-background-dark/30 rounded-xl border border-white/5 space-y-3">
-                                <label class="text-[10px] font-black uppercase text-slate-600 tracking-widest block">Select Visual Signature</label>
-                                <div class="grid grid-cols-4 gap-4">
-                                    <?php
-                                    $presets = [
-                                        'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield1',
-                                        'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield2',
-                                        'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield3',
-                                        'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=CyberShield4'
-                                    ];
-                                    foreach ($presets as $url):
-                                    ?>
-                                    <label class="cursor-pointer group relative">
-                                        <input type="radio" name="preset_icon" value="<?php echo $url; ?>" class="hidden peer" <?php echo $user['profile_image'] === $url ? 'checked' : ''; ?>>
-                                        <div class="size-full rounded-lg bg-surface p-1 border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
-                                            <img src="<?php echo $url; ?>" class="size-full">
-                                        </div>
-                                        <div class="absolute -top-1 -right-1 size-4 bg-primary text-background-dark rounded-full items-center justify-center hidden peer-checked:flex">
-                                            <span class="material-symbols-outlined text-[10px] font-black">check</span>
-                                        </div>
-                                    </label>
-                                    <?php endforeach; ?>
+                                <div class="flex justify-between items-center py-4 border-b border-border-dim">
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Connection</span>
+                                    <div class="flex items-center gap-2">
+                                        <div class="size-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_#a0f000]"></div>
+                                        <span class="text-[10px] font-black text-white uppercase tracking-[0.1em]">Established</span>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <!-- Custom File Upload -->
-                            <div id="custom-container" class="<?php echo $user['profile_type'] === 'custom' ? '' : 'hidden'; ?> space-y-3">
-                                <div class="relative group">
-                                    <input type="file" name="custom_image" accept="image/*" id="file_input" class="hidden">
-                                    <label for="file_input" class="flex flex-col items-center justify-center py-8 border-2 border-dashed border-border-dim rounded-xl hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-all">
-                                        <span class="material-symbols-outlined text-3xl text-slate-500 mb-2">cloud_upload</span>
-                                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Select Image File</span>
-                                        <span id="file_name_display" class="text-[9px] text-primary mt-2 hidden">No file selected</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button type="submit" name="update_profile" class="w-full py-4 bg-primary text-background-dark font-black rounded-xl hover:brightness-110 shadow-lg shadow-primary/10 transition-all uppercase tracking-widest text-xs active:scale-[0.98]">
-                                Synchronize Profile data
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Security Management -->
-                    <div class="glass-panel rounded-2xl p-8 space-y-6">
-                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary">lock_reset</span> Security
-                        </h3>
-                        <form method="POST" class="space-y-6">
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Current Secret Key</label>
-                                <input type="password" name="current_password" required placeholder="••••••••"
-                                    class="w-full bg-background-dark/50 border border-border-dim rounded-xl py-3.5 px-4 focus:border-primary outline-none transition-all text-sm">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black uppercase text-slate-500 tracking-widest block">New Passphrase</label>
-                                <input type="password" name="new_password" required placeholder="Min 8 characters"
-                                    class="w-full bg-background-dark/50 border border-border-dim rounded-xl py-3.5 px-4 focus:border-primary outline-none transition-all text-sm">
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-black uppercase text-slate-500 tracking-widest block">Confirm Transformation</label>
-                                <input type="password" name="confirm_password" required placeholder="Repeat new passphrase"
-                                    class="w-full bg-background-dark/50 border border-border-dim rounded-xl py-3.5 px-4 focus:border-primary outline-none transition-all text-sm">
-                            </div>
-
-                            <button type="submit" name="update_password" class="w-full py-4 bg-white/5 border border-white/10 text-white font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-[0.2em] text-[10px] active:scale-[0.98]">
-                                Update Encryption Key
-                            </button>
-                        </form>
-
-                        <div class="p-4 bg-surface rounded-xl border border-border-dim mt-4">
-                            <div class="flex gap-3">
-                                <span class="material-symbols-outlined text-yellow-500">warning</span>
-                                <div class="space-y-1">
-                                    <p class="text-[10px] font-black text-white uppercase">Security Notice</p>
-                                    <p class="text-[9px] text-slate-500 leading-relaxed uppercase tracking-tighter">Changing your encryption key will invalidate all active session tokens on other devices.</p>
+                                <div class="flex justify-between items-center py-4 border-b border-border-dim">
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Last Sync</span>
+                                    <span class="text-[10px] font-black text-white uppercase tracking-[0.1em]"><?php echo date('H:i:s'); ?> Zulu</span>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="p-5 rounded-[1.5rem] bg-neutral-dark/80 border border-border-dim mt-10 relative z-10">
+                            <div class="flex gap-4">
+                                <span class="material-symbols-outlined text-primary">analytics</span>
+                                <p class="text-[10px] text-slate-400 font-medium leading-relaxed uppercase tracking-tighter">
+                                    Shield Protocol V4.2 active. Access is monitored for anomalous behavioral patterns.
+                                </p>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+
+        <!-- System Footer Bar -->
+        <footer class="h-10 bg-neutral-dark border-t border-border-dim flex items-center justify-between px-8 z-30 shrink-0">
+            <div class="flex items-center gap-6 text-[9px] font-mono text-slate-500 uppercase tracking-widest">
+                <div class="flex items-center gap-2">
+                    <span class="text-primary font-black">//_SYS:</span>
+                    <span>ONLINE</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-primary font-black">//_LATENCY:</span>
+                    <span>24ms</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-primary font-black">//_BUFF:</span>
+                    <span>NOMINAL</span>
+                </div>
+            </div>
+            <div class="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-black">
+                CyberShield Operations Center @ <?php echo date('Y'); ?>
+            </div>
+        </footer>
+    </main>
 
     <script>
-        document.querySelectorAll('input[name="profile_type"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const val = e.target.value;
-                document.getElementById('presets-container').classList.toggle('hidden', val !== 'preset');
-                document.getElementById('custom-container').classList.toggle('hidden', val !== 'custom');
+        // State Management
+        const profileTypes = document.querySelectorAll('input[name="profile_type"]');
+        const presetSection = document.getElementById('presets-section');
+        const uploadSection = document.getElementById('upload-section');
+        const previewContainer = document.getElementById('preview-container');
+        const nameInput = document.querySelector('input[name="name"]');
+        const fileInput = document.querySelector('input[name="custom_image"]');
+        const fileStatus = document.getElementById('file-status');
+
+        function updatePreview() {
+            const selectedType = document.querySelector('input[name="profile_type"]:checked').value;
+            const name = nameInput.value || 'U';
+            
+            if (selectedType === 'none') {
+                const initial = name.trim().charAt(0).toUpperCase();
+                // We use matching style to the PHP helper
+                previewContainer.innerHTML = `<div class="size-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-4xl border border-primary/20 rounded-2xl uppercase tracking-tighter animate-fade-in">${initial}</div>`;
+            } else if (selectedType === 'preset') {
+                const selectedPreset = document.querySelector('input[name="preset_icon"]:checked')?.value;
+                if (selectedPreset) {
+                    previewContainer.innerHTML = `<img src="${selectedPreset}" class="size-full object-cover p-4 animate-fade-in">`;
+                }
+            }
+        }
+
+        profileTypes.forEach(radio => {
+            radio.addEventListener('change', () => {
+                presetSection.classList.toggle('hidden', radio.value !== 'preset');
+                uploadSection.classList.toggle('hidden', radio.value !== 'custom');
+                updatePreview();
             });
         });
 
-        const fileInput = document.getElementById('file_input');
-        const fileNameDisplay = document.getElementById('file_name_display');
-        if (fileInput) {
-            fileInput.onchange = (e) => {
-                if(e.target.files.length > 0) {
-                    fileNameDisplay.innerText = "Selected: " + e.target.files[0].name;
-                    fileNameDisplay.classList.remove('hidden');
+        // Listen for preset clicks
+        document.querySelectorAll('input[name="preset_icon"]').forEach(p => {
+            p.addEventListener('change', updatePreview);
+        });
+
+        // Live name update for letter fallback
+        nameInput.addEventListener('input', () => {
+             if (document.querySelector('input[name="profile_type"]:checked').value === 'none') {
+                 updatePreview();
+             }
+        });
+
+        // Handle file browse preview
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                fileStatus.innerText = "Target Ingested: " + this.files[0].name.toUpperCase();
+                fileStatus.classList.replace('text-primary/50', 'text-primary');
+                
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `<img src="${e.target.result}" class="size-full object-cover animate-fade-in rounded-[2.2rem]">`;
                 }
-            };
-        }
+                reader.readAsDataURL(this.files[0]);
+                
+                // Force custom type selection
+                document.querySelector('input[name="profile_type"][value="custom"]').checked = true;
+                presetSection.classList.add('hidden');
+                uploadSection.classList.remove('hidden');
+            }
+        });
+
+        // Smooth reveal on load
+        window.addEventListener('load', () => {
+            document.querySelector('main').classList.add('animate-fade-in');
+        });
     </script>
 </body>
 </html>
