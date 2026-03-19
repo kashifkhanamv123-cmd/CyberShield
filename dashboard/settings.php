@@ -18,7 +18,7 @@ function getLetterAvatar($name) {
 }
 
 // Fetch current user data
-$stmt = $conn->prepare("SELECT name, email, profile_type, profile_image FROM users WHERE id = ?");
+$stmt = $conn->prepare("SELECT name, email, profile_type, profile_image, bio, mfa_enabled, login_alerts_enabled FROM users WHERE id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
@@ -49,14 +49,21 @@ if (isset($_POST['update_profile'])) {
     }
 
     if (!$error) {
-        $update = $conn->prepare("UPDATE users SET name = ?, profile_type = ?, profile_image = ? WHERE id = ?");
-        $update->bind_param("sssi", $newName, $profile_type, $profile_image, $user_id);
+        $bio = $_POST['bio'] ?? '';
+        $mfa = isset($_POST['mfa_enabled']) ? 1 : 0;
+        $alerts = isset($_POST['login_alerts_enabled']) ? 1 : 0;
+
+        $update = $conn->prepare("UPDATE users SET name = ?, profile_type = ?, profile_image = ?, bio = ?, mfa_enabled = ?, login_alerts_enabled = ? WHERE id = ?");
+        $update->bind_param("ssssiii", $newName, $profile_type, $profile_image, $bio, $mfa, $alerts, $user_id);
         if ($update->execute()) {
             $success = "Directive executed: Profile parameters synchronized.";
             $_SESSION['user_name'] = $newName;
             $user['name'] = $newName;
             $user['profile_type'] = $profile_type;
             $user['profile_image'] = $profile_image;
+            $user['bio'] = $bio;
+            $user['mfa_enabled'] = $mfa;
+            $user['login_alerts_enabled'] = $alerts;
         } else {
             $error = "Synchronization error: Database rejection.";
         }
@@ -152,10 +159,18 @@ $presets = [
                 extend: {
                     colors: {
                         primary: "#a0f000",
-                        "neutral-dark": "#0d0f0a",
-                        "surface": "#161810",
-                        "border-dim": "#2a2e21",
-                        "bg-dark": "#080906"
+                        secondary: "#00f0ff",
+                        "neutral-dark": "#050604",
+                        "surface": "#0d0f0a",
+                        "surface-light": "#161810",
+                        "border-dim": "#1e2216",
+                        "bg-dark": "#020302"
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px -5px rgba(160, 240, 0, 0.3)',
+                        'glow-heavy': '0 0 40px -10px rgba(160, 240, 0, 0.5)',
+                        'glow-cyan': '0 0 20px -5px rgba(0, 240, 255, 0.3)',
+                        'glow-red': '0 0 20px -5px rgba(239, 68, 68, 0.3)',
                     }
                 }
             }
@@ -164,24 +179,84 @@ $presets = [
     <style>
         body {
             background-color: theme('colors.bg-dark');
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(160, 240, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(0, 240, 255, 0.03) 0%, transparent 50%);
             font-family: 'Inter', sans-serif;
             color: #fff;
         }
         .glass-panel {
-            background: rgba(22, 24, 16, 0.7);
-            backdrop-filter: blur(12px);
+            background: rgba(13, 15, 10, 0.7);
+            backdrop-filter: blur(20px);
             border: 1px solid rgba(160, 240, 0, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+        }
+        .glass-panel:hover {
+            border-color: rgba(160, 240, 0, 0.2);
+        }
+        .elite-border {
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
         }
         .form-input {
-            background: rgba(13, 15, 10, 0.5);
+            background: rgba(5, 6, 4, 0.8);
             border: 1px solid theme('colors.border-dim');
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .form-input:focus {
             border-color: theme('colors.primary');
-            box-shadow: 0 0 0 1px theme('colors.primary');
+            box-shadow: 0 0 0 1px theme('colors.primary'), 0 0 20px -5px theme('colors.primary');
             outline: none;
+            transform: translateY(-1px);
         }
+        .btn-elite {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .btn-elite::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(160, 240, 0, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: 0.5s;
+        }
+        .btn-elite:hover::after {
+            left: 100%;
+        }
+        /* Custom Checkbox/Toggle */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #1e2216;
+            transition: .4s;
+            border-radius: 24px;
+            border: 1px solid rgba(160, 240, 0, 0.1);
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 3px; bottom: 3px;
+            background-color: #4a4e41;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: rgba(160, 240, 0, 0.2); border-color: #a0f000; }
+        input:checked + .slider:before { transform: translateX(20px); background-color: #a0f000; box-shadow: 0 0 10px #a0f000; }
+
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
             height: 4px;
@@ -208,30 +283,30 @@ $presets = [
 <body class="flex h-screen overflow-hidden selection:bg-primary selection:text-neutral-dark text-slate-300">
 
     <!-- Sidebar Navigation -->
-    <aside class="w-20 md:w-64 flex flex-col border-r border-border-dim bg-neutral-dark shrink-0 transition-all duration-300">
-        <div class="h-20 flex items-center px-6 border-b border-border-dim">
-            <div class="size-8 bg-primary rounded flex items-center justify-center shrink-0 shadow-[0_0_15px_-5px_#a0f000]">
-                <span class="material-symbols-outlined text-neutral-dark text-xl font-bold">shield</span>
+    <aside class="w-20 md:w-72 flex flex-col border-r border-border-dim bg-neutral-dark shrink-0 transition-all duration-300">
+        <div class="h-24 flex items-center px-8 border-b border-border-dim">
+            <div class="size-10 bg-primary rounded-xl flex items-center justify-center shrink-0 shadow-glow">
+                <span class="material-symbols-outlined text-neutral-dark text-2xl font-black">shield</span>
             </div>
-            <span class="ml-3 font-black tracking-tighter uppercase text-xl md:block hidden italic text-white">Shield</span>
+            <span class="ml-4 font-black tracking-tighter uppercase text-2xl md:block hidden italic text-white">Shield</span>
         </div>
         
-        <nav class="flex-1 p-4 space-y-2">
-            <a href="dashboard.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
-                <span class="material-symbols-outlined text-xl group-hover:text-primary">dashboard</span>
-                <span class="text-sm font-bold md:block hidden">Dashboard</span>
+        <nav class="flex-1 p-5 space-y-3">
+            <a href="dashboard.php" class="flex items-center gap-5 px-5 py-4 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-2xl group-hover:text-primary transition-transform group-hover:scale-110">dashboard</span>
+                <span class="text-sm font-black md:block hidden uppercase tracking-widest">Dashboard</span>
             </a>
-            <div class="pt-4 pb-2 px-4">
-                <p class="text-[10px] text-slate-500 font-black uppercase tracking-widest md:block hidden">Configuration</p>
+            <div class="pt-6 pb-2 px-5">
+                <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] md:block hidden">Configuration</p>
                 <div class="h-px bg-border-dim w-full md:hidden"></div>
             </div>
-            <div class="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary/10 text-primary border border-primary/20 transition-all shadow-[inset_0_0_20px_-10px_#a0f000]">
-                <span class="material-symbols-outlined text-xl">settings</span>
-                <span class="text-sm font-bold md:block hidden">Profile Node</span>
+            <div class="flex items-center gap-5 px-5 py-4 rounded-2xl bg-primary/10 text-primary border border-primary/20 transition-all shadow-glow-heavy">
+                <span class="material-symbols-outlined text-2xl">settings</span>
+                <span class="text-sm font-black md:block hidden uppercase tracking-widest">Profile Node</span>
             </div>
-            <a href="../labs/ddos.php" class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
-                <span class="material-symbols-outlined text-xl group-hover:text-primary">security</span>
-                <span class="text-sm font-bold md:block hidden">Labs Access</span>
+            <a href="../labs/ddos.php" class="flex items-center gap-5 px-5 py-4 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
+                <span class="material-symbols-outlined text-2xl group-hover:text-primary transition-transform group-hover:scale-110">security</span>
+                <span class="text-sm font-black md:block hidden uppercase tracking-widest">Labs Access</span>
             </a>
         </nav>
 
@@ -246,10 +321,10 @@ $presets = [
     <main class="flex-1 flex flex-col relative overflow-hidden bg-bg-dark">
         
         <!-- Top Bar -->
-        <header class="h-20 flex items-center justify-between px-8 bg-neutral-dark/50 backdrop-blur-md border-b border-border-dim shrink-0 z-10">
+        <header class="h-24 flex items-center justify-between px-10 bg-neutral-dark/50 backdrop-blur-md border-b border-border-dim shrink-0 z-10">
             <div class="flex flex-col">
-                <h1 class="text-lg font-black uppercase tracking-tight text-white">Security <span class="text-primary italic">Node</span> Config</h1>
-                <p class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Operator: <?php echo htmlspecialchars($user['name']); ?> // Port: 443</p>
+                <h1 class="text-xl font-black uppercase tracking-tight text-white italic">Node <span class="text-primary not-italic">Config</span></h1>
+                <p class="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-black">Operator: <?php echo htmlspecialchars($user['name']); ?> // Port: 443 // <span class="text-primary animate-pulse">Online</span></p>
             </div>
 
             <div class="flex items-center gap-4">
@@ -293,17 +368,18 @@ $presets = [
                 <form method="POST" enctype="multipart/form-data" class="space-y-8">
                     
                     <!-- Identity Section -->
-                    <div class="glass-panel rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
-                            <span class="material-symbols-outlined text-[10rem]">person_search</span>
+                    <div class="glass-panel rounded-[3rem] p-10 md:p-14 relative overflow-hidden group elite-border">
+                        <div class="absolute top-0 right-0 p-16 opacity-5 pointer-events-none group-hover:scale-110 group-hover:opacity-10 transition-all duration-700">
+                            <span class="material-symbols-outlined text-[15rem]">account_circle</span>
                         </div>
 
-                        <div class="flex flex-col lg:flex-row items-center lg:items-start gap-12 relative z-10">
+                        <div class="flex flex-col lg:flex-row items-center lg:items-start gap-16 relative z-10">
                             
                             <!-- Large Avatar Preview -->
                             <div class="shrink-0">
-                                <div class="size-48 rounded-[3rem] overflow-hidden border-2 border-primary/30 p-2 bg-bg-dark shadow-2xl transition-all duration-500 hover:rotate-2 hover:scale-105">
-                                    <div id="preview-container" class="size-full rounded-[2.2rem] overflow-hidden bg-surface relative">
+                                <div class="size-56 rounded-[3.5rem] overflow-hidden border-2 border-primary/30 p-2.5 bg-bg-dark shadow-glow-heavy transition-all duration-500 hover:rotate-2 hover:scale-105">
+                                    <div id="preview-container" class="size-full rounded-[2.8rem] overflow-hidden bg-surface relative">
+
                                         <?php
                                         if ($user['profile_type'] === 'none' || !$user['profile_image']) {
                                             echo getLetterAvatar($user['name']);
@@ -322,24 +398,40 @@ $presets = [
                             </div>
 
                             <div class="flex-1 w-full space-y-8">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div class="space-y-3">
-                                        <label class="text-[10px] font-black text-primary uppercase tracking-[0.25em] ml-1">Operator Profile Name</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                    <div class="space-y-4">
+                                        <label class="text-[11px] font-black text-primary uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-sm">terminal</span>
+                                            Operator Alias
+                                        </label>
                                         <div class="relative">
-                                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 text-lg">badge</span>
+                                            <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-primary/40 text-xl">badge</span>
                                             <input type="text" name="name" value="<?php echo htmlspecialchars($user['name']); ?>" required
-                                                class="w-full form-input rounded-2xl pl-12 pr-6 py-4 text-sm font-bold text-white transition-all shadow-inner">
+                                                class="w-full form-input rounded-2xl pl-14 pr-7 py-5 text-base font-bold text-white shadow-inner">
                                         </div>
                                     </div>
-                                    <div class="space-y-3 opacity-60">
-                                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-[0.25em] ml-1">Encrypted Mail Relay</label>
+                                    <div class="space-y-4 opacity-70">
+                                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-sm">alternate_email</span>
+                                            Encrypted Relay
+                                        </label>
                                         <div class="relative">
-                                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 text-lg">alternate_email</span>
+                                            <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-600 text-xl">mail</span>
                                             <input type="email" disabled value="<?php echo htmlspecialchars($user['email']); ?>"
-                                                class="w-full form-input rounded-2xl pl-12 pr-6 py-4 text-sm font-bold cursor-not-allowed">
+                                                class="w-full form-input rounded-2xl pl-14 pr-7 py-5 text-base font-bold cursor-not-allowed">
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="space-y-4 pt-2">
+                                    <label class="text-[11px] font-black text-primary uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-sm">description</span>
+                                        Operator Briefing (Bio)
+                                    </label>
+                                    <textarea name="bio" rows="2" placeholder="Describe your specialization..."
+                                        class="w-full form-input rounded-2xl px-6 py-4 text-sm font-medium text-slate-300 resize-none h-24"><?php echo htmlspecialchars($user['bio'] ?? ''); ?></textarea>
+                                </div>
+
 
                                 <!-- Avatar Type Selection -->
                                 <div class="space-y-4">
@@ -410,101 +502,217 @@ $presets = [
                         </div>
 
                         <div class="mt-12">
-                            <button type="submit" name="update_profile" class="w-full bg-primary text-neutral-dark font-black py-5 rounded-3xl uppercase tracking-[0.25em] shadow-[0_15px_40px_-15px_#a0f000] hover:scale-[1.01] hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-3">
-                                <span class="material-symbols-outlined font-black">sync_alt</span>
+                        <div class="mt-14">
+                            <button type="submit" name="update_profile" class="btn-elite w-full bg-primary text-neutral-dark font-black py-6 rounded-[2rem] uppercase tracking-[0.3em] shadow-glow hover:shadow-glow-heavy hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-4 text-sm">
+                                <span class="material-symbols-outlined text-2xl font-black">sync_alt</span>
                                 Synchronize Node Identity
                             </button>
                         </div>
                     </div>
-                </form>
 
-                <!-- Footer Section: Security & Status -->
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+                <!-- Essential Settings Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     
-                    <!-- Password Update -->
-                    <form method="POST" class="lg:col-span-7 glass-panel rounded-[2.5rem] p-10 space-y-8 relative overflow-hidden group">
-                        <div class="absolute top-0 right-0 p-8 opacity-5 text-red-500">
-                            <span class="material-symbols-outlined text-[8rem]">security</span>
+                    <!-- Security Sector -->
+                    <div class="glass-panel rounded-[3rem] p-10 space-y-8 relative overflow-hidden group elite-border">
+                        <div class="absolute top-0 right-0 p-10 opacity-5 text-secondary pointer-events-none group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-[10rem]">verified_user</span>
                         </div>
                         
-                        <div class="flex items-center gap-4 relative z-10">
-                            <div class="size-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 shadow-lg">
-                                <span class="material-symbols-outlined">key</span>
+                        <div class="flex items-center gap-5 relative z-10">
+                            <div class="size-16 rounded-[1.5rem] bg-secondary/10 flex items-center justify-center text-secondary border border-secondary/20 shadow-glow-cyan">
+                                <span class="material-symbols-outlined text-3xl">security</span>
                             </div>
                             <div>
-                                <h3 class="text-sm font-black uppercase tracking-widest text-white">Encryption Key Rotation</h3>
-                                <p class="text-[9px] font-mono text-red-500 uppercase tracking-widest">High Security Sector</p>
+                                <h3 class="text-lg font-black uppercase tracking-widest text-white">Security Sector</h3>
+                                <p class="text-[10px] font-mono text-secondary uppercase tracking-[0.2em]">Hardening Protocols</p>
                             </div>
                         </div>
 
                         <div class="space-y-6 relative z-10 pt-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="space-y-3">
-                                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Current Secret</label>
-                                    <input type="password" name="current_password" required placeholder="••••••••"
-                                        class="w-full form-input rounded-2xl px-6 py-4 text-sm font-bold tracking-[0.2em] focus:tracking-normal">
+                            <div class="flex items-center justify-between p-6 bg-surface-light/50 border border-border-dim rounded-3xl hover:border-secondary/30 transition-all group/item">
+                                <div class="flex items-center gap-4">
+                                    <span class="material-symbols-outlined text-slate-500 group-hover/item:text-secondary transition-colors">vibration</span>
+                                    <div>
+                                        <p class="text-xs font-black uppercase tracking-widest text-white">Multi-Factor Auth</p>
+                                        <p class="text-[9px] text-slate-500 uppercase tracking-tighter">Enhanced biometric verification</p>
+                                    </div>
                                 </div>
-                                <div class="hidden md:block self-center p-4 bg-white/[0.02] border border-white/5 rounded-2xl text-[9px] text-slate-500 uppercase leading-relaxed tracking-tighter">
-                                    Confirm authorization before modifying global encryption parameters.
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="mfa_enabled" <?php echo ($user['mfa_enabled']) ? 'checked' : ''; ?>>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="flex items-center justify-between p-6 bg-surface-light/50 border border-border-dim rounded-3xl hover:border-secondary/30 transition-all group/item">
+                                <div class="flex items-center gap-4">
+                                    <span class="material-symbols-outlined text-slate-500 group-hover/item:text-secondary transition-colors">notifications_active</span>
+                                    <div>
+                                        <p class="text-xs font-black uppercase tracking-widest text-white">Login Alerts</p>
+                                        <p class="text-[9px] text-slate-500 uppercase tracking-tighter">Notify on unauthorized access</p>
+                                    </div>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="login_alerts_enabled" <?php echo ($user['login_alerts_enabled']) ? 'checked' : ''; ?>>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" name="update_profile" class="w-full bg-surface-light hover:bg-secondary/10 text-slate-400 hover:text-white font-black py-4 rounded-2xl uppercase tracking-[0.2em] text-[10px] transition-all border border-border-dim hover:border-secondary/30 relative z-10">
+                            Update Security Schema
+                        </button>
+                    </div>
+
+                    <!-- Session Management -->
+                    <div class="glass-panel rounded-[3rem] p-10 space-y-8 relative overflow-hidden group elite-border">
+                        <div class="absolute top-0 right-0 p-10 opacity-5 text-primary pointer-events-none group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-[10rem]">devices</span>
+                        </div>
+
+                        <div class="flex items-center gap-5 relative z-10">
+                            <div class="size-16 rounded-[1.5rem] bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shadow-glow">
+                                <span class="material-symbols-outlined text-3xl">hub</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black uppercase tracking-widest text-white">Session Matrix</h3>
+                                <p class="text-[10px] font-mono text-primary uppercase tracking-[0.2em]">Active Connections</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 relative z-10 pt-4">
+                            <!-- Current Session -->
+                            <div class="flex items-center justify-between p-5 bg-primary/5 border border-primary/20 rounded-2xl">
+                                <div class="flex items-center gap-4">
+                                    <div class="size-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined text-xl">laptop_mac</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-black text-white uppercase tracking-wider">Windows NT 10.0 (Current)</p>
+                                        <p class="text-[9px] text-primary/60 font-mono"><?php echo $user_ip; ?> // ID: <?php echo substr(session_id(), 0, 8); ?></p>
+                                    </div>
+                                </div>
+                                <span class="text-[8px] font-black bg-primary/20 text-primary px-2 py-1 rounded uppercase tracking-widest">Active</span>
+                            </div>
+
+                            <!-- Simulated Session -->
+                            <div class="flex items-center justify-between p-5 bg-surface-light/30 border border-border-dim rounded-2xl opacity-60 hover:opacity-100 transition-opacity">
+                                <div class="flex items-center gap-4">
+                                    <div class="size-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-500">
+                                        <span class="material-symbols-outlined text-xl">smartphone</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Mobile Operative (iPhone)</p>
+                                        <p class="text-[9px] text-slate-600 font-mono">192.168.1.45 // ID: d8a2b3c4</p>
+                                    </div>
+                                </div>
+                                <button class="text-red-500 hover:text-red-400">
+                                    <span class="material-symbols-outlined text-lg">logout</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <button class="w-full text-red-400 hover:text-red-300 font-black text-[9px] uppercase tracking-[0.3em] py-2 flex items-center justify-center gap-2 hover:bg-red-500/5 rounded-xl transition-all">
+                                <span class="material-symbols-outlined text-sm font-black text-red-500">bolt</span>
+                                Terminate All Remote Sessions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                </form>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch pt-4">
+                    
+                    <!-- Password Update -->
+                    <form method="POST" class="lg:col-span-8 glass-panel rounded-[3rem] p-12 space-y-10 relative overflow-hidden group elite-border">
+                        <div class="absolute top-0 right-0 p-10 opacity-5 text-red-500 pointer-events-none">
+                            <span class="material-symbols-outlined text-[12rem]">vpn_key</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-6 relative z-10">
+                            <div class="size-16 rounded-[1.5rem] bg-red-500/10 flex items-center justify-center text-red-500 border border-red-500/20 shadow-glow-red">
+                                <span class="material-symbols-outlined text-3xl">key</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black uppercase tracking-widest text-white">Encryption Key Rotation</h3>
+                                <p class="text-[10px] font-mono text-red-500 uppercase tracking-[0.2em]">High Security Clearance Required</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-8 relative z-10">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="space-y-4">
+                                    <label class="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-sm">lock_open</span>
+                                        Current Secret
+                                    </label>
+                                    <input type="password" name="current_password" required placeholder="••••••••"
+                                        class="w-full form-input rounded-2xl px-6 py-5 text-base font-bold tracking-[0.3em] focus:tracking-normal">
+                                </div>
+                                <div class="hidden md:flex items-center p-6 bg-red-500/5 border border-red-500/10 rounded-3xl text-[10px] text-red-400/80 uppercase leading-relaxed tracking-wider">
+                                    <span class="material-symbols-outlined mr-3 text-red-500">info</span>
+                                    Rotation of global encryption keys requires re-authentication of all active nodes.
                                 </div>
                             </div>
                             
-                            <div class="h-px bg-border-dim w-full opacity-50"></div>
+                            <div class="h-px bg-white/5 w-full"></div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="space-y-3">
-                                    <label class="text-[10px] font-black text-primary uppercase tracking-widest ml-1">New System Passphrase</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="space-y-4">
+                                    <label class="text-[11px] font-black text-primary uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-sm">add_moderator</span>
+                                        New System Passphrase
+                                    </label>
                                     <input type="password" name="new_password" required placeholder="New Entry"
-                                        class="w-full form-input rounded-2xl px-6 py-4 text-sm font-bold tracking-[0.2em] focus:tracking-normal border-primary/20">
+                                        class="w-full form-input rounded-2xl px-6 py-5 text-base font-bold tracking-[0.3em] focus:tracking-normal border-primary/20">
                                 </div>
-                                <div class="space-y-3">
-                                    <label class="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Verify Passphrase</label>
+                                <div class="space-y-4">
+                                    <label class="text-[11px] font-black text-primary uppercase tracking-[0.3em] ml-1 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-sm">verified</span>
+                                        Verify Passphrase
+                                    </label>
                                     <input type="password" name="confirm_password" required placeholder="Verify Entry"
-                                        class="w-full form-input rounded-2xl px-6 py-4 text-sm font-bold tracking-[0.2em] focus:tracking-normal border-primary/20">
+                                        class="w-full form-input rounded-2xl px-6 py-5 text-base font-bold tracking-[0.3em] focus:tracking-normal border-primary/20">
                                 </div>
                             </div>
                         </div>
 
-                        <button type="submit" name="update_password" class="w-full bg-surface hover:bg-white/10 text-white font-black py-4 rounded-2xl uppercase tracking-[0.2em] text-[10px] transition-all border border-border-dim hover:border-primary/30 relative z-10 mt-4 active:scale-[0.98]">
-                            Apply Security Transformation
+                        <button type="submit" name="update_password" class="w-full bg-surface-light hover:bg-white/10 text-white font-black py-5 rounded-2xl uppercase tracking-[0.3em] text-[11px] transition-all border border-border-dim hover:border-primary/30 relative z-10 mt-4 active:scale-[0.98]">
+                            Apply Global Encryption Update
                         </button>
                     </form>
 
-                    <!-- Node Metadata -->
-                    <div class="lg:col-span-5 glass-panel rounded-[2.5rem] p-10 flex flex-col justify-between relative overflow-hidden group">
-                        <div class="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <!-- Account Deletion / Data Purge -->
+                    <div class="lg:col-span-4 glass-panel rounded-[3rem] p-10 flex flex-col justify-between border-red-500/20 hover:border-red-500/40 transition-all group overflow-hidden relative">
+                        <div class="absolute inset-0 bg-red-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         
                         <div class="space-y-8 relative z-10">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-primary text-2xl font-black">hub</span>
-                                <h3 class="text-xs font-black uppercase tracking-[0.25em] text-white">Node Identity Metadata</h3>
+                            <div class="flex items-center gap-4">
+                                <div class="size-14 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500">
+                                    <span class="material-symbols-outlined text-3xl font-black">skull</span>
+                                </div>
+                                <h3 class="text-sm font-black uppercase tracking-[0.25em] text-red-500">Data Purge</h3>
                             </div>
 
-                            <div class="space-y-4">
-                                <div class="flex justify-between items-center py-4 border-b border-border-dim">
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authorization</span>
-                                    <span class="text-[10px] font-black text-primary uppercase tracking-[0.1em]"><?php echo $rank; ?></span>
+                            <p class="text-[10px] text-slate-500 font-medium leading-relaxed uppercase tracking-tighter">
+                                Warning: This action will permanently decommission this node and erase all operational history from the central mainframe.
+                            </p>
+
+                            <div class="space-y-3 pt-4">
+                                <div class="h-1 bg-neutral-dark rounded-full overflow-hidden">
+                                    <div class="h-full bg-red-500/40 w-full animate-pulse"></div>
                                 </div>
-                                <div class="flex justify-between items-center py-4 border-b border-border-dim">
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Node IP</span>
-                                    <span class="text-[10px] font-black text-white uppercase tracking-[0.1em]"><?php echo $user_ip; ?></span>
-                                </div>
-                                <div class="flex justify-between items-center py-4 border-b border-border-dim">
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">System Time</span>
-                                    <span id="live-clock" class="text-[10px] font-black text-white uppercase tracking-[0.1em]">Initializing...</span>
-                                </div>
+                                <p class="text-[8px] font-mono text-red-500/60 uppercase tracking-widest text-center">Status: Destructive Action Armed</p>
                             </div>
                         </div>
 
-                        <div class="p-5 rounded-[1.5rem] bg-neutral-dark/80 border border-border-dim mt-10 relative z-10">
-                            <div class="flex gap-4">
-                                <span class="material-symbols-outlined text-primary">analytics</span>
-                                <p class="text-[10px] text-slate-400 font-medium leading-relaxed uppercase tracking-tighter">
-                                    Shield Protocol V4.2 active. Access is monitored for anomalous behavioral patterns.
-                                </p>
-                            </div>
-                        </div>
+                        <button onclick="confirm('Permanent Deletion Protocol: Are you sure you wish to purge all node data?') && alert('Destruction scheduled.')" 
+                            class="w-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-neutral-dark font-black py-4 rounded-2xl uppercase tracking-[0.2em] text-[10px] transition-all border border-red-500/30 mt-10 active:scale-[0.95]">
+                            Initiate Core Purge
+                        </button>
                     </div>
+
 
                 </div>
             </div>
