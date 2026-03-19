@@ -90,24 +90,37 @@ $lab_data = [
     </script>
     <style>
         body {
-            background-image: radial-gradient(circle, #a0f00011 1px, transparent 1px);
-            background-size: 30px 30px;
+            background-color: #020302;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(160, 240, 0, 0.02) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(0, 240, 255, 0.02) 0%, transparent 50%);
+            font-family: 'Inter', sans-serif;
         }
 
         .glass {
-            background: rgba(18, 20, 10, 0.75);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(160, 240, 0, 0.1);
+            background: rgba(13, 15, 10, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(160, 240, 0, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
         }
 
-        .nav-item.active {
-            background: rgba(160, 240, 0, 0.1);
-            border-right: 2px solid #a0f000;
+        .glass:hover {
+            border-color: rgba(160, 240, 0, 0.15);
+        }
+
+        .elite-border {
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: linear-gradient(135deg, rgba(255,255,255,0.02), transparent);
         }
 
         .glow {
-            text-shadow: 0 0 10px rgba(160, 240, 0, 0.5);
+            text-shadow: 0 0 20px rgba(160, 240, 0, 0.4);
         }
+
+        .shadow-glow {
+            box-shadow: 0 0 20px -5px rgba(160, 240, 0, 0.2);
+        }
+
 
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
@@ -141,38 +154,44 @@ $lab_data = [
         <!-- Main -->
         <main class="flex-1 flex flex-col overflow-hidden relative">
             <!-- Top Bar -->
-            <header class="shrink-0 sticky top-0 z-10 bg-background-dark/80 backdrop-blur-md border-b border-border-dim px-4 md:px-8 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-4">
+            <header class="shrink-0 sticky top-0 z-20 bg-[#050604]/80 backdrop-blur-xl border-b border-border-dim px-10 py-6 flex items-center justify-between">
+                <div class="flex items-center gap-6">
                     <button id="mobile-admin-btn" class="md:hidden text-white hover:text-primary transition-colors">
                         <span class="material-symbols-outlined text-2xl">menu</span>
                     </button>
                     <div>
-                        <p class="text-[10px] font-mono text-primary uppercase tracking-widest">Node: csh_admin_01</p>
-                        <h2 class="text-xl font-black text-white italic uppercase">Admin <span class="text-primary glow">Control Centre</span></h2>
+                        <p class="text-[9px] font-mono text-primary/50 uppercase tracking-[0.3em] font-black">Operator Session: Active</p>
+                        <h2 class="text-2xl font-black text-white italic uppercase tracking-tighter">Command <span class="text-primary glow not-italic">Center</span></h2>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span class="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary font-mono uppercase tracking-widest animate-pulse">● LIVE</span>
-                    <span class="text-xs text-slate-500 font-mono"><?php echo date('Y-m-d H:i:s'); ?></span>
+                <div class="flex items-center gap-6">
+                    <div class="flex flex-col items-end hidden sm:flex">
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">System Core Status</span>
+                        <div class="flex items-center gap-2">
+                            <span class="size-1.5 rounded-full bg-primary animate-pulse shadow-glow"></span>
+                            <span class="text-[11px] font-mono text-primary uppercase font-bold tracking-widest">Nominal</span>
+                        </div>
+                    </div>
+                    <div class="h-10 w-px bg-border-dim hidden sm:block"></div>
+                    <span class="text-xs text-slate-500 font-mono font-bold tracking-widest hidden lg:block"><?php echo date('Y.m.d // H:i:s'); ?></span>
                 </div>
             </header>
+
 
             <!-- Content -->
             <section class="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8">
 
-                <!-- Stat Cards -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
+                <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                     <?php
                     $cards = [
-                        ['Total Users',     'total_users',    'group',           'from-blue-500/20   to-blue-900/10',  'text-blue-400'],
-                        ['Phishing Camps',  'total_phishing', 'alternate_email', 'from-primary/20    to-primary/5',    'text-primary'],
-                        ['Brute Force Logs', 'total_bf',       'lock_open',       'from-orange-500/20 to-orange-900/10', 'text-orange-400'],
-                        ['Malware Samples', 'total_malware',  'bug_report',      'from-red-500/20    to-red-900/10',   'text-red-400'],
-                        ['DDoS Sims',       'total_ddos',     'thunderstorm',    'from-purple-500/20 to-purple-900/10', 'text-purple-400'],
-                        ['Blocked Users',   'blocked_users',  'block',           'from-slate-500/20  to-slate-900/10', 'text-slate-400'],
+                        ['Users',     'total_users',    'group',           'from-blue-500/10   to-blue-900/5',  'text-blue-500',   'border-blue-500/10'],
+                        ['Phishing',  'total_phishing', 'alternate_email', 'from-primary/10    to-primary/5',    'text-primary',    'border-primary/10'],
+                        ['Brute Force', 'total_bf',       'lock_open',       'from-orange-500/10 to-orange-900/5', 'text-orange-500', 'border-orange-500/10'],
+                        ['Malware', 'total_malware',  'bug_report',      'from-red-500/10    to-red-900/5',   'text-red-500',    'border-red-500/10'],
+                        ['DDoS',       'total_ddos',     'thunderstorm',    'from-purple-500/10 to-purple-900/5', 'text-purple-500', 'border-purple-500/10'],
+                        ['Blocked',   'blocked_users',  'block',           'from-slate-500/10  to-slate-900/5', 'text-slate-500',  'border-slate-500/10'],
                     ];
-                    foreach ($cards as [$label, $id, $icon, $grad, $color]):
-                        // Initial values from PHP (for faster load)
+                    foreach ($cards as [$label, $id, $icon, $grad, $color, $border]):
                         $val = 0;
                         if ($id == 'total_users') $val = $total_users;
                         if ($id == 'total_phishing') $val = $total_phishing;
@@ -181,13 +200,21 @@ $lab_data = [
                         if ($id == 'total_ddos') $val = $total_ddos;
                         if ($id == 'blocked_users') $val = $blocked_users;
                     ?>
-                        <div class="stat-card glass rounded-2xl p-5 bg-gradient-to-br <?php echo $grad; ?>">
-                            <span class="material-symbols-outlined text-2xl <?php echo $color; ?>"><?php echo $icon; ?></span>
-                            <p id="stat-<?php echo $id; ?>" class="text-2xl font-black text-white mt-2"><?php echo number_format($val); ?></p>
-                            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5"><?php echo $label; ?></p>
+                        <div class="stat-card glass rounded-[2rem] p-6 bg-gradient-to-br <?php echo $grad; ?> border <?php echo $border; ?> relative overflow-hidden group">
+                            <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <span class="material-symbols-outlined text-[6rem]"><?php echo $icon; ?></span>
+                            </div>
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="size-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/5">
+                                    <span class="material-symbols-outlined text-xl <?php echo $color; ?>"><?php echo $icon; ?></span>
+                                </div>
+                                <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]"><?php echo $label; ?></p>
+                            </div>
+                            <p id="stat-<?php echo $id; ?>" class="text-3xl font-black text-white tracking-tighter"><?php echo number_format($val); ?></p>
                         </div>
                     <?php endforeach; ?>
                 </div>
+
 
                 <!-- Charts Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

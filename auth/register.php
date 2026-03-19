@@ -5,46 +5,52 @@ require_once __DIR__ . "/../config/db.php";
 $error = "";
 $success = "";
 
+// Global Registration Check
+$r_res = $conn->query("SELECT setting_value FROM system_settings WHERE setting_key = 'registration_enabled'");
+$registration_enabled = ($r_res && $r_res->num_rows > 0) ? ($r_res->fetch_assoc()['setting_value'] === '1') : true;
+
 if (isset($_POST['register'])) {
-
-    $name = trim($_POST['name']);
-    $email = trim($_POST['email']);
-    $password = $_POST['password'];
-    $confirm = $_POST['confirm_password'];
-    $country = trim($_POST['country'] ?? '');
-    $gender = trim($_POST['gender'] ?? '');
-
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Invalid email format!";
-    } elseif ($password !== $confirm) {
-        $error = "Passwords do not match!";
+    if (!$registration_enabled) {
+        $error = "Registration node is currently offline. Admission denied.";
     } else {
-        // Check if email already exists
-        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $stmt->store_result();
+        $name     = trim($_POST['name']);
+        $email    = trim($_POST['email']);
+        $password = $_POST['password'];
+        $confirm  = $_POST['confirm_password'];
+        $country  = trim($_POST['country'] ?? '');
+        $gender   = trim($_POST['gender'] ?? '');
 
-        if ($stmt->num_rows > 0) {
-            $error = "Email already registered!";
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = "Invalid email format!";
+        } elseif ($password !== $confirm) {
+            $error = "Passwords do not match!";
         } else {
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            // Check if email already exists
+            $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->store_result();
 
-            $insert = $conn->prepare("INSERT INTO users (name, email, password, country, gender) VALUES (?, ?, ?, ?, ?)");
-            $insert->bind_param("sssss", $name, $email, $hashedPassword, $country, $gender);
-
-            if ($insert->execute()) {
-                $success = "Registration successful! Initializing encrypted access...";
+            if ($stmt->num_rows > 0) {
+                $error = "Email already registered!";
             } else {
-                $error = "Registration failed. Please try again or contact support.";
-            }
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                $insert = $conn->prepare("INSERT INTO users (name, email, password, country, gender) VALUES (?, ?, ?, ?, ?)");
+                $insert->bind_param("sssss", $name, $email, $hashedPassword, $country, $gender);
 
-            $insert->close();
+                if ($insert->execute()) {
+                    $success = "Registration successful! Initializing encrypted access...";
+                } else {
+                    $error = "Registration failed. Please try again or contact support.";
+                }
+                $insert->close();
+            }
+            $stmt->close();
         }
-        $stmt->close();
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html class="dark" lang="en">
 
@@ -122,6 +128,13 @@ if (isset($_POST['register'])) {
                 <h2 class="text-lg font-semibold mb-1">Create Account</h2>
                 <p class="text-slate-400 text-sm">Join the elite cybersecurity training platform</p>
 
+                <?php if (!$registration_enabled): ?>
+                    <div class="mt-4 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center gap-3 animate-pulse">
+                        <span class="material-symbols-outlined text-orange-500">lock</span>
+                        <p class="text-orange-500 text-[10px] font-black uppercase tracking-widest text-left leading-relaxed">Admission Protocol Offline. New operator enrollment is currently restricted.</p>
+                    </div>
+                <?php endif; ?>
+
                 <?php if ($error): ?>
                     <div class="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                         <p class="text-red-500 text-sm font-medium"><?php echo htmlspecialchars($error); ?></p>
@@ -140,7 +153,7 @@ if (isset($_POST['register'])) {
                 <?php endif; ?>
             </div>
 
-            <form method="POST" class="space-y-6">
+            <form method="POST" class="space-y-6 <?php echo !$registration_enabled ? 'opacity-40 pointer-events-none grayscale' : ''; ?>">
 
                 <!-- Account Essentials -->
                 <div class="space-y-4">
