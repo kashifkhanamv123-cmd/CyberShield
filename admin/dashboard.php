@@ -69,6 +69,7 @@ $lab_data = [
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0f000'><path d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.47 4.34-3.1 8.25-7 9.53V12H5V6.3l7-3.11v8.8z'/></svg>">
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -174,6 +175,12 @@ $lab_data = [
                     </div>
                     <div class="h-10 w-px bg-border-dim hidden sm:block"></div>
                     <span class="text-xs text-slate-500 font-mono font-bold tracking-widest hidden lg:block"><?php echo date('Y.m.d // H:i:s'); ?></span>
+                </div>
+                <!-- Admin Search -->
+                <div class="relative hidden xl:block ml-8">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">search</span>
+                    <input type="text" id="adminSearch" placeholder="Search system stats..." 
+                           class="bg-surface/50 border border-border-dim rounded-lg py-2 pl-9 pr-4 text-xs focus:border-primary/50 outline-none transition-all w-48 focus:w-64">
                 </div>
             </header>
 
@@ -481,7 +488,35 @@ $lab_data = [
                 closeBtn.addEventListener('click', () => sidebar.classList.add('-translate-x-full'));
             }
         });
+
+        // Admin Search Filter
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('adminSearch');
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    const term = e.target.value.toLowerCase();
+                    const cards = document.querySelectorAll('.stat-card');
+                    cards.forEach(card => {
+                        const label = card.querySelector('p').innerText.toLowerCase();
+                        if (label.includes(term)) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
     </script>
+    <!-- Scroll Buttons -->
+    <div class="fixed bottom-12 right-10 flex flex-col gap-3 z-[100]">
+        <button onclick="document.querySelector('.overflow-y-auto').scrollTo({top: 0, behavior: 'smooth'})" class="size-11 rounded-full bg-surface border border-primary/30 text-primary flex items-center justify-center hover:bg-primary hover:text-neutral-dark transition-all shadow-glow group">
+            <span class="material-symbols-outlined text-sm group-hover:animate-bounce">arrow_upward</span>
+        </button>
+        <button onclick="const el = document.querySelector('.overflow-y-auto'); el.scrollTo({top: el.scrollHeight, behavior: 'smooth'})" class="size-11 rounded-full bg-surface border border-primary/30 text-primary flex items-center justify-center hover:bg-primary hover:text-neutral-dark transition-all shadow-glow group">
+            <span class="material-symbols-outlined text-sm group-hover:animate-bounce">arrow_downward</span>
+        </button>
+    </div>
 </body>
 
 </html>

@@ -13,6 +13,7 @@ require_once __DIR__ . '/config/session.php';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0f000'><path d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.47 4.34-3.1 8.25-7 9.53V12H5V6.3l7-3.11v8.8z'/></svg>">
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -332,12 +333,24 @@ require_once __DIR__ . '/config/session.php';
                 <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="#">
                     <span class="material-symbols-outlined">code</span>
                 </a>
+                <button onclick="navigator.clipboard.writeText(window.location.href); alert('Project link copied to clipboard! Share it with your class.');" class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" title="Share Project">
+                    <span class="material-symbols-outlined">share</span>
+                </button>
             </div>
         </div>
         <div class="mt-8 text-center text-slate-600 text-[10px] font-mono">
             © 2024 CYBERSHIELD OPERATIONS INC. ALL RIGHTS RESERVED. // AUTHORIZED ACCESS ONLY.
         </div>
     </footer>
+    <!-- Scroll Buttons -->
+    <div class="fixed bottom-8 right-8 flex flex-col gap-3 z-[100]">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="size-12 rounded-full bg-surface-dark border border-primary/30 text-primary flex items-center justify-center hover:bg-primary hover:text-background-dark transition-all shadow-glow group">
+            <span class="material-symbols-outlined group-hover:animate-bounce">arrow_upward</span>
+        </button>
+        <button onclick="window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})" class="size-12 rounded-full bg-surface-dark border border-primary/30 text-primary flex items-center justify-center hover:bg-primary hover:text-background-dark transition-all shadow-glow group">
+            <span class="material-symbols-outlined group-hover:animate-bounce">arrow_downward</span>
+        </button>
+    </div>
 </body>
 
 </html>

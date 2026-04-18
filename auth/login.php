@@ -62,7 +62,7 @@ if (isset($_POST['login'])) {
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
-
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23a0f000'><path d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.47 4.34-3.1 8.25-7 9.53V12H5V6.3l7-3.11v8.8z'/></svg>">
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -183,8 +183,16 @@ if (isset($_POST['login'])) {
             }
         }
 
-        typeWriter();
     </script>
+    <!-- Scroll Buttons -->
+    <div class="fixed bottom-8 right-8 flex flex-col gap-3 z-[100]">
+        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="size-10 rounded-full bg-card-dark border border-primary/30 text-primary flex items-center justify-center hover:bg-primary hover:text-black transition-all shadow-glow group">
+            <span class="material-symbols-outlined text-sm group-hover:animate-bounce">arrow_upward</span>
+        </button>
+        <button onclick="window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'})" class="size-10 rounded-full bg-card-dark border border-primary/30 text-primary flex items-center justify-center hover:bg-primary hover:text-black transition-all shadow-glow group">
+            <span class="material-symbols-outlined text-sm group-hover:animate-bounce">arrow_downward</span>
+        </button>
+    </div>
 </body>
 
 </html>
