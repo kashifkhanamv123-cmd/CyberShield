@@ -56,6 +56,11 @@ $malware_progress = $malware_success ? 100 : min($malware_count * 25, 90);
 // Total completed labs
 $completed_labs = ($phishing_count > 0 ? 1 : 0) + ($bruteforce_success ? 1 : 0) + ($ddos_success ? 1 : 0) + ($malware_success ? 1 : 0);
 
+// Fetch SOC Alert Count (active)
+$soc_res = $conn->query("SELECT COUNT(*) FROM soc_alerts WHERE status = 'active'");
+$soc_active_count = $soc_res->fetch_row()[0];
+$soc_res->close();
+
 $lab_completed = $_GET['lab_completed'] ?? '';
 
 // Helper for letter avatar
@@ -445,6 +450,29 @@ function getLetterAvatar($name) {
                         </div>
                         <a href="../labs/bruteforce.php" class="p-4 bg-surface/50 text-[9px] font-black text-center text-slate-400 hover:text-primary hover:bg-primary/10 uppercase tracking-widest rounded-b-[1.8rem] border-t border-border-dim transition-all">
                             Initialize Node
+                        </a>
+                    </div>
+
+                    <!-- Lab Card: SOC Command Center -->
+                    <div class="glass-panel group rounded-[2rem] p-1 flex flex-col transition-all border-primary/20 hover:border-primary/60 hover:translate-y-[-4px] bg-gradient-to-br from-primary/5 to-transparent">
+                        <div class="p-6 flex-1">
+                            <div class="flex justify-between items-start mb-6">
+                                <span class="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">shield_with_house</span>
+                                <div class="px-2 py-1 bg-danger/10 border border-danger/20 rounded-full flex items-center gap-1.5">
+                                    <div class="size-1.5 bg-danger rounded-full animate-pulse"></div>
+                                    <span class="text-[8px] font-black text-danger uppercase tracking-widest"><?php echo $soc_active_count; ?> Active</span>
+                                </div>
+                            </div>
+                            <h4 class="text-md font-black text-white mb-2 uppercase tracking-tight italic">SOC Command Center</h4>
+                            <p class="text-[11px] text-slate-500 leading-relaxed mb-6">Real-time incident response and multi-vector threat visualization hub.</p>
+                            
+                            <div class="flex items-center gap-2">
+                                <span class="size-1.5 rounded-full bg-primary ring-4 ring-primary/10"></span>
+                                <span class="text-[9px] font-mono text-primary uppercase tracking-widest">Systems Online</span>
+                            </div>
+                        </div>
+                        <a href="../labs/soc_lab.php" class="p-4 bg-primary/10 text-[9px] font-black text-center text-primary group-hover:bg-primary group-hover:text-neutral-dark uppercase tracking-widest rounded-b-[1.8rem] border-t border-primary/20 transition-all">
+                            Launch Interface
                         </a>
                     </div>
                 </div>

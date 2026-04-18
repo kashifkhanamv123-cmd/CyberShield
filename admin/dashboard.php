@@ -20,6 +20,7 @@ $total_bf       = get_count($conn, "SELECT COUNT(*) FROM bruteforce_logs");
 $total_malware  = get_count($conn, "SELECT COUNT(*) FROM malware_samples");
 $total_ddos     = get_count($conn, "SELECT COUNT(*) FROM ddos_simulations");
 $blocked_users  = get_count($conn, "SELECT COUNT(*) FROM users WHERE status='blocked'");
+$total_soc      = get_count($conn, "SELECT COUNT(*) FROM soc_alerts WHERE status='active'");
 
 // ── Recent logs ────────────────────────────────────────────────
 // ── Recent logs (Prepared Statement) ─────────────────────────────
@@ -196,6 +197,7 @@ $lab_data = [
                         ['Brute Force', 'total_bf',       'lock_open',       'from-orange-500/10 to-orange-900/5', 'text-orange-500', 'border-orange-500/10'],
                         ['Malware', 'total_malware',  'bug_report',      'from-red-500/10    to-red-900/5',   'text-red-500',    'border-red-500/10'],
                         ['DDoS',       'total_ddos',     'thunderstorm',    'from-purple-500/10 to-purple-900/5', 'text-purple-500', 'border-purple-500/10'],
+                        ['SOC Alerts', 'total_soc',     'shield_with_house', 'from-red-500/10   to-rose-900/5',   'text-rose-500',   'border-rose-500/10'],
                         ['Blocked',   'blocked_users',  'block',           'from-slate-500/10  to-slate-900/5', 'text-slate-500',  'border-slate-500/10'],
                     ];
                     foreach ($cards as [$label, $id, $icon, $grad, $color, $border]):
@@ -205,6 +207,7 @@ $lab_data = [
                         if ($id == 'total_bf') $val = $total_bf;
                         if ($id == 'total_malware') $val = $total_malware;
                         if ($id == 'total_ddos') $val = $total_ddos;
+                        if ($id == 'total_soc') $val = $total_soc;
                         if ($id == 'blocked_users') $val = $blocked_users;
                     ?>
                         <div class="stat-card glass rounded-[2rem] p-6 bg-gradient-to-br <?php echo $grad; ?> border <?php echo $border; ?> relative overflow-hidden group">
