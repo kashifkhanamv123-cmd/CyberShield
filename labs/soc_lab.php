@@ -100,6 +100,14 @@ $userName = $_SESSION['user_name'];
         </div>
 
         <div class="flex items-center gap-8 font-mono text-[11px]">
+            <!-- Exit button visible when complete -->
+            <div id="complete-exit" class="hidden">
+                 <a href="../dashboard/dashboard.php" class="flex items-center gap-3 px-6 py-2 bg-primary/10 border border-primary/40 rounded-xl text-primary font-black hover:bg-primary hover:text-neutral-dark transition-all group">
+                    <span class="material-symbols-outlined text-sm">logout</span>
+                    <span class="tracking-widest uppercase text-[9px]">Exit Mission</span>
+                 </a>
+            </div>
+
             <div class="flex flex-col items-end">
                 <span id="system-time" class="text-white font-bold tabular-nums">--:--:-- ZULU</span>
                 <span class="text-[8px] text-primary/40 uppercase tracking-widest text-right">Encrypted Feed</span>
@@ -260,7 +268,12 @@ $userName = $_SESSION['user_name'];
                         <h2 class="text-6xl font-black text-white italic tracking-tighter uppercase">Mission <span class="text-primary">Secured</span></h2>
                         <p class="text-slate-400 font-mono text-sm max-w-xl mx-auto leading-relaxed">Operation "Shadow Bridge" neutralized. Threats identified, purged, and assets recovered from all sectors.</p>
                     </div>
-                    <a href="../dashboard/dashboard.php" class="px-12 py-6 bg-primary text-neutral-dark font-black rounded-[3rem] uppercase tracking-[0.4em] text-sm hover:scale-105 transition-all shadow-glow hover:brightness-110">Exit Terminal</a>
+                    
+                    <div class="flex items-center gap-4">
+                        <button onclick="toggleReview(true)" class="px-10 py-5 bg-white/5 border border-white/10 text-white font-black rounded-[2.5rem] uppercase tracking-[0.3em] text-[11px] hover:bg-white/10 transition-all">Review Records</button>
+                        <a href="../dashboard/dashboard.php" class="px-12 py-6 bg-primary text-neutral-dark font-black rounded-[3rem] uppercase tracking-[0.4em] text-sm hover:scale-105 transition-all shadow-glow hover:brightness-110">Exit Terminal</a>
+                        <button onclick="restartMission()" class="px-10 py-5 bg-danger/10 border border-danger/20 text-danger font-black rounded-[2.5rem] uppercase tracking-[0.3em] text-[11px] hover:bg-danger/20 transition-all">Restart Mission</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -284,6 +297,7 @@ $userName = $_SESSION['user_name'];
 
     <script>
         let selectedAlert = null;
+        let reviewMode = false;
 
         function updateTime() {
             const now = new Date();
@@ -293,11 +307,19 @@ $userName = $_SESSION['user_name'];
         updateTime();
 
         async function fetchAlerts() {
-            const res = await fetch('manage_soc.php?action=get_alerts');
-            const data = await res.json();
-            if (data.success) {
-                renderAlerts(data.alerts);
-                updateProgress(data.progress);
+            try {
+                const res = await fetch('manage_soc.php?action=get_alerts');
+                const data = await res.json();
+                if (data.success) {
+                    if (data.debug_error) {
+                        document.getElementById('analyst-brief').innerHTML = `<span class="text-danger font-bold uppercase tracking-widest animate-pulse">[SYSTEM_ERROR]: ${data.debug_error}</span><br>Check database schema permissions.`;
+                    } else {
+                        renderAlerts(data.alerts);
+                        updateProgress(data.progress);
+                    }
+                }
+            } catch (e) {
+                document.getElementById('analyst-brief').innerText = "FATAL: Connection to SOC Command failed.";
             }
         }
 
@@ -309,20 +331,29 @@ $userName = $_SESSION['user_name'];
             queue.innerHTML = '';
             nodesGrp.innerHTML = '';
             
-            if (alerts.length === 0) {
+            const activeAlerts = alerts.filter(a => a.status === 'active');
+            
+            if (activeAlerts.length === 0 && !reviewMode) {
                 count.innerText = "NOMINAL";
                 count.className = "text-[9px] font-black text-primary px-2 py-0.5 bg-primary/10 rounded border border-primary/20 italic";
                 document.getElementById('analyst-brief').innerText = "All sectors clear. Monitoring background activity.";
                 return;
             }
 
-            count.innerText = "THREAT_FOUND";
-            count.className = "text-[9px] font-black text-danger px-2 py-0.5 bg-danger/10 rounded border border-danger/20 italic animate-pulse";
-            document.getElementById('analyst-brief').innerText = "Anomalous signature detected. Forensics recommended.";
+            if (reviewMode) {
+                count.innerText = "MISSION_COMPLETE";
+                count.className = "text-[9px] font-black text-primary px-2 py-0.5 bg-primary/20 rounded border border-primary/40 italic shadow-glow";
+                document.getElementById('analyst-brief').innerText = "Mission objectives fulfilled. Training data archived.";
+            } else {
+                count.innerText = "THREAT_FOUND";
+                count.className = "text-[9px] font-black text-danger px-2 py-0.5 bg-danger/10 rounded border border-danger/20 italic animate-pulse";
+                document.getElementById('analyst-brief').innerText = "Anomalous signature detected. Forensics recommended.";
+            }
 
             alerts.forEach((alert, index) => {
+                const isMitigated = alert.status === 'mitigated';
                 const card = document.createElement('div');
-                card.className = `alert-card glass-panel p-6 rounded-[2rem] cursor-pointer severity-${alert.severity.toLowerCase()} active:scale-95`;
+                card.className = `alert-card glass-panel p-6 rounded-[2rem] cursor-pointer severity-${alert.severity.toLowerCase()} active:scale-95 ${isMitigated ? 'opacity-60 border-primary/40' : ''}`;
                 card.onclick = () => {
                     card.classList.add('glitch-flash');
                     selectAlert(alert);
@@ -330,21 +361,21 @@ $userName = $_SESSION['user_name'];
                 };
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
-                        <span class="text-[9px] font-mono text-primary/40 uppercase font-black tracking-widest">SIG_${alert.id}</span>
-                        <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${getSeverityClass(alert.severity)}">${alert.severity}</span>
+                        <span class="text-[9px] font-mono text-primary/40 uppercase font-black tracking-widest">${isMitigated ? 'SECURED' : 'SIG_' + alert.id}</span>
+                        <span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${isMitigated ? 'bg-primary/20 text-primary border border-primary/30' : getSeverityClass(alert.severity)}">${isMitigated ? 'PURGED' : alert.severity}</span>
                     </div>
                     <h4 class="text-[11px] font-black text-white uppercase italic tracking-widest truncate">${alert.type}</h4>
                     <p class="text-[9px] text-slate-600 font-mono mt-2 tracking-tighter">${alert.source_ip}</p>
                 `;
                 queue.appendChild(card);
 
-                const x = 300 + (alert.phase_order * 100);
-                const y = 100 + (index * 80 % 300);
+                const x = 200 + (alert.phase_order * 140);
+                const y = 80 + (index * 80 % 300);
                 const node = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 node.setAttribute("cx", x);
                 node.setAttribute("cy", y);
-                node.setAttribute("r", 9);
-                node.setAttribute("class", `map-ping ${getSeverityColor(alert.severity)}`);
+                node.setAttribute("r", isMitigated ? 6 : 9);
+                node.setAttribute("class", `map-ping ${isMitigated ? 'text-primary/40' : getSeverityColor(alert.severity)}`);
                 node.onclick = () => selectAlert(alert);
                 nodesGrp.appendChild(node);
             });
@@ -352,9 +383,37 @@ $userName = $_SESSION['user_name'];
 
         function updateProgress(progress) {
             if (!progress) return;
-            document.getElementById('scenario-progress').style.width = ((progress.current-1)/progress.total)*100 + '%';
+            document.getElementById('scenario-progress').style.width = ((progress.current - (progress.is_complete ? 0 : 1)) / progress.total) * 100 + '%';
             document.getElementById('phase-label').innerText = `PHASE ${progress.current}/${progress.total}`;
-            if (progress.is_complete) document.getElementById('mission-complete').classList.remove('hidden');
+            
+            if (progress.is_complete) {
+                document.getElementById('complete-exit').classList.remove('hidden');
+                if (!reviewMode) {
+                    document.getElementById('mission-complete').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('complete-exit').classList.add('hidden');
+            }
+        }
+
+        function toggleReview(val) {
+            reviewMode = val;
+            if (val) {
+                document.getElementById('mission-complete').classList.add('hidden');
+                fetchAlerts();
+            }
+        }
+
+        async function restartMission() {
+            if (!confirm('This will wipe your current investigation data and restart the mission. Proceed?')) return;
+            const res = await fetch('manage_soc.php?action=restart');
+            const data = await res.json();
+            if (data.success) {
+                reviewMode = false;
+                document.getElementById('mission-complete').classList.add('hidden');
+                document.getElementById('incident-terminal').classList.add('translate-y-full','opacity-0');
+                fetchAlerts();
+            }
         }
 
         function getSeverityClass(sev) {
@@ -374,11 +433,24 @@ $userName = $_SESSION['user_name'];
             document.getElementById('terminal-title').innerText = alert.type;
             document.getElementById('terminal-desc').innerText = alert.description;
             document.getElementById('terminal-ip').innerText = alert.source_ip;
-            document.getElementById('terminal-severity').innerText = alert.severity;
-            document.getElementById('terminal-severity').className = `px-5 py-2 bg-white/5 border border-white/10 rounded-full text-[11px] font-black uppercase tracking-[0.3em] italic ${getSeverityClass(alert.severity)}`;
+            document.getElementById('terminal-severity').innerText = alert.status === 'mitigated' ? 'SECURED' : alert.severity;
+            document.getElementById('terminal-severity').className = `px-5 py-2 bg-white/5 border border-white/10 rounded-full text-[11px] font-black uppercase tracking-[0.3em] italic ${alert.status === 'mitigated' ? 'text-primary border-primary/30' : getSeverityClass(alert.severity)}`;
             document.getElementById('terminal-time').innerText = new Date(alert.created_at).toLocaleTimeString();
             const iconMap={'Protocol Probe':'radar','Payload Delivery':'package_2','Data Infiltration':'database_upload','System Takeover':'vital_signs','Exfiltration Trace':'cloud_upload'};
             document.getElementById('terminal-icon').innerText = iconMap[alert.canonical_type] || 'warning';
+            
+            const actions = terminal.querySelector('.flex.flex-col.gap-3');
+            if (alert.status === 'mitigated') {
+                actions.innerHTML = `
+                    <button onclick="startInvestigation()" class="w-full py-5 bg-primary/20 text-primary font-black rounded-3xl uppercase tracking-[.25em] text-xs border border-primary/40 hover:bg-primary/30 transition-all">Review Forensics</button>
+                    <button onclick="document.getElementById('incident-terminal').classList.add('translate-y-full','opacity-0')" class="w-full py-5 bg-white/5 text-slate-500 font-bold rounded-3xl uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all">Close Entry</button>
+                `;
+            } else {
+                actions.innerHTML = `
+                    <button onclick="startInvestigation()" class="w-full py-5 bg-primary text-neutral-dark font-black rounded-3xl uppercase tracking-[.25em] text-xs hover:brightness-110 shadow-glow transition-all active:scale-95">Verify Intel</button>
+                    <button onclick="handleAction('dismiss')" class="w-full py-5 bg-white/5 text-slate-500 font-bold rounded-3xl uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all">Dismiss Log</button>
+                `;
+            }
         }
 
         function startInvestigation() {
@@ -391,7 +463,7 @@ $userName = $_SESSION['user_name'];
         function closeInvestigation() { document.getElementById('investigation-modal').classList.add('hidden'); }
 
         async function verifyIdentification(answer) {
-            if (!selectedAlert) return;
+            if (!selectedAlert || selectedAlert.status === 'mitigated') return;
             const msg = document.getElementById('feedback-msg');
             msg.classList.remove('hidden','bg-danger/10','border-danger/20','text-danger','bg-primary/10','border-primary/20','text-primary');
             msg.innerText = 'MATCHING SIGNATURES...';
