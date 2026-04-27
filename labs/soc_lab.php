@@ -69,9 +69,16 @@ $userName = $_SESSION['user_name'];
 
         .terminal-text { text-shadow: 0 0 5px rgba(160, 240, 0, 0.3); }
         .data-grid { background-size: 30px 30px; background-image: linear-gradient(to right, rgba(160, 240, 0, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(160, 240, 0, 0.02) 1px, transparent 1px); }
+        
+        .scanlines {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+            background-size: 100% 4px, 3px 100%; pointer-events: none; z-index: 100; opacity: 0.3;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col font-sans selection:bg-primary selection:text-neutral-dark data-grid">
+    <div class="scanlines"></div>
     <!-- Top Navigation -->
     <header class="h-16 flex items-center justify-between px-8 border-b border-primary/10 bg-black/40 backdrop-blur-xl z-50">
         <div class="flex items-center gap-6">
@@ -226,33 +233,33 @@ $userName = $_SESSION['user_name'];
                 </div>
 
                 <!-- Terminal -->
-                <div id="incident-terminal" class="absolute bottom-8 left-8 right-8 glass-panel rounded-[3rem] p-10 flex items-center gap-12 transform translate-y-full opacity-0 transition-all duration-1000 shadow-[0_-40px_100px_rgba(0,0,0,0.9)] z-40 border-primary/20">
-                    <div class="size-28 rounded-[2.5rem] bg-danger/10 flex items-center justify-center text-danger shrink-0 shadow-[0_0_60px_rgba(255,62,62,0.2)] ring-1 ring-danger/30 relative group overflow-hidden">
+                <div id="incident-terminal" class="absolute bottom-6 left-6 right-6 glass-panel rounded-3xl p-6 flex items-center gap-8 transform translate-y-full opacity-0 transition-all duration-700 shadow-[0_-20px_60px_rgba(0,0,0,0.8)] z-40 border-primary/20">
+                    <div class="size-20 rounded-2xl bg-danger/10 flex items-center justify-center text-danger shrink-0 shadow-[0_0_30px_rgba(255,62,62,0.15)] ring-1 ring-danger/30 relative group overflow-hidden">
                          <div class="absolute inset-0 bg-danger/5 animate-pulse"></div>
-                         <span id="terminal-icon" class="material-symbols-outlined text-6xl relative z-10 transition-transform group-hover:scale-110">warning</span>
+                         <span id="terminal-icon" class="material-symbols-outlined text-4xl relative z-10 transition-transform group-hover:scale-110">warning</span>
                     </div>
-                    <div class="flex-1 space-y-5">
+                    <div class="flex-1 space-y-3">
                         <div class="flex items-center justify-between">
-                            <div class="space-y-1">
-                                <h2 id="terminal-title" class="text-3xl font-black text-white uppercase italic tracking-tighter terminal-text">--</h2>
-                                <p id="terminal-desc" class="text-[11px] text-slate-500 font-bold tracking-widest uppercase italic opacity-60">--</p>
+                            <div class="space-y-0.5">
+                                <h2 id="terminal-title" class="text-xl font-black text-white uppercase italic tracking-tighter terminal-text">--</h2>
+                                <p id="terminal-desc" class="text-[9px] text-slate-500 font-bold tracking-widest uppercase italic opacity-60">--</p>
                             </div>
-                            <span id="terminal-severity" class="px-5 py-2 bg-white/5 border border-white/10 rounded-full text-[11px] font-black uppercase tracking-[0.3em] italic">--</span>
+                            <span id="terminal-severity" class="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-[0.2em] italic">--</span>
                         </div>
-                        <div class="flex items-center gap-10 text-[10px] font-mono">
-                            <div class="flex items-center gap-3">
-                                <span class="text-primary font-black">// SRC:</span>
-                                <span id="terminal-ip" class="text-white bg-white/5 px-3 py-1 rounded">0.0.0.0</span>
+                        <div class="flex items-center gap-8 text-[9px] font-mono">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-primary font-black opacity-50">// SRC:</span>
+                                <span id="terminal-ip" class="text-white bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/5">0.0.0.0</span>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <span class="text-primary font-black">// TS:</span>
-                                <span id="terminal-time" class="text-white bg-white/5 px-3 py-1 rounded">--</span>
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-primary font-black opacity-50">// TS:</span>
+                                <span id="terminal-time" class="text-white bg-white/5 px-2.5 py-0.5 rounded-lg border border-white/5">--</span>
                             </div>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-3 min-w-[260px]">
-                        <button onclick="startInvestigation()" class="w-full py-5 bg-primary text-neutral-dark font-black rounded-3xl uppercase tracking-[.25em] text-xs hover:brightness-110 shadow-glow transition-all active:scale-95">Verify Intel</button>
-                        <button onclick="handleAction('dismiss')" class="w-full py-5 bg-white/5 text-slate-500 font-bold rounded-3xl uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all">Dismiss Log</button>
+                    <div class="flex flex-col gap-2.5 min-w-[220px]">
+                        <button onclick="startInvestigation()" class="w-full py-3.5 bg-primary text-neutral-dark font-black rounded-2xl uppercase tracking-[.2em] text-[10px] hover:brightness-110 shadow-glow transition-all active:scale-95">Verify Intel</button>
+                        <button onclick="handleAction('dismiss')" class="w-full py-3.5 bg-white/5 text-slate-500 font-bold rounded-2xl uppercase tracking-widest text-[9px] hover:bg-white/10 transition-all">Dismiss Log</button>
                     </div>
                 </div>
 
@@ -270,9 +277,9 @@ $userName = $_SESSION['user_name'];
                     </div>
                     
                     <div class="flex items-center gap-4">
-                        <button onclick="toggleReview(true)" class="px-10 py-5 bg-white/5 border border-white/10 text-white font-black rounded-[2.5rem] uppercase tracking-[0.3em] text-[11px] hover:bg-white/10 transition-all">Review Records</button>
-                        <a href="../dashboard/dashboard.php" class="px-12 py-6 bg-primary text-neutral-dark font-black rounded-[3rem] uppercase tracking-[0.4em] text-sm hover:scale-105 transition-all shadow-glow hover:brightness-110">Exit Terminal</a>
-                        <button onclick="restartMission()" class="px-10 py-5 bg-danger/10 border border-danger/20 text-danger font-black rounded-[2.5rem] uppercase tracking-[0.3em] text-[11px] hover:bg-danger/20 transition-all">Restart Mission</button>
+                        <button onclick="toggleReview(true)" class="px-8 py-4 bg-white/5 border border-white/10 text-white font-black rounded-2xl uppercase tracking-[0.3em] text-[10px] hover:bg-white/10 transition-all">Review Records</button>
+                        <a href="../dashboard/dashboard.php" class="px-10 py-5 bg-primary text-neutral-dark font-black rounded-[2.5rem] uppercase tracking-[0.3em] text-xs hover:scale-105 transition-all shadow-glow hover:brightness-110">Exit Terminal</a>
+                        <button onclick="restartMission()" class="px-8 py-4 bg-danger/10 border border-danger/20 text-danger font-black rounded-2xl uppercase tracking-[0.3em] text-[10px] hover:bg-danger/20 transition-all">Restart Mission</button>
                     </div>
                 </div>
             </div>
@@ -442,13 +449,13 @@ $userName = $_SESSION['user_name'];
             const actions = terminal.querySelector('.flex.flex-col.gap-3');
             if (alert.status === 'mitigated') {
                 actions.innerHTML = `
-                    <button onclick="startInvestigation()" class="w-full py-5 bg-primary/20 text-primary font-black rounded-3xl uppercase tracking-[.25em] text-xs border border-primary/40 hover:bg-primary/30 transition-all">Review Forensics</button>
-                    <button onclick="document.getElementById('incident-terminal').classList.add('translate-y-full','opacity-0')" class="w-full py-5 bg-white/5 text-slate-500 font-bold rounded-3xl uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all">Close Entry</button>
+                    <button onclick="startInvestigation()" class="w-full py-3.5 bg-primary/20 text-primary font-black rounded-2xl uppercase tracking-[.25em] text-[10px] border border-primary/40 hover:bg-primary/30 transition-all">Review Forensics</button>
+                    <button onclick="document.getElementById('incident-terminal').classList.add('translate-y-full','opacity-0')" class="w-full py-3.5 bg-white/5 text-slate-500 font-bold rounded-2xl uppercase tracking-widest text-[9px] hover:bg-white/10 transition-all">Close Entry</button>
                 `;
             } else {
                 actions.innerHTML = `
-                    <button onclick="startInvestigation()" class="w-full py-5 bg-primary text-neutral-dark font-black rounded-3xl uppercase tracking-[.25em] text-xs hover:brightness-110 shadow-glow transition-all active:scale-95">Verify Intel</button>
-                    <button onclick="handleAction('dismiss')" class="w-full py-5 bg-white/5 text-slate-500 font-bold rounded-3xl uppercase tracking-widest text-[10px] hover:bg-white/10 transition-all">Dismiss Log</button>
+                    <button onclick="startInvestigation()" class="w-full py-3.5 bg-primary text-neutral-dark font-black rounded-2xl uppercase tracking-[.2em] text-[10px] hover:brightness-110 shadow-glow transition-all active:scale-95">Verify Intel</button>
+                    <button onclick="handleAction('dismiss')" class="w-full py-3.5 bg-white/5 text-slate-500 font-bold rounded-2xl uppercase tracking-widest text-[9px] hover:bg-white/10 transition-all">Dismiss Log</button>
                 `;
             }
         }
