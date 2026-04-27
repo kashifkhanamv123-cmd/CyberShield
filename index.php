@@ -86,9 +86,19 @@ require_once __DIR__ . '/config/session.php';
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
         }
 
         .cursor {
@@ -102,7 +112,9 @@ require_once __DIR__ . '/config/session.php';
         }
 
         @keyframes blink {
-            50% { opacity: 0; }
+            50% {
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -196,6 +208,7 @@ require_once __DIR__ . '/config/session.php';
         <section id="modules" class="max-w-7xl mx-auto px-6 py-24 border-t border-border-dark">
             <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-4">
                 <div class="space-y-2">
+                    <span class="text-primary font-mono text-sm tracking-widest">/LABS/AVAILABLE_MODS</span>
                     <h3 class="text-4xl font-black text-white uppercase italic">Core Modules</h3>
                 </div>
                 <p class="text-slate-400 font-mono text-xs">Total Progress: 12% Completed</p>
@@ -250,6 +263,7 @@ require_once __DIR__ . '/config/session.php';
         <section id="soc" class="bg-surface-dark py-32 border-y border-border-dark relative overflow-hidden">
             <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
                 <div class="lg:col-span-5 space-y-6">
+                    <span class="text-primary font-mono text-sm tracking-widest">/OPERATIONS/DASHBOARD</span>
                     <h3 class="text-4xl md:text-5xl font-black text-white uppercase italic leading-tight">The SOC <br /> Experience</h3>
                     <p class="text-slate-400 leading-relaxed">
                         Step into the shoes of a Security Operations Center analyst. Monitor real-time log streams, manage high-priority alerts, and neutralize threats before they compromise the infrastructure.
@@ -399,8 +413,8 @@ require_once __DIR__ . '/config/session.php';
         <div class="max-w-4xl mx-auto h-full p-8 flex flex-col">
             <div class="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
                 <div class="flex items-center gap-4">
-                    <span class="material-symbols-outlined text-primary text-sm">terminal</span>
-                    <h4 class="text-[10px] font-mono text-white/70 uppercase tracking-[0.2em]">Deployment :: Node_Alpha_01 [SECURED]</h4>
+                    <span class="material-symbols-outlined text-primary">terminal</span>
+                    <h4 class="text-xs font-bold text-white uppercase tracking-widest">Secure_Node_01 // Root Access</h4>
                 </div>
                 <button onclick="toggleTerminal(false)" class="text-slate-500 hover:text-white transition-colors">
                     <span class="material-symbols-outlined">close</span>
@@ -420,8 +434,8 @@ require_once __DIR__ . '/config/session.php';
         <div class="max-w-4xl mx-auto h-full p-8 flex flex-col">
             <div class="flex items-center justify-between mb-8 border-b border-primary/20 pb-4">
                 <div class="flex items-center gap-4">
-                    <span class="material-symbols-outlined text-primary text-sm">source</span>
-                    <h4 class="text-[10px] font-mono text-white/70 uppercase tracking-[0.2em]">Core :: Simulation_Kernels [V.5.4]</h4>
+                    <span class="material-symbols-outlined text-primary">source</span>
+                    <h4 class="text-sm font-bold text-white uppercase tracking-widest">CYBERSHIELD_SRC // Repository_v24.0</h4>
                 </div>
                 <button onclick="toggleRepo(false)" class="text-slate-500 hover:text-white transition-colors">
                     <span class="material-symbols-outlined">close</span>
@@ -436,14 +450,10 @@ require_once __DIR__ . '/config/session.php';
                     <p class="text-slate-400 max-w-md mx-auto">This repository contains proprietary simulation kernels. Specialized clearance and hardware-keys are required for retrieval.</p>
                 </div>
                 <div class="w-full max-w-sm space-y-4">
-                    <div class="h-12 bg-white/5 border border-white/10 rounded flex items-center px-4 gap-3 relative">
+                    <div class="h-12 bg-white/5 border border-white/10 rounded flex items-center px-4 gap-3">
                         <span class="material-symbols-outlined text-slate-500 text-sm">key</span>
-                        <input type="password" id="repoSeedInput" placeholder="ENTER_CLEARANCE_SEED" class="bg-transparent border-none outline-none text-primary font-mono text-sm w-full" oninput="showRepoError()">
+                        <input type="password" placeholder="ENTER_CLEARANCE_SEED" class="bg-transparent border-none outline-none text-primary font-mono text-sm w-full" readonly>
                         <span class="text-[10px] font-mono text-slate-500">AUTH_REQ</span>
-                        <!-- Error Message -->
-                        <div id="repoError" class="absolute -top-10 left-0 w-full text-center hidden">
-                            <span class="text-[10px] bg-red-500/20 border border-red-500/50 text-red-500 px-3 py-1 rounded font-mono animate-pulse">! ACCESS_DENIED: INVALID_SEED_FORMAT</span>
-                        </div>
                     </div>
                     <a href="auth/register.php" class="block w-full bg-primary/20 border border-primary/50 text-primary py-3 rounded font-black text-center uppercase tracking-widest hover:bg-primary hover:text-black transition-all">
                         Request Source Access
@@ -482,7 +492,7 @@ require_once __DIR__ . '/config/session.php';
                     <p>Welcome, Operator. Monitoring system nodes...</p>
                     <p class="mt-4"><span class="text-white">root@cybershield:~$</span> <span id="typedValue"></span><span class="cursor"></span></p>
                 `;
-                
+
                 if (!terminalInterval) {
                     terminalInterval = setInterval(() => {
                         if (logCount < 9) {
@@ -518,25 +528,6 @@ require_once __DIR__ . '/config/session.php';
             const overlay = document.getElementById('repoOverlay');
             overlay.style.display = show ? 'block' : 'none';
             document.body.style.overflow = show ? 'hidden' : 'auto';
-            if (!show) {
-                document.getElementById('repoError').classList.add('hidden');
-                document.getElementById('repoSeedInput').value = '';
-            }
-        }
-
-        function showRepoError() {
-            const error = document.getElementById('repoError');
-            const input = document.getElementById('repoSeedInput');
-            
-            if (input.value.length > 0) {
-                error.classList.remove('hidden');
-                // Shake the lock
-                const lock = document.querySelector('.repo-lock');
-                lock.classList.add('animate-shake');
-                setTimeout(() => lock.classList.remove('animate-shake'), 500);
-            } else {
-                error.classList.add('hidden');
-            }
         }
     </script>
 </body>

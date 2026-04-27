@@ -293,8 +293,8 @@ $presets = [
         
         <nav class="flex-1 p-5 space-y-3">
             <a href="dashboard.php" class="flex items-center gap-5 px-5 py-4 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
-                <span class="material-symbols-outlined text-2xl group-hover:text-primary transition-transform group-hover:scale-110">dashboard</span>
-                <span class="text-sm font-black md:block hidden uppercase tracking-widest">Dashboard</span>
+                <span class="material-symbols-outlined text-2xl group-hover:text-primary transition-transform group-hover:scale-110">security</span>
+                <span class="text-sm font-black md:block hidden uppercase tracking-widest">Labs Access</span>
             </a>
             <div class="pt-6 pb-2 px-5">
                 <p class="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] md:block hidden">Configuration</p>
@@ -304,10 +304,6 @@ $presets = [
                 <span class="material-symbols-outlined text-2xl">settings</span>
                 <span class="text-sm font-black md:block hidden uppercase tracking-widest">Profile Node</span>
             </div>
-            <a href="../labs/ddos.php" class="flex items-center gap-5 px-5 py-4 rounded-2xl hover:bg-white/5 text-slate-400 hover:text-white transition-all group">
-                <span class="material-symbols-outlined text-2xl group-hover:text-primary transition-transform group-hover:scale-110">security</span>
-                <span class="text-sm font-black md:block hidden uppercase tracking-widest">Labs Access</span>
-            </a>
         </nav>
 
         <div class="p-4 border-t border-border-dim">
@@ -487,24 +483,24 @@ $presets = [
                         <!-- Upload Sub-section -->
                         <div id="upload-section" class="mt-12 pt-10 border-t border-border-dim animate-fade-in <?php echo ($user['profile_type'] === 'custom') ? '' : 'hidden'; ?>">
                             <h3 class="text-xs font-black uppercase tracking-widest text-white mb-6">System binary ingestion</h3>
-                            <div class="relative group border-2 border-dashed border-border-dim rounded-[2rem] p-12 text-center hover:border-primary/30 hover:bg-primary/5 transition-all">
+                            <div class="relative group border-2 border-dashed border-border-dim rounded-3xl p-8 text-center hover:border-primary/30 hover:bg-primary/5 transition-all">
                                 <input type="file" name="custom_image" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
-                                <div class="space-y-4">
-                                    <div class="size-20 mx-auto rounded-[1.5rem] bg-surface flex items-center justify-center text-slate-600 group-hover:text-primary transition-all group-hover:scale-110">
-                                        <span class="material-symbols-outlined text-5xl">cloud_upload</span>
+                                <div class="flex flex-col items-center gap-4">
+                                    <div class="size-14 rounded-2xl bg-surface flex items-center justify-center text-slate-600 group-hover:text-primary transition-all group-hover:scale-110">
+                                        <span class="material-symbols-outlined text-3xl">cloud_upload</span>
                                     </div>
                                     <div class="space-y-1">
-                                        <p class="text-sm font-black text-white uppercase tracking-tight">Access Local Storage</p>
-                                        <p id="file-status" class="text-[10px] text-primary font-mono uppercase tracking-[0.2em]">Ready for stream ingestion...</p>
+                                        <p class="text-xs font-black text-white uppercase tracking-tight">Access Local Storage</p>
+                                        <p id="file-status" class="text-[9px] text-primary font-mono uppercase tracking-[0.1em]">Ready for stream ingestion...</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mt-12">
-                        <div class="mt-14">
-                            <button type="submit" name="update_profile" class="btn-elite w-full bg-primary text-neutral-dark font-black py-6 rounded-[2rem] uppercase tracking-[0.3em] shadow-glow hover:shadow-glow-heavy hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-4 text-sm">
-                                <span class="material-symbols-outlined text-2xl font-black">sync_alt</span>
+                        <div class="mt-14 flex justify-center">
+                            <button type="submit" name="update_profile" class="btn-elite w-full max-w-sm bg-primary text-neutral-dark font-black py-4 rounded-2xl uppercase tracking-[0.3em] shadow-glow hover:shadow-glow-heavy hover:scale-[1.05] active:scale-[0.98] transition-all flex items-center justify-center gap-3 text-xs">
+                                <span class="material-symbols-outlined text-xl font-black">sync_alt</span>
                                 Synchronize Node Identity
                             </button>
                         </div>

@@ -36,11 +36,13 @@ require_once __DIR__ . '/config/session.php';
             background-image: radial-gradient(circle, #343a27 1px, transparent 1px);
             background-size: 30px 30px;
         }
+
         .glass-card {
             background: rgba(22, 24, 16, 0.7);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(160, 240, 0, 0.1);
         }
+
         .glow-text {
             text-shadow: 0 0 20px rgba(160, 240, 0, 0.5);
         }
@@ -62,16 +64,6 @@ require_once __DIR__ . '/config/session.php';
             max-height: 100%;
         }
 
-        .repo-lock {
-            animation: shake 0.5s ease-in-out;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
         .cursor {
             display: inline-block;
             width: 8px;
@@ -83,7 +75,9 @@ require_once __DIR__ . '/config/session.php';
         }
 
         @keyframes blink {
-            50% { opacity: 0; }
+            50% {
+                opacity: 0;
+            }
         }
     </style>
 </head>
@@ -176,6 +170,10 @@ require_once __DIR__ . '/config/session.php';
             <div class="relative">
                 <div class="absolute inset-0 bg-primary/20 blur-[80px] -z-10 rounded-full"></div>
                 <img src="assets/images/cyber_ops_center_1777253856025.png" alt="Cyber Operations Center" class="rounded-2xl border border-primary/30 shadow-2xl glow-shield hover:scale-[1.02] transition-transform duration-700">
+                <div class="absolute -bottom-6 -right-6 glass-card p-4 rounded border border-primary/50 font-mono text-[10px] text-primary">
+                    <p>// STATUS: OPERATIONAL</p>
+                    <p>// LOCATION: GLOBAL_COMMAND</p>
+                </div>
             </div>
         </section>
 
@@ -242,7 +240,7 @@ require_once __DIR__ . '/config/session.php';
                 <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="javascript:void(0)" onclick="toggleTerminal(true)">
                     <span class="material-symbols-outlined">terminal</span>
                 </a>
-                <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="javascript:void(0)" onclick="toggleRepo(true)">
+                <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="javascript:void(0)" onclick="alert('Source code repository access required.');">
                     <span class="material-symbols-outlined">code</span>
                 </a>
                 <button onclick="navigator.clipboard.writeText(window.location.href); alert('CyberShield project link copied to clipboard!');" class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" title="Share Project">
@@ -269,8 +267,8 @@ require_once __DIR__ . '/config/session.php';
         <div class="max-w-4xl mx-auto h-full p-8 flex flex-col">
             <div class="flex items-center justify-between mb-4 border-b border-primary/20 pb-2">
                 <div class="flex items-center gap-4">
-                    <span class="material-symbols-outlined text-primary text-sm">terminal</span>
-                    <h4 class="text-[10px] font-mono text-white/70 uppercase tracking-[0.2em]">Deployment :: Node_Alpha_01 [SECURED]</h4>
+                    <span class="material-symbols-outlined text-primary">terminal</span>
+                    <h4 class="text-xs font-bold text-white uppercase tracking-widest">Secure_Node_01 // Root Access</h4>
                 </div>
                 <button onclick="toggleTerminal(false)" class="text-slate-500 hover:text-white transition-colors">
                     <span class="material-symbols-outlined">close</span>
@@ -285,47 +283,8 @@ require_once __DIR__ . '/config/session.php';
         </div>
     </div>
 
-    <!-- Mock Repository Overlay -->
-    <div id="repoOverlay" class="terminal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 250;">
-        <div class="max-w-4xl mx-auto h-full p-8 flex flex-col">
-            <div class="flex items-center justify-between mb-8 border-b border-primary/20 pb-4">
-                <div class="flex items-center gap-4">
-                    <span class="material-symbols-outlined text-primary text-sm">source</span>
-                    <h4 class="text-[10px] font-mono text-white/70 uppercase tracking-[0.2em]">Core :: Simulation_Kernels [V.5.4]</h4>
-                </div>
-                <button onclick="toggleRepo(false)" class="text-slate-500 hover:text-white transition-colors">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div class="flex-1 flex flex-col items-center justify-center space-y-12">
-                <div class="size-24 rounded-full border-4 border-red-500/50 flex items-center justify-center animate-pulse shadow-[0_0_50px_rgba(239,68,68,0.2)]">
-                    <span class="material-symbols-outlined text-6xl text-red-500 repo-lock">lock</span>
-                </div>
-                <div class="text-center space-y-4">
-                    <h5 class="text-2xl font-black text-white uppercase tracking-tighter">Repository Access Restricted</h5>
-                    <p class="text-slate-400 max-w-md mx-auto">This repository contains proprietary simulation kernels. Specialized clearance and hardware-keys are required for retrieval.</p>
-                </div>
-                <div class="w-full max-w-sm space-y-4">
-                    <div class="h-12 bg-white/5 border border-white/10 rounded flex items-center px-4 gap-3 relative">
-                        <span class="material-symbols-outlined text-slate-500 text-sm">key</span>
-                        <input type="password" id="repoSeedInput" placeholder="ENTER_CLEARANCE_SEED" class="bg-transparent border-none outline-none text-primary font-mono text-sm w-full" oninput="showRepoError()">
-                        <span class="text-[10px] font-mono text-slate-500">AUTH_REQ</span>
-                        <!-- Error Message -->
-                        <div id="repoError" class="absolute -top-10 left-0 w-full text-center hidden">
-                            <span class="text-[10px] bg-red-500/20 border border-red-500/50 text-red-500 px-3 py-1 rounded font-mono animate-pulse">! ACCESS_DENIED: INVALID_SEED_FORMAT</span>
-                        </div>
-                    </div>
-                    <a href="auth/register.php" class="block w-full bg-primary/20 border border-primary/50 text-primary py-3 rounded font-black text-center uppercase tracking-widest hover:bg-primary hover:text-black transition-all">
-                        Request Source Access
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
         let terminalInterval;
-        let logCount = 0;
         const logEntries = [
             "SCANNING_NETWORK: 192.168.1.0/24 - COMPLETED",
             "ALERT: Unauthorized packet attempt on PORT 8080 - BLOCKED",
@@ -345,36 +304,13 @@ require_once __DIR__ . '/config/session.php';
 
             if (show) {
                 document.body.style.overflow = 'hidden';
-                logCount = 0;
-                log.innerHTML = `
-                    <p>Establishing secure connection to CYBERSHIELD_CENTRAL...</p>
-                    <p>Connection established. Encryption layer active.</p>
-                    <p>Welcome, Operator. Monitoring system nodes...</p>
-                    <p class="mt-4"><span class="text-white">root@cybershield:~$</span> <span id="typedValue"></span><span class="cursor"></span></p>
-                `;
-                
                 if (!terminalInterval) {
                     terminalInterval = setInterval(() => {
-                        if (logCount < 9) {
-                            const entry = document.createElement('p');
-                            const timestamp = new Date().toLocaleTimeString();
-                            entry.innerHTML = `<span class="opacity-40">[${timestamp}]</span> ${logEntries[Math.floor(Math.random() * logEntries.length)]}`;
-                            log.appendChild(entry);
-                            log.scrollTop = log.scrollHeight;
-                            logCount++;
-                        } else {
-                            clearInterval(terminalInterval);
-                            terminalInterval = null;
-                            const loginPrompt = document.createElement('div');
-                            loginPrompt.className = "mt-8 p-4 border border-primary/30 bg-primary/5 rounded space-y-4";
-                            loginPrompt.innerHTML = `
-                                <p class="text-white font-bold blink">! AUTHENTICATION REQUIRED</p>
-                                <p class="text-xs">Security protocol 41-B has been triggered. Continuing the simulation requires valid operator credentials.</p>
-                                <a href="auth/login.php" class="inline-block bg-primary text-black px-4 py-2 text-xs font-bold uppercase rounded hover:brightness-110">Login to Access Lab</a>
-                            `;
-                            log.appendChild(loginPrompt);
-                            log.scrollTop = log.scrollHeight;
-                        }
+                        const entry = document.createElement('p');
+                        const timestamp = new Date().toLocaleTimeString();
+                        entry.innerHTML = `<span class="opacity-40">[${timestamp}]</span> ${logEntries[Math.floor(Math.random() * logEntries.length)]}`;
+                        log.appendChild(entry);
+                        log.scrollTop = log.scrollHeight;
                     }, 1500);
                 }
             } else {
@@ -383,31 +319,7 @@ require_once __DIR__ . '/config/session.php';
                 terminalInterval = null;
             }
         }
-
-        function toggleRepo(show) {
-            const overlay = document.getElementById('repoOverlay');
-            overlay.style.display = show ? 'block' : 'none';
-            document.body.style.overflow = show ? 'hidden' : 'auto';
-            if (!show) {
-                document.getElementById('repoError').classList.add('hidden');
-                document.getElementById('repoSeedInput').value = '';
-            }
-        }
-
-        function showRepoError() {
-            const error = document.getElementById('repoError');
-            const input = document.getElementById('repoSeedInput');
-            
-            if (input.value.length > 0) {
-                error.classList.remove('hidden');
-                // Shake the lock
-                const lock = document.querySelector('.repo-lock');
-                lock.classList.add('animate-shake');
-                setTimeout(() => lock.classList.remove('animate-shake'), 500);
-            } else {
-                error.classList.add('hidden');
-            }
-        }
     </script>
 </body>
+
 </html>
