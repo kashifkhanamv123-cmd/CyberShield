@@ -79,11 +79,14 @@ require_once __DIR__ . '/config/session.php';
                 </a>
             </div>
             <div class="hidden md:flex items-center gap-10">
-                <a class="text-sm font-medium hover:text-primary transition-colors" href="#modules">
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="index.php#modules">
                     Modules
                 </a>
-                <a class="text-sm font-medium hover:text-primary transition-colors" href="#soc">
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="index.php#soc">
                     SOC Experience
+                </a>
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="about.php">
+                    About
                 </a>
             </div>
             <div class="flex items-center gap-4">
@@ -111,7 +114,7 @@ require_once __DIR__ . '/config/session.php';
                     Master the Art of <span class="text-primary italic">Attack</span> and <span class="border-b-4 border-primary/40">Defense</span>
                 </h2>
                 <p class="text-lg md:text-xl text-slate-400 max-w-xl font-light leading-relaxed">
-                    Interactive cyber simulations and real-time SOC monitoring for the next generation of analysts. Hack, defend, and dominate the digital landscape.
+                    Practical security training and real-time SOC monitoring for aspiring analysts. Develop technical skills through guided scenarios and live defensive operations.
                 </p>
                 <div class="flex flex-wrap gap-4 pt-4">
                     <a href="auth/register.php" class="bg-primary text-background-dark font-black px-8 py-4 rounded-lg uppercase tracking-widest text-lg shadow-[0_0_30px_-5px_rgba(160,240,0,0.5)] hover:scale-105 transition-transform inline-block">
@@ -297,9 +300,9 @@ require_once __DIR__ . '/config/session.php';
         </section>
         <!-- CTA Section -->
         <section class="max-w-4xl mx-auto px-6 py-32 text-center">
-            <h3 class="text-4xl md:text-5xl font-black text-white uppercase mb-6 tracking-tighter">Ready to join the <span class="text-primary italic underline decoration-4 underline-offset-8">frontlines?</span></h3>
+            <h3 class="text-4xl md:text-5xl font-black text-white uppercase mb-6 tracking-tighter">Ready to <span class="text-primary italic underline decoration-4 underline-offset-8">get started?</span></h3>
             <p class="text-slate-400 text-lg mb-12 max-w-2xl mx-auto">
-                Join over security professionals and students training on the world's most advanced cyber simulation platform.
+                Join a community of security professionals and students building their expertise on a modern, hands-on training platform.
             </p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4"><?php if (isset($_SESSION['user_id'])): ?>
                     <a href="dashboard/dashboard.php" class="w-full sm:w-auto bg-primary text-background-dark font-black px-10 py-4 rounded-lg uppercase tracking-widest text-xl shadow-[0_0_30px_-5px_rgba(160,240,0,0.4)] hover:scale-105 transition-all inline-block text-center">
@@ -321,19 +324,20 @@ require_once __DIR__ . '/config/session.php';
                 <h1 class="text-lg font-black tracking-tighter text-white uppercase italic">CyberShield</h1>
             </div>
             <div class="flex gap-8 text-slate-500 text-xs font-mono uppercase tracking-widest">
-                <a class="hover:text-primary" href="#">Status</a>
-                <a class="hover:text-primary" href="#">API</a>
-                <a class="hover:text-primary" href="#">Privacy</a>
-                <a class="hover:text-primary" href="#">Terms</a>
+                <a class="hover:text-primary" href="about.php">About</a>
+                <a class="hover:text-primary" href="javascript:void(0)" onclick="return false;">Status</a>
+                <a class="hover:text-primary" href="javascript:void(0)" onclick="return false;">API</a>
+                <a class="hover:text-primary" href="javascript:void(0)" onclick="return false;">Privacy</a>
+                <a class="hover:text-primary" href="javascript:void(0)" onclick="return false;">Terms</a>
             </div>
             <div class="flex gap-4">
-                <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="#">
+                <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="javascript:void(0)" onclick="alert('Accessing secure terminal... [RESTRICTED]');">
                     <span class="material-symbols-outlined">terminal</span>
                 </a>
-                <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="#">
+                <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="javascript:void(0)" onclick="alert('Source code repository access required.');">
                     <span class="material-symbols-outlined">code</span>
                 </a>
-                <button onclick="navigator.clipboard.writeText(window.location.href); alert('Project link copied to clipboard! Share it with your class.');" class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" title="Share Project">
+                <button onclick="navigator.clipboard.writeText(window.location.href); alert('CyberShield project link copied to clipboard!');" class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" title="Share Project">
                     <span class="material-symbols-outlined">share</span>
                 </button>
             </div>
