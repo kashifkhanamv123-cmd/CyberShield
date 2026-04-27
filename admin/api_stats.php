@@ -26,6 +26,7 @@ $stats = [
         'malware'    => (int)get_api_count($conn, "SELECT COUNT(*) FROM malware_samples"),
         'ddos'       => (int)get_api_count($conn, "SELECT COUNT(*) FROM ddos_simulations"),
         'blocked'    => (int)get_api_count($conn, "SELECT COUNT(*) FROM users WHERE status='blocked'"),
+        'reports'    => (int)get_api_count($conn, "SELECT COUNT(*) FROM system_reports WHERE status='pending'"),
     ],
     'performance' => [
         'avg_ddos'     => round((float)get_api_count($conn, "SELECT AVG(duration_sec) FROM ddos_simulations"), 1),

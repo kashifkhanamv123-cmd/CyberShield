@@ -79,6 +79,10 @@ require_once __DIR__ . '/config/session.php';
                 opacity: 0;
             }
         }
+
+        .animate-shake {
+            animation: shake 0.5s ease-in-out;
+        }
     </style>
 </head>
 
@@ -240,7 +244,7 @@ require_once __DIR__ . '/config/session.php';
                 <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="javascript:void(0)" onclick="toggleTerminal(true)">
                     <span class="material-symbols-outlined">terminal</span>
                 </a>
-                <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="javascript:void(0)" onclick="alert('Source code repository access required.');">
+                <a class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" href="javascript:void(0)" onclick="toggleRepo(true)">
                     <span class="material-symbols-outlined">code</span>
                 </a>
                 <button onclick="navigator.clipboard.writeText(window.location.href); alert('CyberShield project link copied to clipboard!');" class="size-10 rounded border border-border-dark flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all" title="Share Project">
@@ -283,8 +287,110 @@ require_once __DIR__ . '/config/session.php';
         </div>
     </div>
 
+    <!-- Mock Repository Overlay -->
+    <div id="repoOverlay" class="terminal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 250;">
+        <div class="max-w-4xl mx-auto h-full p-8 flex flex-col">
+            <div class="flex items-center justify-between mb-8 border-b border-primary/20 pb-4">
+                <div class="flex items-center gap-4">
+                    <span class="material-symbols-outlined text-primary">source</span>
+                    <h4 class="text-sm font-bold text-white uppercase tracking-widest">CYBERSHIELD_SRC // Repository_v24.0</h4>
+                </div>
+                <button onclick="toggleRepo(false)" class="text-slate-500 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div id="repoLoading" class="flex-1 flex flex-col items-center justify-center space-y-8">
+                <div class="w-64 space-y-4">
+                    <div class="flex justify-between font-mono text-[10px] text-primary uppercase tracking-widest">
+                        <span>Initializing Clone Protocol</span>
+                        <span id="clonePercent">0%</span>
+                    </div>
+                    <div class="h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div id="cloneBar" class="h-full bg-primary w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+                <div id="fileDiscovery" class="w-full max-w-md font-mono text-[9px] text-slate-500 space-y-1 h-48 overflow-hidden opacity-50">
+                    <!-- Files discovered will appear here -->
+                </div>
+            </div>
+
+            <div id="repoRestricted" class="flex-1 flex flex-col items-center justify-center space-y-12" style="display: none;">
+                <div class="size-24 rounded-full border-4 border-red-500/50 flex items-center justify-center animate-pulse shadow-[0_0_50px_rgba(239,68,68,0.2)]">
+                    <span class="material-symbols-outlined text-6xl text-red-500 repo-lock">lock</span>
+                </div>
+                <div class="text-center space-y-4">
+                    <h5 class="text-2xl font-black text-white uppercase tracking-tighter">Repository Access Restricted</h5>
+                    <p class="text-slate-400 max-w-md mx-auto">This repository contains proprietary simulation kernels. Specialized clearance and hardware-keys are required for retrieval.</p>
+                </div>
+                <div class="w-full max-w-sm space-y-4">
+                    <div class="h-12 bg-white/5 border border-white/10 rounded flex items-center px-4 gap-3">
+                        <span class="material-symbols-outlined text-slate-500 text-sm">key</span>
+                        <input type="password" id="repoSeedInput" placeholder="ENTER_CLEARANCE_SEED" class="bg-transparent border-none outline-none text-primary font-mono text-sm w-full transition-colors">
+                        <span class="text-[10px] font-mono text-slate-500">AUTH_REQ</span>
+                    </div>
+                    <div id="repoErrorMessage" class="text-[9px] text-red-500 font-black uppercase tracking-widest text-center opacity-0 transition-opacity duration-300">
+                        ! UNAUTHORIZED_INPUT_DETECTED
+                    </div>
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <button onclick="alert('Access request submitted. Awaiting administrator approval.')" class="block w-full bg-primary/20 border border-primary/50 text-primary py-3 rounded font-black text-center uppercase tracking-widest hover:bg-primary hover:text-black transition-all">
+                            Submit Clearance Request
+                        </button>
+                    <?php else: ?>
+                        <a href="auth/register.php" class="block w-full bg-primary/20 border border-primary/50 text-primary py-3 rounded font-black text-center uppercase tracking-widest hover:bg-primary hover:text-black transition-all">
+                            Register for Source Access
+                        </a>
+                    <?php endif; ?>
+                    <button onclick="toggleReportModal(true)" class="block w-full py-2 text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] hover:text-primary transition-colors">
+                        Report Access Issue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Report Modal -->
+    <div id="reportModal" class="terminal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 300; backdrop-filter: blur(10px);">
+        <div class="max-w-lg mx-auto mt-20 p-8 glass-panel border-primary/30 rounded-3xl relative">
+            <button onclick="toggleReportModal(false)" class="absolute top-6 right-6 text-slate-500 hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <div class="mb-8">
+                <h4 class="text-xl font-black text-white uppercase italic tracking-tighter">Report <span class="text-primary italic">System Issue</span></h4>
+                <p class="text-xs text-slate-500 font-mono tracking-widest uppercase">Direct line to CYBERSHIELD_ADMIN</p>
+            </div>
+            <form id="reportForm" class="space-y-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-primary uppercase tracking-widest">Issue Subject</label>
+                    <input type="text" name="subject" required placeholder="e.g., REPOSITORY_ACCESS_DENIED" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-primary outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-primary uppercase tracking-widest">Description</label>
+                    <textarea name="description" required rows="4" placeholder="Describe the anomaly detected..." class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-primary outline-none transition-all resize-none"></textarea>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-primary uppercase tracking-widest">Severity</label>
+                    <select name="priority" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-primary outline-none transition-all">
+                        <option value="low">Low - Minor Anomaly</option>
+                        <option value="medium" selected>Medium - Functional Issue</option>
+                        <option value="high">High - Security Warning</option>
+                        <option value="critical">Critical - System Breach</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-4 bg-primary text-neutral-dark font-black rounded-2xl uppercase tracking-[0.2em] text-xs hover:brightness-110 transition-all shadow-glow">
+                    Transmit Report
+                </button>
+            </form>
+            <div id="reportStatus" class="mt-4 text-[10px] font-mono text-center hidden uppercase tracking-widest"></div>
+        </div>
+    </div>
+
     <script>
         let terminalInterval;
+        let repoInterval;
+        let logCount = 0;
+        const isLoggedIn = <?php echo isset($_SESSION['user_id']) ? 'true' : 'false'; ?>;
+
         const logEntries = [
             "SCANNING_NETWORK: 192.168.1.0/24 - COMPLETED",
             "ALERT: Unauthorized packet attempt on PORT 8080 - BLOCKED",
@@ -294,7 +400,18 @@ require_once __DIR__ . '/config/session.php';
             "STATUS: Firewall rules updated successfully",
             "SECURITY: SQL Injection signature detected and neutralized",
             "NODE: 10.0.0.52 is online and responding",
-            "TRAFFIC: 1.2 GB/s inbound through Edge_Gateway_Alpha"
+            "TRAFFIC: 1.2 GB/s inbound through Edge_Gateway_Alpha",
+            "UPLINK: Establishing handshake with satellite_link_beta",
+            "ENCRYPTION: Rotating RSA keys for session_id_882",
+            "AUDIT: Log integrity check passed - NO TAMPERING DETECTED",
+            "KERNEL: Hotfix 4.2.1 applied to isolation_kernel",
+            "WATCHDOG: Memory leak prevented in sandbox_v3",
+            "IDS: Pattern match found - 'CVE-2024-X' attempt blocked",
+            "SYSTEM: Garbage collection cycle completed in 12ms",
+            "NETWORK: Latency spike detected in EU_CENTRAL cluster",
+            "SECURITY: Heuristic analysis flagged suspicious PID 9021",
+            "LOG: Automated backup stored at /mnt/secure_bkp",
+            "UPLINK: Bandwidth optimized for low-latency ops"
         ];
 
         function toggleTerminal(show) {
@@ -304,14 +421,46 @@ require_once __DIR__ . '/config/session.php';
 
             if (show) {
                 document.body.style.overflow = 'hidden';
+                logCount = 0;
+                log.innerHTML = `
+                    <p>Establishing secure connection to CYBERSHIELD_CENTRAL...</p>
+                    <p>Connection established. Encryption layer active.</p>
+                    <p>Welcome, Operator. Monitoring system nodes...</p>
+                    <p class="mt-4"><span class="text-white">root@cybershield:~$</span> <span id="typedValue"></span><span class="cursor"></span></p>
+                `;
+
                 if (!terminalInterval) {
                     terminalInterval = setInterval(() => {
-                        const entry = document.createElement('p');
-                        const timestamp = new Date().toLocaleTimeString();
-                        entry.innerHTML = `<span class="opacity-40">[${timestamp}]</span> ${logEntries[Math.floor(Math.random() * logEntries.length)]}`;
-                        log.appendChild(entry);
-                        log.scrollTop = log.scrollHeight;
-                    }, 1500);
+                        if (logCount < 20) {
+                            const entry = document.createElement('p');
+                            const timestamp = new Date().toLocaleTimeString();
+                            entry.innerHTML = `<span class="opacity-40">[${timestamp}]</span> ${logEntries[Math.floor(Math.random() * logEntries.length)]}`;
+                            log.appendChild(entry);
+                            log.scrollTop = log.scrollHeight;
+                            logCount++;
+                        } else {
+                            clearInterval(terminalInterval);
+                            terminalInterval = null;
+                            const finalPrompt = document.createElement('div');
+                            finalPrompt.className = "mt-8 p-4 border border-primary/30 bg-primary/5 rounded space-y-4";
+                            
+                            if (isLoggedIn) {
+                                finalPrompt.innerHTML = `
+                                    <p class="text-primary font-bold animate-pulse">✓ HANDSHAKE SUCCESSFUL</p>
+                                    <p class="text-xs">Uplink verified. All nodes responding. Terminal session will remain active in the background.</p>
+                                    <a href="dashboard/dashboard.php" class="inline-block bg-primary text-black px-4 py-2 text-xs font-bold uppercase rounded hover:brightness-110">Open Lab Dashboard</a>
+                                `;
+                            } else {
+                                finalPrompt.innerHTML = `
+                                    <p class="text-white font-bold blink">! AUTHENTICATION REQUIRED</p>
+                                    <p class="text-xs">Security protocol 41-B has been triggered. Continuing the simulation requires valid operator credentials.</p>
+                                    <a href="auth/login.php" class="inline-block bg-primary text-black px-4 py-2 text-xs font-bold uppercase rounded hover:brightness-110">Login to Access Lab</a>
+                                `;
+                            }
+                            log.appendChild(finalPrompt);
+                            log.scrollTop = log.scrollHeight;
+                        }
+                    }, 800);
                 }
             } else {
                 document.body.style.overflow = 'auto';
@@ -319,6 +468,130 @@ require_once __DIR__ . '/config/session.php';
                 terminalInterval = null;
             }
         }
+
+        function toggleRepo(show) {
+            const overlay = document.getElementById('repoOverlay');
+            const loading = document.getElementById('repoLoading');
+            const restricted = document.getElementById('repoRestricted');
+            const bar = document.getElementById('cloneBar');
+            const percent = document.getElementById('clonePercent');
+            const discovery = document.getElementById('fileDiscovery');
+
+            overlay.style.display = show ? 'block' : 'none';
+            document.body.style.overflow = show ? 'hidden' : 'auto';
+
+            if (show) {
+                loading.style.display = 'flex';
+                restricted.style.display = 'none';
+                bar.style.width = '0%';
+                percent.innerText = '0%';
+                discovery.innerHTML = '';
+                
+                let p = 0;
+                repoInterval = setInterval(() => {
+                    p += Math.floor(Math.random() * 15) + 5;
+                    if (p >= 100) {
+                        p = 100;
+                        clearInterval(repoInterval);
+                        setTimeout(() => {
+                            loading.style.display = 'none';
+                            restricted.style.display = 'flex';
+                        }, 1000);
+                    }
+                    bar.style.width = p + '%';
+                    percent.innerText = p + '%';
+                    
+                    const mockFiles = ['kernel_v2.bin', 'exploit_db.sql', 'node_config.json', 'handshake.sh', 'encrypted_payload.aes', 'simulation_kernel.sys'];
+                    const file = document.createElement('p');
+                    file.innerText = `> DISCOVERED: ${mockFiles[Math.floor(Math.random() * mockFiles.length)]} [${(Math.random() * 500).toFixed(2)} KB]`;
+                    discovery.prepend(file);
+                }, 400);
+            } else {
+                clearInterval(repoInterval);
+            }
+        }
+
+        function toggleReportModal(show) {
+            const modal = document.getElementById('reportModal');
+            modal.style.display = show ? 'block' : 'none';
+            if (!show) {
+                document.getElementById('reportForm').reset();
+                document.getElementById('reportStatus').classList.add('hidden');
+            }
+        }
+
+        document.getElementById('reportForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const status = document.getElementById('reportStatus');
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'TRANSMITTING...';
+            status.classList.remove('hidden', 'text-red-500', 'text-primary');
+            status.innerText = '// ESTABLISHING_SECURE_UPLINK...';
+            status.classList.remove('hidden');
+
+            const formData = new FormData(form);
+            fetch('includes/submit_report.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    status.innerText = '✓ REPORT_TRANSMITTED_SUCCESSFULLY';
+                    status.classList.add('text-primary');
+                    setTimeout(() => toggleReportModal(false), 2000);
+                } else {
+                    status.innerText = '! ERROR: ' + data.message.toUpperCase();
+                    status.classList.add('text-red-500');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'TRANSMIT REPORT';
+                }
+            })
+            .catch(() => {
+                status.innerText = '! UPLINK_FAILURE_DETECTED';
+                status.classList.add('text-red-500');
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'TRANSMIT REPORT';
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const seedInput = document.getElementById('repoSeedInput');
+            const errorMsg = document.getElementById('repoErrorMessage');
+            
+            if (seedInput) {
+                seedInput.addEventListener('input', () => {
+                    if (seedInput.value.length > 0) {
+                        errorMsg.classList.remove('opacity-0');
+                        seedInput.classList.add('text-red-500');
+                        seedInput.classList.remove('text-primary');
+                    } else {
+                        errorMsg.classList.add('opacity-0');
+                        seedInput.classList.remove('text-red-500');
+                        seedInput.classList.add('text-primary');
+                    }
+                });
+
+                seedInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        const seed = seedInput.value.trim();
+                        if (seed === 'CYBER_ELITE_2024') {
+                            alert('MASTER ACCESS GRANTED. Redirecting to internal core...');
+                            window.location.href = 'dashboard/dashboard.php';
+                        } else {
+                            seedInput.value = '';
+                            errorMsg.innerText = '! CLEARANCE_REFUSED_RETRY';
+                            seedInput.placeholder = 'INVALID_SEED_RETRY';
+                            seedInput.classList.add('animate-shake');
+                            setTimeout(() => seedInput.classList.remove('animate-shake'), 500);
+                        }
+                    }
+                });
+            }
+        });
     </script>
 </body>
 

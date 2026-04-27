@@ -14,6 +14,7 @@ $navItems = [
     'malware'    => ['icon' => 'bug_report',        'label' => 'Malware Analysis'],
     'ddos'       => ['icon' => 'thunderstorm',      'label' => 'DDoS Simulation'],
     'logs'       => ['icon' => 'receipt_long',      'label' => 'Security Logs'],
+    'reports'    => ['icon' => 'report_problem',    'label' => 'System Reports'],
     'analytics'  => ['icon' => 'bar_chart',         'label' => 'Analytics'],
     'settings'   => ['icon' => 'settings_suggest',  'label' => 'System Config'],
 ];
