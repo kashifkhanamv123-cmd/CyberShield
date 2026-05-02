@@ -737,5 +737,6 @@ function getLetterAvatar(string $name) {
             <span class="material-symbols-outlined text-sm group-hover:animate-bounce">arrow_downward</span>
         </button>
     </div>
+    <?php include 'chatbot_component.php'; ?>
 </body>
 </html>

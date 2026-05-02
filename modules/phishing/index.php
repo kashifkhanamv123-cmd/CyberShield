@@ -980,6 +980,7 @@ $show_success = isset($_GET['success']);
             globalEventSource.close();
         });
     </script>
+    <?php include '../../dashboard/chatbot_component.php'; ?>
 </body>
 
 </html>

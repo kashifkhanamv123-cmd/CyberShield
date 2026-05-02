@@ -817,5 +817,6 @@ $presets = [
             document.querySelector('main').classList.add('animate-fade-in');
         });
     </script>
+    <?php include 'chatbot_component.php'; ?>
 </body>
 </html>
