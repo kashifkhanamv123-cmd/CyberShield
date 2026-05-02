@@ -2,6 +2,8 @@
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/db.php';
 
+/** @var mysqli $conn */
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../auth/login.php");
     exit();
@@ -10,45 +12,79 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $userName = $_SESSION['user_name'];
 
+// --- ROBUST STATS FETCHING ---
+
 // Fetch User Data for Header (Photo/Settings)
+$user_data = ['name' => $userName, 'email' => '', 'profile_type' => 'none', 'profile_image' => ''];
 $user_stmt = $conn->prepare("SELECT name, email, profile_type, profile_image FROM users WHERE id = ?");
-$user_stmt->bind_param("i", $user_id);
-$user_stmt->execute();
-$user_data = $user_stmt->get_result()->fetch_assoc();
-$user_stmt->close();
+if ($user_stmt) {
+    $user_stmt->bind_param("i", $user_id);
+    $user_stmt->execute();
+    $res = $user_stmt->get_result();
+    if ($res && $res->num_rows > 0) {
+        $user_data = $res->fetch_assoc();
+    }
+    $user_stmt->close();
+}
+
+// Helper function to safely get counts
+function getSafeCount(mysqli $conn, string $query, array $params = [], string $types = ""): int {
+    try {
+        $stmt = $conn->prepare($query);
+        if (!$stmt) return 0;
+        if ($params) $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if (!$res) return 0;
+        $row = $res->fetch_row();
+        return $row ? (int)$row[0] : 0;
+    } catch (Exception $e) {
+        return 0;
+    }
+}
 
 // Fetch Phishing Progress
-$phishing_stmt = $conn->prepare("SELECT COUNT(*) as total FROM phishing_campaigns WHERE user_id = ?");
-$phishing_stmt->bind_param("i", $user_id);
-$phishing_stmt->execute();
-$phishing_count = $phishing_stmt->get_result()->fetch_row()[0];
+$phishing_count = getSafeCount($conn, "SELECT COUNT(*) FROM phishing_campaigns WHERE user_id = ?", [$user_id], "i");
 $phishing_progress = min($phishing_count * 20, 100);
-$phishing_level = min(floor($phishing_count / 1) + 1, 5);
 
 // Fetch Brute Force Progress
+$bruteforce_data = ['total' => 0, 'has_success' => 0];
 $bruteforce_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(success) as has_success FROM bruteforce_logs WHERE user_id = ?");
-$bruteforce_stmt->bind_param("i", $user_id);
-$bruteforce_stmt->execute();
-$bruteforce_res = $bruteforce_stmt->get_result();
-$bruteforce_data = $bruteforce_res->fetch_assoc();
-$bruteforce_count = (int)$bruteforce_data['total'];
-$bruteforce_success = (int)$bruteforce_data['has_success'];
+if ($bruteforce_stmt) {
+    $bruteforce_stmt->bind_param("i", $user_id);
+    $bruteforce_stmt->execute();
+    $bruteforce_res = $bruteforce_stmt->get_result();
+    if ($bruteforce_res) $bruteforce_data = $bruteforce_res->fetch_assoc();
+    $bruteforce_stmt->close();
+}
+$bruteforce_count = (int)($bruteforce_data['total'] ?? 0);
+$bruteforce_success = (int)($bruteforce_data['has_success'] ?? 0);
 $bruteforce_progress = $bruteforce_success ? 100 : min($bruteforce_count * 10, 90);
 
 // Fetch DDoS Progress
+$ddos_data = ['total' => 0, 'has_success' => 0];
 $ddos_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(mitigated) as has_success FROM ddos_logs WHERE user_id = ?");
-$ddos_stmt->bind_param("i", $user_id);
-$ddos_stmt->execute();
-$ddos_data = $ddos_stmt->get_result()->fetch_assoc();
+if ($ddos_stmt) {
+    $ddos_stmt->bind_param("i", $user_id);
+    $ddos_stmt->execute();
+    $ddos_res = $ddos_stmt->get_result();
+    if ($ddos_res) $ddos_data = $ddos_res->fetch_assoc();
+    $ddos_stmt->close();
+}
 $ddos_success  = (int)($ddos_data['has_success'] ?? 0);
 $ddos_count    = (int)($ddos_data['total'] ?? 0);
 $ddos_progress = $ddos_success ? 100 : min($ddos_count * 15, 90);
 
 // Fetch Malware Progress
+$mal_data = ['total' => 0, 'has_success' => 0];
 $mal_stmt = $conn->prepare("SELECT COUNT(*) as total, MAX(correct) as has_success FROM malware_logs WHERE user_id = ?");
-$mal_stmt->bind_param("i", $user_id);
-$mal_stmt->execute();
-$mal_data = $mal_stmt->get_result()->fetch_assoc();
+if ($mal_stmt) {
+    $mal_stmt->bind_param("i", $user_id);
+    $mal_stmt->execute();
+    $mal_res = $mal_stmt->get_result();
+    if ($mal_res) $mal_data = $mal_res->fetch_assoc();
+    $mal_stmt->close();
+}
 $malware_success  = (int)($mal_data['has_success'] ?? 0);
 $malware_count    = (int)($mal_data['total'] ?? 0);
 $malware_progress = $malware_success ? 100 : min($malware_count * 25, 90);
@@ -57,14 +93,19 @@ $malware_progress = $malware_success ? 100 : min($malware_count * 25, 90);
 $completed_labs = ($phishing_count > 0 ? 1 : 0) + ($bruteforce_success ? 1 : 0) + ($ddos_success ? 1 : 0) + ($malware_success ? 1 : 0);
 
 // Fetch SOC Alert Count (active)
-$soc_res = $conn->query("SELECT COUNT(*) FROM soc_alerts WHERE status = 'active'");
-$soc_active_count = $soc_res->fetch_row()[0];
-$soc_res->close();
+$soc_active_count = 0;
+try {
+    $soc_res = $conn->query("SELECT COUNT(*) FROM soc_alerts WHERE status = 'active'");
+    if ($soc_res) {
+        $soc_active_count = $soc_res->fetch_row()[0];
+        $soc_res->close();
+    }
+} catch (Exception $e) { $soc_active_count = 0; }
 
 $lab_completed = $_GET['lab_completed'] ?? '';
 
 // Helper for letter avatar
-function getLetterAvatar($name) {
+function getLetterAvatar(string $name) {
     if (!$name) $name = "U";
     $initial = strtoupper(substr(trim($name), 0, 1));
     return '<div class="size-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-xl uppercase tracking-tighter">' . $initial . '</div>';
@@ -213,7 +254,7 @@ function getLetterAvatar($name) {
 
     <main class="flex-1 flex flex-col relative overflow-hidden bg-bg-dark">
         <!-- Top Header -->
-        <header class="h-20 flex items-center justify-between px-8 bg-neutral-dark/50 backdrop-blur-md border-b border-border-dim shrink-0 z-10">
+        <header class="h-20 flex items-center justify-between px-8 bg-neutral-dark/50 backdrop-blur-md border-b border-border-dim shrink-0 sticky top-0 z-50">
             <div class="flex flex-col">
                 <h1 class="text-lg font-black uppercase tracking-tight text-white">Analyst <span class="text-primary italic text-xl">Dashboard</span></h1>
                 <p class="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Node: csh_central_01 // Region: Local_Host</p>

@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . "/../../config/session.php";
-include("../../config/db.php");
+require_once __DIR__ . "/../../config/db.php";
+
+/** @var mysqli $conn */
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../../auth/login.php");
@@ -267,7 +269,7 @@ $unique_ips  = array_unique($ip_list);
     </style>
 </head>
 
-<body id="analytics-app" class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-hidden custom-scrollbar" style="background-color:#1c230f;">
+<body id="analytics-app" class="text-white font-display terminal-grid min-h-screen flex flex-col overflow-x-clip custom-scrollbar" style="background-color:#1c230f;">
 
     <!-- HEADER -->
     <header class="sticky top-0 z-50 flex items-center justify-between border-b border-border-muted px-6 py-3 bg-background-dark/80 backdrop-blur-md shrink-0">

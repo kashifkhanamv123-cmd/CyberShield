@@ -12,23 +12,11 @@ $user_id = $_SESSION['user_id'];
 $action = $_GET['action'] ?? '';
 $alert_id = (int)($_GET['id'] ?? 0);
 
-// --- SELF-MIGRATION LOGIC ---
-$migration_error = null;
-try {
-    $colCheck = $conn->query("SHOW COLUMNS FROM soc_alerts LIKE 'user_id'");
-    if ($colCheck && $colCheck->num_rows == 0) {
-        // Column missing, migrate table
-        if (!$conn->query("ALTER TABLE soc_alerts ADD COLUMN user_id INT NOT NULL AFTER id")) {
-            throw new Exception("Add user_id failed: " . $conn->error);
-        }
-        // Also add Foreign Key if possible (ignore failure if engine doesn't support it)
-        $conn->query("ALTER TABLE soc_alerts ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE");
-    }
-} catch (Exception $e) {
-    $migration_error = $e->getMessage();
-}
+// --- SOC ALERTS INITIALIZATION ---
+// Migration is now handled by the master fix script. 
+// We just ensure alerts exist for the user.
 
-function seedAlerts($conn, $userId) {
+function seedAlerts(mysqli $conn, int $userId) {
     try {
         $check = $conn->prepare("SELECT id FROM soc_alerts WHERE user_id = ? LIMIT 1");
         if (!$check) throw new Exception($conn->error);
@@ -161,7 +149,7 @@ if ($action === 'mitigate' && $alert_id > 0) {
         'success' => true, 
         'alerts' => $alerts, 
         'progress' => $progress,
-        'debug_error' => $error ?: $migration_error
+        'debug_error' => $error
     ]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid action']);

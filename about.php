@@ -86,7 +86,7 @@ require_once __DIR__ . '/config/session.php';
     </style>
 </head>
 
-<body class="bg-background-dark font-display text-slate-100 selection:bg-primary selection:text-background-dark overflow-x-hidden">
+<body class="bg-background-dark font-display text-slate-100 selection:bg-primary selection:text-background-dark overflow-x-clip">
     <!-- Sticky Navigation -->
     <nav class="sticky top-0 z-50 w-full border-b border-border-dark bg-background-dark/80 backdrop-blur-md">
         <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">

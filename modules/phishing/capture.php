@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/../../config/db.php";
+/** @var mysqli $conn */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $campaign_id = isset($_POST['campaign_id']) ? (int)$_POST['campaign_id'] : 0;

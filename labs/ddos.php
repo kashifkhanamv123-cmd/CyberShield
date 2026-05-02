@@ -212,7 +212,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'log') {
     </style>
 </head>
 
-<body class="text-slate-300 font-sans min-h-screen overflow-x-hidden selection:bg-primary selection:text-black">
+<body class="text-slate-300 font-sans min-h-screen overflow-x-clip selection:bg-primary selection:text-black">
     <div class="scanline"></div>
 
     <!-- Top Navigation -->

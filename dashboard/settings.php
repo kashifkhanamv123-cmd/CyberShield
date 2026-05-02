@@ -12,7 +12,7 @@ $error = "";
 $success = "";
 
 // Helper for letter avatar
-function getLetterAvatar($name) {
+function getLetterAvatar(string $name): string {
     $initial = strtoupper(substr(trim($name ?? 'U'), 0, 1));
     return '<div class="size-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-4xl border border-primary/20 rounded-2xl uppercase tracking-tighter">' . $initial . '</div>';
 }
@@ -317,7 +317,7 @@ $presets = [
     <main class="flex-1 flex flex-col relative overflow-hidden bg-bg-dark">
         
         <!-- Top Bar -->
-        <header class="h-24 flex items-center justify-between px-10 bg-neutral-dark/50 backdrop-blur-md border-b border-border-dim shrink-0 z-10">
+        <header class="h-24 flex items-center justify-between px-10 bg-neutral-dark/50 backdrop-blur-md border-b border-border-dim shrink-0 sticky top-0 z-50">
             <div class="flex flex-col">
                 <h1 class="text-xl font-black uppercase tracking-tight text-white italic">Node <span class="text-primary not-italic">Config</span></h1>
                 <p class="text-[10px] font-mono text-slate-500 uppercase tracking-[0.2em] font-black">Operator: <?php echo htmlspecialchars($user['name']); ?> // Port: 443 // <span class="text-primary animate-pulse">Online</span></p>

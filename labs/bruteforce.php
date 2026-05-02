@@ -240,7 +240,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'log') {
     </style>
 </head>
 
-<body class="text-slate-300 font-sans min-h-screen overflow-x-hidden selection:bg-primary selection:text-black">
+<body class="text-slate-300 font-sans min-h-screen overflow-x-clip selection:bg-primary selection:text-black">
     <div class="scanline"></div>
 
     <div class="px-4 md:px-6 py-4 border-b border-primary/20 bg-black/60 backdrop-blur-md flex flex-wrap gap-4 items-center justify-between sticky top-0 z-40">

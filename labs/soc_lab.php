@@ -80,7 +80,7 @@ $userName = $_SESSION['user_name'];
 <body class="h-screen flex flex-col font-sans selection:bg-primary selection:text-neutral-dark data-grid">
     <div class="scanlines"></div>
     <!-- Top Navigation -->
-    <header class="h-16 flex items-center justify-between px-8 border-b border-primary/10 bg-black/40 backdrop-blur-xl z-50">
+    <header class="h-16 flex items-center justify-between px-8 border-b border-primary/10 bg-black/40 backdrop-blur-xl sticky top-0 z-50">
         <div class="flex items-center gap-6">
             <a href="../dashboard/dashboard.php" class="size-9 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-center text-primary hover:bg-primary hover:text-neutral-dark transition-all group">
                 <span class="material-symbols-outlined text-sm group-hover:scale-110">arrow_back</span>
