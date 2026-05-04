@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(data.status === 'success') {
                     appendMessage('ai', data.reply);
                 } else {
-                    appendMessage('ai', 'Error: Signal interrupted. Please try again.');
+                    appendMessage('ai', 'Error: ' + (data.message || 'Signal interrupted. Please try again.'));
                 }
             }, 800);
         })

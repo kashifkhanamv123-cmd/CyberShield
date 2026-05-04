@@ -30,7 +30,7 @@ if (GEMINI_API_KEY === 'YOUR_API_KEY' || empty(GEMINI_API_KEY)) {
 }
 
 // 3. Prepare Gemini API Request
-$url = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=" . GEMINI_API_KEY;
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" . GEMINI_API_KEY;
 
 $payload = [
     "contents" => [

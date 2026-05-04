@@ -37,7 +37,7 @@ try {
     }
 
     // 1. Prepare Gemini API Request
-    $url = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=" . GEMINI_API_KEY;
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . GEMINI_API_KEY;
 
     $payload = [
         "contents" => [
@@ -107,5 +107,5 @@ try {
 
 } catch (Exception $e) {
     error_log("Chatbot Error: " . $e->getMessage());
-    echo json_encode(['status' => 'error', 'message' => 'System error: ' . $e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
