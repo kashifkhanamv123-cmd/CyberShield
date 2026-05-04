@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI Chatbot - Premium PHP Integration</title>
+    <meta name="description" content="A powerful chatbot powered by Google Gemini API and PHP backend.">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="chat-container">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="status-dot"></div>
+            <h1>Luna AI Assistant</h1>
+        </header>
+
+        <!-- Chat Area -->
+        <div class="messages-wrapper" id="chat-box">
+            <!-- Initial Bot Message -->
+            <div class="message bot">
+                Hello! I'm Luna, your CyberShield AI assistant. How can I help you with your security labs today?
+            </div>
+            
+            <!-- Loading indicator (hidden by default) -->
+            <div class="loading" id="loading">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <form class="input-area" id="chat-form">
+            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off" required>
+            <button type="submit" id="send-btn">
+                <span>Send</span>
+                <i class="fas fa-paper-plane" style="margin-left: 8px;"></i>
+            </button>
+        </form>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="assets/js/chat.js"></script>
+</body>
+</html>
