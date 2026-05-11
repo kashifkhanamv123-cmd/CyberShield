@@ -24,7 +24,7 @@ if (empty($userMessage)) {
     exit;
 }
 
-if (GEMINI_API_KEY === 'YOUR_API_KEY' || empty(GEMINI_API_KEY)) {
+if (GEMINI_API_KEY === 'AIzaSyDz1yNeYCnx0QfV-n_GmN7_5wxlwEqoBPI' || empty(GEMINI_API_KEY)) {
     echo json_encode(['error' => 'Please set your Google Gemini API Key in api.php']);
     exit;
 }
