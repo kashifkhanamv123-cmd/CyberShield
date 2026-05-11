@@ -18,9 +18,10 @@ $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
 $userMessage = isset($data['message']) ? trim($data['message']) : '';
+$imageData = isset($data['image']) ? $data['image'] : null;
 
-if (empty($userMessage)) {
-    echo json_encode(['error' => 'Message is required']);
+if (empty($userMessage) && empty($imageData)) {
+    echo json_encode(['error' => 'Message or image is required']);
     exit;
 }
 
@@ -30,15 +31,41 @@ if (GEMINI_API_KEY === 'AIzaSyDz1yNeYCnx0QfV-n_GmN7_5wxlwEqoBPI' || empty(GEMINI
 }
 
 // 3. Prepare Gemini API Request
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" . GEMINI_API_KEY;
+// Use v1alpha for high-resolution support if an image is provided, otherwise use stable v1
+$apiVersion = $imageData ? 'v1alpha' : 'v1';
+$model = 'gemini-2.0-flash'; 
+$url = "https://generativelanguage.googleapis.com/{$apiVersion}/models/{$model}:generateContent?key=" . GEMINI_API_KEY;
+
+$parts = [];
+if (!empty($userMessage)) {
+    $parts[] = ["text" => $userMessage];
+}
+
+if ($imageData) {
+    // Strip base64 header if present
+    if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $type)) {
+        $imageData = substr($imageData, strpos($imageData, ',') + 1);
+        $mimeType = "image/" . strtolower($type[1]);
+    } else {
+        $mimeType = "image/jpeg"; // Default
+    }
+
+    $parts[] = [
+        "inline_data" => [
+            "mime_type" => $mimeType,
+            "data" => $imageData
+        ],
+        "media_resolution" => [
+            "level" => "media_resolution_high"
+        ]
+    ];
+}
 
 $payload = [
     "contents" => [
         [
             "role" => "user",
-            "parts" => [
-                ["text" => $userMessage]
-            ]
+            "parts" => $parts
         ]
     ],
     "system_instruction" => [
@@ -84,5 +111,5 @@ if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
     $botReply = $responseData['candidates'][0]['content']['parts'][0]['text'];
     echo json_encode(['reply' => $botReply]);
 } else {
-    echo json_encode(['error' => 'Invalid response structure from Gemini API']);
+    echo json_encode(['error' => 'Invalid response structure from Gemini API', 'debug' => $responseData]);
 }

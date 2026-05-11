@@ -21,16 +21,33 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Chat endpoint
 app.post('/chat', async (req, res) => {
     try {
-        const { message } = req.body;
+        const { message, image } = req.body;
 
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
+        if (!message && !image) {
+            return res.status(400).json({ error: 'Message or image is required' });
         }
 
-        // For text-only input, use the gemini-pro model
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        // Use gemini-2.0-flash which supports both text and vision
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-        const result = await model.generateContent(message);
+        let result;
+        if (image) {
+            // Handle image + text
+            const imageData = image.split(',')[1]; // Strip prefix
+            result = await model.generateContent([
+                message || "What is in this image?",
+                {
+                    inlineData: {
+                        data: imageData,
+                        mimeType: "image/jpeg"
+                    }
+                }
+            ]);
+        } else {
+            // Text only
+            result = await model.generateContent(message);
+        }
+
         const response = await result.response;
         const text = response.text();
 

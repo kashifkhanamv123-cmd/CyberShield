@@ -1,6 +1,34 @@
 const chatForm = document.getElementById('chat-form');
 const userInput = document.getElementById('user-input');
 const chatContainer = document.getElementById('chat-container');
+const imageInput = document.getElementById('image-input');
+const imagePreviewContainer = document.getElementById('image-preview-container');
+const imagePreview = document.getElementById('image-preview');
+const removeImageBtn = document.getElementById('remove-image-btn');
+
+let selectedImageBase64 = null;
+
+// Handle image selection
+imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            selectedImageBase64 = event.target.result;
+            imagePreview.src = selectedImageBase64;
+            imagePreviewContainer.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Handle image removal
+removeImageBtn.addEventListener('click', () => {
+    selectedImageBase64 = null;
+    imageInput.value = '';
+    imagePreviewContainer.style.display = 'none';
+    imagePreview.src = '';
+});
 
 // Function to add a message to the chat container
 function addMessage(text, isBot = false) {
@@ -37,24 +65,42 @@ chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const message = userInput.value.trim();
-    if (!message) return;
+    if (!message && !selectedImageBase64) return;
 
-    // Clear input
+    // Clear input and preview
     userInput.value = '';
+    const currentImage = selectedImageBase64;
+    
+    if (selectedImageBase64) {
+        imagePreviewContainer.style.display = 'none';
+        selectedImageBase64 = null;
+        imageInput.value = '';
+    }
     
     // Add user message to UI
-    addMessage(message, false);
+    if (message) {
+        addMessage(message, false);
+    } else {
+        addMessage("(Sent an image)", false);
+    }
     
     // Show typing indicator
     showTypingIndicator();
 
     try {
-        const response = await fetch('/chat', {
+        // Decide which API to call. Since the user is working in PHP, 
+        // we'll try the PHP API if it's available, otherwise fallback to /chat
+        const apiEndpoint = window.location.pathname.includes('php-app') ? 'api.php' : '/chat';
+        
+        const response = await fetch(apiEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message })
+            body: JSON.stringify({ 
+                message: message || "What is in this image?", 
+                image: currentImage 
+            })
         });
 
         const data = await response.json();
@@ -62,8 +108,9 @@ chatForm.addEventListener('submit', async (e) => {
         // Remove indicator and add bot response
         removeTypingIndicator();
         
-        if (data.response) {
-            addMessage(data.response, true);
+        const reply = data.reply || data.response;
+        if (reply) {
+            addMessage(reply, true);
         } else if (data.error) {
             addMessage(`Error: ${data.error}`, true);
         }

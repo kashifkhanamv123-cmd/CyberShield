@@ -1,4 +1,5 @@
 <?php
+/** @var mysqli $conn */
 require_once __DIR__ . '/admin-auth.php';
 
 $message = '';
@@ -262,6 +263,7 @@ if ($search) {
                                                         </form>
                                                         <!-- Delete -->
                                                         <form method="POST" onsubmit="return confirm('Permanently delete this user?')">
+                                                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
                                                             <input type="hidden" name="uid" value="<?php echo $u['id']; ?>">
                                                             <input type="hidden" name="action" value="delete">
                                                             <button type="submit" title="Delete user"
