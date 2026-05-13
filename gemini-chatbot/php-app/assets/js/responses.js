@@ -5,46 +5,62 @@
 
 const assistantData = {
     greetings: {
-        keywords: ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening"],
-        response: "Hello! I'm Luna, your CyberShield assistant. I'm here to help you navigate the platform and master your security labs. How can I assist you today?"
+        keywords: ["hi", "hello", "hey", "greetings", "good morning", "good afternoon", "good evening", "luna"],
+        response: "Hello Operator! I'm Luna, your Elite AI security assistant. I'm connected to the CyberShield neural network and ready to guide you through our defensive training modules. How can I help you secure the perimeter today?"
     },
     dashboard: {
-        keywords: ["dashboard", "home", "main page", "overview"],
-        response: "The Dashboard is your mission control. It shows your active labs, recent security events, and progress metrics. You can access it anytime by clicking 'Dashboard' in the navigation bar."
+        keywords: ["dashboard", "home", "main page", "overview", "status"],
+        response: "The **Analyst Dashboard** is your central command center. Here you can monitor the 'Global Threat Monitor' for real-time simulations, check your current 'Security Level', and view the 'Intrusion Feed' for live logs. It's designed to give you a 360-degree view of the network's health."
     },
-    labs: {
-        keywords: ["labs", "training", "exercises", "scenarios", "practice"],
-        response: "CyberShield offers several interactive labs: \n1. **Phishing Simulation**: Practice identifying and creating phishing campaigns.\n2. **Brute Force Lab**: Learn how SSH attacks work and how to mitigate them.\n3. **Malware Analysis**: Investigate suspicious samples in a safe environment.\n4. **SOC Lab**: Monitor alerts and respond to simulated threats in real-time."
+    phishing_lab: {
+        keywords: ["phishing", "email", "spoof", "campaign", "social engineering"],
+        response: "In the **Phishing Lab**, you learn to think like an attacker to build better defenses. You can create simulated campaigns by choosing a sender name, spoofing an email address, and crafting a convincing body. The goal is to analyze 'Click Rates' and 'Credential Harvests' to understand user vulnerability."
     },
-    auth: {
-        keywords: ["login", "register", "account", "signup", "password"],
-        response: "You can manage your account through the 'Profile' section. If you're not logged in, use the 'Login' or 'Register' links at the top. Remember to use a strong password for your CyberShield operator profile!"
+    brute_force: {
+        keywords: ["brute force", "ssh", "hydra", "password attack", "cracking"],
+        response: "The **Brute Force Lab** simulates automated credential attacks against an SSH server. You'll witness how attackers use wordlists to guess passwords. Your task is to analyze the 'Brute Force Logs', identify the attacker's IP, and implement mitigation strategies like account lockouts and IP banning."
+    },
+    malware: {
+        keywords: ["malware", "virus", "ransomware", "analysis", "forensics", "sample"],
+        response: "In the **Malware Analysis** module, you are presented with suspicious file samples. You must perform static and dynamic analysis (simulated) to determine the 'Sample Type' (e.g., Ransomware, Trojan, Spyware) and provide a final verdict. It's a safe environment to practice digital forensics."
+    },
+    soc_lab: {
+        keywords: ["soc", "siem", "alerts", "monitoring", "incidents", "threat hunting"],
+        response: "The **Elite SOC Lab** is our most advanced module. You'll act as a Security Operations Center analyst, triaging 'High' and 'Critical' alerts. You must examine 'Log Evidence', determine the 'Canonical Type' of the threat, and move through phases to successfully mitigate the attack."
+    },
+    ddos: {
+        keywords: ["ddos", "dos", "flood", "syn", "traffic", "botnet"],
+        response: "Our **DDoS Defense** simulator allows you to experience various attack types like SYN Floods and UDP amplification. You'll learn to monitor traffic spikes and use the 'Mitigation Toggle' to protect the server's availability during an active assault."
     },
     progress: {
-        keywords: ["progress", "stats", "rank", "score", "performance"],
-        response: "Your progress is tracked automatically as you complete lab tasks. Check the 'Analytics' or 'Progress' tab in your dashboard to see your performance metrics and ranking."
+        keywords: ["progress", "stats", "rank", "score", "performance", "my level"],
+        response: "Your progress is tracked in real-time. Every successful lab mitigation increases your 'Node Integrity' and overall score. You can see your detailed breakdown in the **Progress Tracking** section of your profile."
     },
     settings: {
-        keywords: ["settings", "profile", "customize", "edit profile"],
-        response: "In the 'Settings' area, you can update your personal details, change your password, and customize your operator profile image."
-    },
-    tools: {
-        keywords: ["tools", "software", "utilities", "scripts"],
-        response: "Each lab provides its own set of professional tools, including log analyzers, network scanners, and forensic utilities, accessible through the lab interface."
-    },
-    troubleshooting: {
-        keywords: ["help", "error", "broken", "not working", "stuck"],
-        response: "If you're stuck, first check the Lab Documentation provided in each module. If you encounter a system error, please submit a query through the 'Help Desk' section, and an admin will assist you."
-    },
-    cybersecurity: {
-        keywords: ["cybersecurity", "security", "hacking", "defense", "protection"],
-        response: "CyberShield is dedicated to teaching defensive security. Our focus is on monitoring, analysis, and threat mitigation to build robust digital defenses."
+        keywords: ["settings", "profile", "customize", "edit", "identity", "image"],
+        response: "Access **Node Config** (Settings) to manage your identity. You can synchronize your Node ID, update your regional settings, and upload a custom avatar. We recommend keeping your profile updated for the leaderboard."
     },
     navigation: {
-        keywords: ["navigate", "where is", "how to find", "menu"],
-        response: "Use the sidebar or top navigation menu to switch between the Dashboard, Labs, Help Desk, and your Profile. Everything is just one click away!"
+        keywords: ["navigate", "where is", "how to find", "menu", "sidebar", "go to"],
+        response: "The navigation sidebar on the left gives you instant access to: \n- **Dashboard**: Global status\n- **Labs**: All training modules\n- **Node Config**: Profile & Settings\n- **Help Desk**: Support queries\n\nSimply click an icon to re-route your session."
     },
-    fallback: "I'm not quite sure about that. Try asking about 'Labs', 'Dashboard', or 'Settings', or visit the Help Desk for more specific assistance."
+    auth: {
+        keywords: ["login", "register", "logout", "account", "signup", "access"],
+        response: "CyberShield uses encrypted session handling. To secure your data, always 'Terminate' (Logout) your session when leaving your terminal. New operators can join via the 'Register' node on the login page."
+    },
+    help: {
+        keywords: ["help", "stuck", "support", "admin", "query", "question"],
+        response: "If you're facing technical issues or have a specific question, navigate to the **Help Desk**. You can submit a 'Support Query' directly to our administrators, and they will provide a solution within your 'Resolved Queries' tab."
+    },
+    mission: {
+        keywords: ["what is", "about", "mission", "purpose", "who are you"],
+        response: "CyberShield is an elite cybersecurity training platform designed to bridge the gap between theory and practice. Our mission is to forge the next generation of cyber defenders through immersive, high-fidelity simulations."
+    },
+    faq: {
+        keywords: ["faq", "questions", "common issues"],
+        response: "Common questions include: \n- **How do I reset a lab?** Use the 'Reset Node' button within the lab module.\n- **Can I work offline?** Yes! Our new Luna Scripted Assistant is fully offline-capable.\n- **Are the threats real?** No, all simulations are safely sandboxed."
+    },
+    fallback: "I've scanned my database but couldn't find a direct match for that query. Try asking about 'SOC Lab', 'Phishing', 'DDoS', or 'How to navigate'. I'm here to help!"
 };
 
 /**
