@@ -1,9 +1,22 @@
 <?php
 // Centralized session configuration
+require_once __DIR__ . '/env.php';
+
+// Production Error Handling
+if (($_ENV['APP_ENV'] ?? 'production') === 'production') {
+    ini_set('display_errors', 0);
+    ini_set('display_startup_errors', 0);
+    error_reporting(E_ALL);
+    ini_set('log_errors', 1);
+    ini_set('error_log', __DIR__ . '/../logs/php_error.log');
+}
+
 if (session_status() === PHP_SESSION_NONE) {
+    $is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443;
+    
     session_set_cookie_params([
         'path'     => '/',
-        'secure'   => false, // Set to true if using HTTPS
+        'secure'   => $is_https,
         'httponly' => true,
         'samesite' => 'Lax'
     ]);

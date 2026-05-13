@@ -45,16 +45,31 @@ document.addEventListener('DOMContentLoaded', () => {
         chatBox.scrollTop = chatBox.scrollHeight;
 
         try {
+            // Get reCAPTCHA response
+            const captchaResponse = grecaptcha.getResponse();
+            
+            if (!captchaResponse) {
+                loadingIndicator.style.display = 'none';
+                appendMessage("Please complete the captcha first.", 'bot');
+                return;
+            }
+
             // 3. Send message to PHP backend
             const response = await fetch('api.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: message })
+                body: JSON.stringify({ 
+                    message: message,
+                    captcha: captchaResponse 
+                })
             });
 
             const data = await response.json();
+
+            // Reset reCAPTCHA for next message
+            grecaptcha.reset();
 
             // 4. Hide loading indicator
             loadingIndicator.style.display = 'none';

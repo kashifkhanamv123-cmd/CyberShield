@@ -38,7 +38,10 @@
 
         <!-- Input Area -->
         <form class="input-area" id="chat-form">
-            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off" required>
+            <div class="input-wrapper">
+                <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off" required>
+                <div class="g-recaptcha" data-sitekey="6Lc8SugsAAAAAH9YhID72YspXNNMF76NEuBl6nNY" data-theme="dark"></div>
+            </div>
             <button type="submit" id="send-btn">
                 <span>Send</span>
                 <i class="fas fa-paper-plane" style="margin-left: 8px;"></i>
@@ -47,6 +50,7 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <script src="assets/js/chat.js"></script>
 </body>
 </html>

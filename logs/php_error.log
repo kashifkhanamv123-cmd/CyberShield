@@ -1,0 +1,30 @@
+[13-May-2026 13:49:50 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'root'@'localhost' (using password: NO) in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php:9
+Stack trace:
+#0 C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php(9): mysqli_connect()
+#1 C:\Users\Haris Laptops\Desktop\Cybershield\auth\login.php(3): require_once('...')
+#2 {main}
+  thrown in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php on line 9
+[13-May-2026 13:49:52 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'root'@'localhost' (using password: NO) in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php:9
+Stack trace:
+#0 C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php(9): mysqli_connect()
+#1 C:\Users\Haris Laptops\Desktop\Cybershield\auth\login.php(3): require_once('...')
+#2 {main}
+  thrown in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php on line 9
+[13-May-2026 13:49:53 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'root'@'localhost' (using password: NO) in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php:9
+Stack trace:
+#0 C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php(9): mysqli_connect()
+#1 C:\Users\Haris Laptops\Desktop\Cybershield\auth\login.php(3): require_once('...')
+#2 {main}
+  thrown in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php on line 9
+[13-May-2026 13:51:07 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'root'@'localhost' (using password: NO) in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php:9
+Stack trace:
+#0 C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php(9): mysqli_connect()
+#1 C:\Users\Haris Laptops\Desktop\Cybershield\auth\login.php(3): require_once('...')
+#2 {main}
+  thrown in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php on line 9
+[13-May-2026 13:51:14 UTC] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user 'root'@'localhost' (using password: NO) in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php:9
+Stack trace:
+#0 C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php(9): mysqli_connect()
+#1 C:\Users\Haris Laptops\Desktop\Cybershield\auth\register.php(3): require_once('...')
+#2 {main}
+  thrown in C:\Users\Haris Laptops\Desktop\Cybershield\config\db.php on line 9

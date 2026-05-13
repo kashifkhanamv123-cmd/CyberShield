@@ -25,6 +25,18 @@ if (isset($_POST['register'])) {
         } elseif ($password !== $confirm) {
             $error = "Passwords do not match!";
         } else {
+            // reCAPTCHA Verification
+            $recaptcha_secret = $_ENV['RECAPTCHA_SECRET_KEY'] ?? '';
+            if (!empty($recaptcha_secret)) {
+                $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+                $verify = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret={$recaptcha_secret}&response={$recaptcha_response}");
+                $responseData = json_decode($verify);
+                if (!$responseData->success) {
+                    $error = "reCAPTCHA verification failed. Please try again.";
+                }
+            }
+
+            if (empty($error)) {
             // Check if email already exists
             $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
             $stmt->bind_param("s", $email);
@@ -46,6 +58,7 @@ if (isset($_POST['register'])) {
                 $insert->close();
             }
             $stmt->close();
+            }
         }
     }
 }
@@ -60,6 +73,7 @@ if (isset($_POST['register'])) {
     <title>CyberShield | Register New Operator</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
@@ -217,21 +231,19 @@ if (isset($_POST['register'])) {
                     </div>
                 </div>
 
-                <!-- Captcha Placeholder -->
-                <div class="bg-black/20 border border-white/5 rounded-lg p-3 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="relative flex items-center justify-center w-6 h-6">
-                            <input type="checkbox" id="captchaCheck" required class="peer w-5 h-5 appearance-none border border-white/20 bg-background-dark rounded checked:bg-primary checked:border-primary transition-all cursor-pointer">
-                            <span id="captchaIcon" class="material-symbols-outlined absolute pointer-events-none text-black text-sm font-bold opacity-0 peer-checked:opacity-100">check</span>
-                            <div id="captchaLoader" class="recaptcha-spinner absolute inset-0 hidden"></div>
+                <!-- Google reCAPTCHA Widget -->
+                <div class="flex justify-center">
+                    <?php if (!empty($_ENV['RECAPTCHA_SITE_KEY'])): ?>
+                        <div class="g-recaptcha" data-sitekey="<?php echo htmlspecialchars($_ENV['RECAPTCHA_SITE_KEY']); ?>" data-theme="dark" data-callback="enableBtn"></div>
+                    <?php else: ?>
+                        <div class="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg text-center">
+                            <p class="text-orange-500 text-[10px] font-bold uppercase">reCAPTCHA Site Key Missing</p>
                         </div>
-                        <span id="captchaText" class="text-xs text-slate-400">Verifying human operator...</span>
-                    </div>
-                    <img src="https://www.gstatic.com/recaptcha/api2/logo_48.png" alt="reCAPTCHA" class="w-6 h-6 opacity-40 grayscale">
+                    <?php endif; ?>
                 </div>
 
-                <button id="submitBtn" name="register" type="submit" disabled
-                    class="w-full bg-primary/20 text-black/50 font-bold py-3 rounded-lg uppercase tracking-widest transition-all shadow-lg active:scale-[0.98] cursor-not-allowed">
+                <button id="submitBtn" name="register" type="submit" <?php echo !empty($_ENV['RECAPTCHA_SITE_KEY']) ? 'disabled' : ''; ?>
+                    class="w-full <?php echo !empty($_ENV['RECAPTCHA_SITE_KEY']) ? 'bg-primary/20 text-black/50 cursor-not-allowed' : 'bg-primary text-black'; ?> font-bold py-3 rounded-lg uppercase tracking-widest transition-all shadow-lg active:scale-[0.98]">
                     Initialize Operator Profile
                 </button>
 
@@ -307,36 +319,14 @@ if (isset($_POST['register'])) {
             }
         }
 
-        // Animated reCAPTCHA
-        const captchaCheck = document.getElementById('captchaCheck');
-        const captchaIcon = document.getElementById('captchaIcon');
-        const captchaLoader = document.getElementById('captchaLoader');
-        const captchaText = document.getElementById('captchaText');
-        const submitBtn = document.getElementById('submitBtn');
-
-        captchaCheck.addEventListener('change', function() {
-            if (this.checked) {
-                this.classList.add('hidden');
-                captchaLoader.classList.remove('hidden');
-                captchaText.innerText = "Analyzing biometric patterns...";
-                
-                setTimeout(() => {
-                    captchaLoader.classList.add('hidden');
-                    captchaIcon.classList.remove('opacity-0');
-                    captchaIcon.classList.add('opacity-100');
-                    captchaCheck.classList.remove('hidden');
-                    captchaCheck.checked = true;
-                    captchaCheck.disabled = true;
-                    captchaText.innerText = "Human verified";
-                    captchaText.classList.replace('text-slate-400', 'text-primary');
-                    
-                    submitBtn.disabled = false;
-                    submitBtn.classList.replace('bg-primary/20', 'bg-primary');
-                    submitBtn.classList.replace('text-black/50', 'text-black');
-                    submitBtn.classList.replace('cursor-not-allowed', 'cursor-pointer');
-                }, 1800);
-            }
-        });
+        // reCAPTCHA Callback
+        function enableBtn() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+            submitBtn.classList.replace('bg-primary/20', 'bg-primary');
+            submitBtn.classList.replace('text-black/50', 'text-black');
+            submitBtn.classList.replace('cursor-not-allowed', 'cursor-pointer');
+        }
     </script>
 </body>
 

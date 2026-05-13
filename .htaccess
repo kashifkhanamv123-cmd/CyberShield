@@ -1,0 +1,17 @@
+# CyberShield Root Protection
+
+# 1. Disable directory browsing
+Options -Indexes
+
+# 2. Prevent access to sensitive files
+<FilesMatch "^\.env|.*\.sql|.*\.log|composer\.(json|lock)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 3. Protect specific directories
+RedirectMatch 403 ^/(config|includes|database|modules)/.*$
+
+# 4. Error pages (optional)
+# ErrorDocument 403 /maintenance.php
+# ErrorDocument 404 /index.php

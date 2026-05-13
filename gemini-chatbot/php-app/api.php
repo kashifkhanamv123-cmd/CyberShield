@@ -12,11 +12,9 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json");
 
-/* =========================
-   1. Gemini API Key
-========================= */
+require_once __DIR__ . '/../../config/env.php';
 
-define('GEMINI_API_KEY', 'YOUR_API_KEY_HERE');
+define('GEMINI_API_KEY', $_ENV['GEMINI_API_KEY'] ?? 'YOUR_API_KEY_HERE');
 
 /* =========================
    2. Read POST Data
@@ -25,6 +23,26 @@ define('GEMINI_API_KEY', 'YOUR_API_KEY_HERE');
 $json = file_get_contents('php://input');
 
 $data = json_decode($json, true);
+
+/* =========================
+   2.5. Verify reCAPTCHA
+========================= */
+
+$recaptchaSecret = '6Lc8SugsAAAAAOBjmM6CpekV_5BhvN8QDSy3bQXo';
+$recaptchaResponse = isset($data['captcha']) ? $data['captcha'] : '';
+
+if (empty($recaptchaResponse)) {
+    echo json_encode(['error' => 'Captcha verification failed']);
+    exit;
+}
+
+$verifyResponse = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret={$recaptchaSecret}&response={$recaptchaResponse}");
+$responseData = json_decode($verifyResponse);
+
+if (!$responseData->success) {
+    echo json_encode(['error' => 'Captcha verification failed']);
+    exit;
+}
 
 $userMessage = isset($data['message'])
     ? trim($data['message'])
