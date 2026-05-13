@@ -40,53 +40,44 @@ document.addEventListener('DOMContentLoaded', () => {
         userInput.value = '';
         userInput.focus();
 
-        // 2. Show loading indicator
+        // 2. Show loading indicator (Typing simulation)
         loadingIndicator.style.display = 'flex';
         chatBox.scrollTop = chatBox.scrollHeight;
 
-        try {
-            // Get reCAPTCHA response
-            const captchaResponse = grecaptcha.getResponse();
-            
-            if (!captchaResponse) {
-                loadingIndicator.style.display = 'none';
-                appendMessage("Please complete the captcha first.", 'bot');
-                return;
-            }
-
-            // 3. Send message to PHP backend
-            const response = await fetch('api.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    message: message,
-                    captcha: captchaResponse 
-                })
-            });
-
-            const data = await response.json();
-
-            // Reset reCAPTCHA for next message
-            grecaptcha.reset();
+        // Simulate thinking time
+        setTimeout(() => {
+            // 3. Get response from local script
+            const reply = getAssistantResponse(message);
 
             // 4. Hide loading indicator
             loadingIndicator.style.display = 'none';
 
-            // 5. Handle response
-            if (data.reply) {
-                appendMessage(data.reply, 'bot');
-            } else if (data.error) {
-                appendMessage("Error: " + data.error, 'bot');
-            } else {
-                appendMessage("An unexpected error occurred.", 'bot');
-            }
-
-        } catch (error) {
-            console.error('Fetch error:', error);
-            loadingIndicator.style.display = 'none';
-            appendMessage("Could not connect to the server. Please check your connection.", 'bot');
-        }
+            // 5. Display bot message with typing effect
+            appendBotMessage(reply);
+        }, 800 + Math.random() * 1000);
     });
+
+    /**
+     * Appends a bot message with a simple typing effect
+     * @param {string} text 
+     */
+    const appendBotMessage = (text) => {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', 'bot');
+        chatBox.insertBefore(messageDiv, loadingIndicator);
+        
+        let i = 0;
+        const speed = 20; // ms per character
+
+        function type() {
+            if (i < text.length) {
+                messageDiv.textContent += text.charAt(i);
+                i++;
+                chatBox.scrollTop = chatBox.scrollHeight;
+                setTimeout(type, speed);
+            }
+        }
+        
+        type();
+    };
 });
